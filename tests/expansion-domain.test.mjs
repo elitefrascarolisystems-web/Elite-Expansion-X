@@ -220,4 +220,9 @@ test("rejects unsafe links and contact data without authorization", async () => 
   assert.throws(() => parseActionPayload("update_lead", {
     leadId: 1, status: "Cancelado", assignedToEmail: "", consentRevoked: true, consentRevocationReason: "",
   }));
+  assert.throws(() => parseActionPayload("update_settings", {
+    referralBaseUrl: "", attributionModel: "Último contato confirmado", minActiveAmbassadors: 1,
+    minConfirmedPayments: 1, minActivePartners: 0, minDataPeriods: 1, inactivityDays: 30,
+    organicGoalPercent: 0,
+  }));
 });

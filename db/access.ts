@@ -78,7 +78,7 @@ export async function getSettings(): Promise<SettingsView> {
   return {
     ownerEmail: String(row.owner_email ?? OWNER_EMAIL),
     referralBaseUrl: String(row.referral_base_url ?? ""),
-    attributionModel: String(row.attribution_model ?? "Origem principal declarada"),
+    attributionModel: "Origem principal declarada",
     minActiveAmbassadors: asNumber(row.min_active_ambassadors),
     minConfirmedPayments: asNumber(row.min_confirmed_payments),
     minActivePartners: asNumber(row.min_active_partners),

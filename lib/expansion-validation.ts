@@ -199,7 +199,7 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
       if (!value) return true;
       try { const url = new URL(value); return ["http:", "https:"].includes(url.protocol); } catch { return false; }
     }, "Informe um link válido iniciado por http ou https."),
-    attributionModel: z.enum(["Origem principal declarada", "Primeiro contato", "Último contato confirmado"]),
+    attributionModel: z.literal("Origem principal declarada"),
     minActiveAmbassadors: nonNegative,
     minConfirmedPayments: nonNegative,
     minActivePartners: nonNegative,
