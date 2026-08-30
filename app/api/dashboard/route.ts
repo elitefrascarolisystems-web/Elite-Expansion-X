@@ -1,50 +1,48 @@
 import { getChatGPTUser } from "@/app/chatgpt-auth";
-import {
-  createAmbassador,
-  createCity,
-  getDashboardData,
-  recordAmbassadorUpdate,
-  recordCityUpdate,
-} from "@/db/queries";
+import { getUserAccess } from "@/db/access";
+import { executeAction } from "@/db/mutations";
+import { getDashboardData } from "@/db/queries";
+import { actionNameSchema, parseActionPayload } from "@/lib/expansion-validation";
+import { ZodError } from "zod";
 
 export const dynamic = "force-dynamic";
 
+const responseHeaders = { "Cache-Control": "no-store" };
+
+function sameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  return !origin || origin === new URL(request.url).origin;
+}
+
 export async function GET() {
   const user = await getChatGPTUser();
-  if (!user) return Response.json({ error: "Acesso não autorizado." }, { status: 401 });
-  return Response.json({ data: await getDashboardData(user.email) });
+  if (!user) return Response.json({ error: "Acesso não autorizado." }, { status: 401, headers: responseHeaders });
+  const access = await getUserAccess(user.email, user.displayName);
+  if (!access) return Response.json({ error: "Seu perfil ainda não foi liberado dentro da plataforma." }, { status: 403, headers: responseHeaders });
+  return Response.json({ data: await getDashboardData(access) }, { headers: responseHeaders });
 }
 
 export async function POST(request: Request) {
+  if (!sameOrigin(request)) return Response.json({ error: "Origem da solicitação não permitida." }, { status: 403, headers: responseHeaders });
   const user = await getChatGPTUser();
-  if (!user) return Response.json({ error: "Acesso não autorizado." }, { status: 401 });
+  if (!user) return Response.json({ error: "Acesso não autorizado." }, { status: 401, headers: responseHeaders });
+  const access = await getUserAccess(user.email, user.displayName);
+  if (!access) return Response.json({ error: "Seu perfil ainda não foi liberado dentro da plataforma." }, { status: 403, headers: responseHeaders });
 
   try {
-    const payload = (await request.json()) as { action?: string; data?: Record<string, unknown> };
-    const data = payload.data ?? {};
-    if (payload.action === "create_city") {
-      if (!String(data.name || "").trim()) throw new Error("Informe o nome da cidade.");
-      await createCity(data, user.email);
-    } else if (payload.action === "create_ambassador") {
-      if (!String(data.name || "").trim() || !String(data.code || "").trim()) {
-        throw new Error("Informe o nome e o código do embaixador.");
-      }
-      await createAmbassador(data, user.email);
-    } else if (payload.action === "record_city") {
-      if (!data.cityId || !String(data.period || "").trim()) throw new Error("Informe a cidade e o período.");
-      await recordCityUpdate(data, user.email);
-    } else if (payload.action === "record_ambassador") {
-      if (!data.ambassadorId || !String(data.period || "").trim()) throw new Error("Informe o embaixador e o período.");
-      await recordAmbassadorUpdate(data, user.email);
-    } else {
-      return Response.json({ error: "Ação inválida." }, { status: 400 });
-    }
-    return Response.json({ data: await getDashboardData(user.email) });
+    const payload = (await request.json()) as { action?: unknown; data?: unknown };
+    const action = actionNameSchema.parse(payload.action);
+    const data = parseActionPayload(action, payload.data ?? {});
+    await executeAction(action, data, access);
+    return Response.json({ data: await getDashboardData(access) }, { headers: responseHeaders });
   } catch (error) {
-    const raw = error instanceof Error ? error.message : "Não foi possível salvar.";
+    const raw = error instanceof ZodError
+      ? error.issues[0]?.message ?? "Revise os campos informados."
+      : error instanceof Error ? error.message : "Não foi possível salvar.";
     const message = raw.includes("UNIQUE constraint failed")
-      ? "Esse nome ou código já está cadastrado."
+      ? "Já existe um registro com esse nome, código ou e-mail."
       : raw;
-    return Response.json({ error: message }, { status: 400 });
+    const status = /permissão|fora do seu acesso|próprio embaixador|Origem da solicitação/.test(message) ? 403 : 400;
+    return Response.json({ error: message }, { status, headers: responseHeaders });
   }
 }
