@@ -54,6 +54,7 @@ export type AmbassadorRecord = {
   code: string;
   email: string;
   whatsapp: string;
+  whatsappAuthorizedAt: string | null;
   level: string;
   status: string;
   onboardingStatus: string;
@@ -116,6 +117,8 @@ export type LeadRecord = {
   consentAt: string;
   consentSource: string;
   consentPurpose: string;
+  consentRevokedAt: string | null;
+  consentRevocationReason: string;
   assignedToEmail: string;
   createdAt: string;
 };
@@ -267,6 +270,7 @@ export type CityMetric = CityRecord & {
   revenueCents: number;
   costCents: number;
   mediaCostCents: number;
+  ambassadorProgramCostCents: number | null;
   refunds: number;
   activePartners: number;
   eventsCount: number;
@@ -295,6 +299,7 @@ export type SummaryMetric = {
   plannedCities: number;
   activeCities: number;
   activeAmbassadors: number;
+  eligibleAmbassadors: number;
   validLeads: number;
   confirmedSales: number;
   confirmedPayments: number;
@@ -306,6 +311,7 @@ export type SummaryMetric = {
   cplCents: number | null;
   cacCents: number | null;
   organicShare: number | null;
+  activation: number | null;
   roas: number | null;
   roi: number | null;
   costPerActiveAmbassadorCents: number | null;

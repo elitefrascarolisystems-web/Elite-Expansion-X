@@ -73,6 +73,9 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     : access.role === "Comercial"
       ? { where: "1 = 0", values: [] }
       : { where: scope.where.replaceAll("c.id", "t.city_id"), values: scope.values };
+  const contentWhere = access.role === "Embaixador"
+    ? { where: `x.status = 'Aprovado' AND (x.city_id IS NULL OR ${scope.where})`, values: scope.values }
+    : { where: `x.city_id IS NULL OR ${scope.where}`, values: scope.values };
 
   const [
     settings,
@@ -99,7 +102,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
       ORDER BY CASE c.phase WHEN 'Piloto' THEN 1 WHEN 'Ativa' THEN 2 WHEN 'Preparação' THEN 3 ELSE 4 END, c.name
     `, scope.values),
     rows(`
-      SELECT a.id, a.city_id, c.name AS city_name, a.name, a.code, a.email, a.whatsapp,
+      SELECT a.id, a.city_id, c.name AS city_name, a.name, a.code, a.email, a.whatsapp, a.whatsapp_authorized_at,
         a.level, a.status, a.onboarding_status, a.training_progress, a.terms_accepted_at,
         a.pause_reason, a.updated_at, a.created_at
       FROM ambassadors a JOIN cities c ON c.id = a.city_id
@@ -124,7 +127,8 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
       SELECT l.id, l.city_id, c.name AS city_name, l.ambassador_id,
         COALESCE(a.name, '') AS ambassador_name, l.partner_id, l.event_id, l.content_id,
         l.name, l.email, l.whatsapp, l.status, l.channel, l.source_label, l.campaign,
-        l.consent_at, l.consent_source, l.consent_purpose, l.assigned_to_email, l.created_at
+        l.consent_at, l.consent_source, l.consent_purpose, l.consent_revoked_at,
+        l.consent_revocation_reason, l.assigned_to_email, l.created_at
       FROM leads l
       JOIN cities c ON c.id = l.city_id
       LEFT JOIN ambassadors a ON a.id = l.ambassador_id
@@ -160,9 +164,9 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
         x.title, x.type, x.channel, x.version, x.status, x.url, x.instructions,
         x.expires_at, x.created_at
       FROM contents x LEFT JOIN cities c ON c.id = x.city_id
-      WHERE x.city_id IS NULL OR ${scope.where}
+      WHERE ${contentWhere.where}
       ORDER BY CASE x.status WHEN 'Aprovado' THEN 1 WHEN 'Em revisão' THEN 2 ELSE 3 END, x.id DESC LIMIT 500
-    `, scope.values),
+    `, contentWhere.values),
     rows(`
       SELECT t.id, t.city_id, t.ambassador_id, COALESCE(a.name, 'Equipe da cidade') AS ambassador_name,
         t.title, t.category, t.due_date, t.status, t.completed_at, t.created_at
@@ -189,13 +193,13 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     state: String(row.state),
     phase: String(row.phase),
     leaderName: String(row.leader_name ?? ""),
-    targetCacCents: asNumber(row.target_cac_cents),
-    ambassadorGoal: asNumber(row.ambassador_goal),
-    salesGoal: asNumber(row.sales_goal),
+    targetCacCents: access.role === "Embaixador" ? 0 : asNumber(row.target_cac_cents),
+    ambassadorGoal: access.role === "Embaixador" ? 0 : asNumber(row.ambassador_goal),
+    salesGoal: access.role === "Embaixador" ? 0 : asNumber(row.sales_goal),
     status: String(row.status),
-    budgetCents: asNumber(row.budget_cents),
+    budgetCents: access.role === "Embaixador" ? 0 : asNumber(row.budget_cents),
     trackingMode: String(row.tracking_mode),
-    notes: String(row.notes ?? ""),
+    notes: access.role === "Embaixador" ? "" : String(row.notes ?? ""),
     updatedAt: String(row.updated_at ?? ""),
     createdAt: String(row.created_at),
   }));
@@ -208,6 +212,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     code: String(row.code),
     email: String(row.email ?? ""),
     whatsapp: String(row.whatsapp ?? ""),
+    whatsappAuthorizedAt: nullableText(row.whatsapp_authorized_at),
     level: String(row.level),
     status: String(row.status),
     onboardingStatus: String(row.onboarding_status),
@@ -244,6 +249,8 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     campaign: String(row.campaign ?? ""), consentAt: String(row.consent_at),
     consentSource: access.role === "Embaixador" ? "Registrado" : String(row.consent_source),
     consentPurpose: access.role === "Embaixador" ? "Registrado" : String(row.consent_purpose),
+    consentRevokedAt: nullableText(row.consent_revoked_at),
+    consentRevocationReason: access.role === "Embaixador" ? "" : String(row.consent_revocation_reason ?? ""),
     assignedToEmail: access.role === "Embaixador" ? "" : String(row.assigned_to_email ?? ""),
     createdAt: String(row.created_at),
   }));
@@ -264,15 +271,19 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
 
   const partners: PartnerRecord[] = partnerRows.map((row) => ({
     id: asNumber(row.id), cityId: asNumber(row.city_id), cityName: String(row.city_name), name: String(row.name),
-    type: String(row.type), contactName: String(row.contact_name ?? ""), whatsapp: String(row.whatsapp ?? ""),
-    status: String(row.status), nextAction: String(row.next_action ?? ""), createdAt: String(row.created_at),
+    type: String(row.type), contactName: access.role === "Embaixador" ? "" : String(row.contact_name ?? ""),
+    whatsapp: access.role === "Embaixador" ? "" : String(row.whatsapp ?? ""),
+    status: String(row.status), nextAction: access.role === "Embaixador" ? "" : String(row.next_action ?? ""), createdAt: String(row.created_at),
   }));
 
   const events: EventRecord[] = eventRows.map((row) => ({
     id: asNumber(row.id), cityId: asNumber(row.city_id), cityName: String(row.city_name),
     partnerId: asNullableNumber(row.partner_id), name: String(row.name), eventDate: String(row.event_date),
-    status: String(row.status), ownerName: String(row.owner_name ?? ""), costCents: asNumber(row.cost_cents),
-    reach: asNumber(row.reach), leads: asNumber(row.leads), sales: asNumber(row.sales), createdAt: String(row.created_at),
+    status: String(row.status), ownerName: access.role === "Embaixador" ? "" : String(row.owner_name ?? ""),
+    costCents: access.role === "Embaixador" ? 0 : asNumber(row.cost_cents),
+    reach: access.role === "Embaixador" ? 0 : asNumber(row.reach),
+    leads: access.role === "Embaixador" ? 0 : asNumber(row.leads),
+    sales: access.role === "Embaixador" ? 0 : asNumber(row.sales), createdAt: String(row.created_at),
   }));
 
   const contents: ContentRecord[] = contentRows.map((row) => ({

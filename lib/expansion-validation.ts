@@ -9,6 +9,10 @@ const id = z.number().int().positive();
 const optionalId = z.number().int().positive().nullable().optional();
 const nonNegative = z.number().int().min(0);
 const emailOrEmpty = z.union([z.literal(""), z.string().trim().email().max(254)]);
+const webUrlOrEmpty = z.string().trim().max(1000).refine((value) => {
+  if (!value) return true;
+  try { return ["http:", "https:"].includes(new URL(value).protocol); } catch { return false; }
+}, "Informe um link iniciado por http ou https.");
 const month = z.string().regex(/^\d{4}-\d{2}$/, "Informe o período no formato AAAA-MM.");
 const date = z.string().regex(/^\d{4}-\d{2}$/, "Informe a data no formato AAAA-MM-DD.");
 
@@ -46,8 +50,13 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     code: z.string().trim().min(3).max(30).regex(/^[A-Za-z0-9_-]+$/, "Use letras, números, hífen ou sublinhado."),
     email: emailOrEmpty.default(""),
     whatsapp: z.string().trim().max(30).default(""),
+    whatsappAuthorized: z.boolean().default(false),
     level: z.enum(["Indicador", "Embaixador ativo", "Referência", "Líder local"]),
     status: z.enum(["Convidado", "Em análise", "Aprovado", "Em treinamento", "Ativo", "Inativo", "Pausado", "Desligado"]),
+  }).superRefine((value, context) => {
+    if (value.whatsapp && !value.whatsappAuthorized) {
+      context.addIssue({ code: "custom", path: ["whatsappAuthorized"], message: "Confirme a autorização antes de registrar o WhatsApp." });
+    }
   }),
   update_ambassador: z.object({
     ambassadorId: id,
@@ -55,6 +64,7 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     status: z.enum(["Convidado", "Em análise", "Aprovado", "Em treinamento", "Ativo", "Inativo", "Pausado", "Desligado"]),
     onboardingStatus: z.enum(["Pendente", "Em andamento", "Concluído"]),
     trainingProgress: z.number().int().min(0).max(100),
+    whatsappAuthorized: z.boolean(),
     pauseReason: optionalText,
   }),
   record_city: z.object({
@@ -118,6 +128,12 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     leadId: id,
     status: z.enum(["Lead informado", "Lead válido", "Oportunidade", "Cancelado"]),
     assignedToEmail: emailOrEmpty.default(""),
+    consentRevoked: z.boolean().default(false),
+    consentRevocationReason: optionalText,
+  }).superRefine((value, context) => {
+    if (value.consentRevoked && !value.consentRevocationReason) {
+      context.addIssue({ code: "custom", path: ["consentRevocationReason"], message: "Informe o motivo da revogação." });
+    }
   }),
   record_sale: z.object({
     leadId: id,
@@ -164,7 +180,7 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     channel: z.enum(["WhatsApp", "Instagram", "Presencial", "E-mail", "Geral"]),
     version: z.string().trim().min(1).max(20),
     status: z.enum(["Em revisão", "Aprovado", "Retirado"]),
-    url: z.string().trim().max(1000).default(""),
+    url: webUrlOrEmpty.default(""),
     instructions: noteText,
     expiresAt: z.union([z.literal(""), date]).nullable().optional(),
   }),

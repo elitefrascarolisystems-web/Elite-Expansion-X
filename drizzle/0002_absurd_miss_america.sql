@@ -1,0 +1,1 @@
+ALTER TABLE `ambassadors` ADD `whatsapp_authorized_at` text;

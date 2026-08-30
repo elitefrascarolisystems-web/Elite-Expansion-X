@@ -21,7 +21,9 @@ export const EMPTY_FILTERS: DashboardFilters = {
   ambassadorId: null,
 };
 
-const activeStatuses = new Set(["Ativo", "Líder local"]);
+const activeStatuses = new Set(["Ativo"]);
+const eligibleStatuses = new Set(["Aprovado", "Em treinamento", "Ativo", "Inativo"]);
+const validLeadStatuses = new Set(["Lead válido", "Oportunidade"]);
 const paidStatus = "Pagamento confirmado";
 const confirmedSaleStatuses = new Set(["Venda confirmada", paidStatus]);
 
@@ -71,7 +73,7 @@ function ambassadorMetrics(
       );
       const leads = data.leads.filter(
         (lead) => lead.ambassadorId === item.id &&
-          lead.status !== "Cancelado" &&
+          validLeadStatuses.has(lead.status) &&
           recordPeriodMatches(lead.createdAt, filters.period) &&
           (!filters.channel || lead.channel === filters.channel),
       );
@@ -190,7 +192,7 @@ function cityMetrics(
       ? []
       : data.leads.filter(
           (lead) => lead.cityId === city.id &&
-            lead.status !== "Cancelado" &&
+            validLeadStatuses.has(lead.status) &&
             recordPeriodMatches(lead.createdAt, filters.period) &&
             (!filters.channel || lead.channel === filters.channel) &&
             (filters.ambassadorId === null || lead.ambassadorId === filters.ambassadorId),
@@ -261,6 +263,10 @@ function cityMetrics(
       revenueCents,
       costCents,
       mediaCostCents,
+      ambassadorProgramCostCents: detailedMode
+        ? costs.filter((cost) => cost.channel === "Embaixador" || cost.ambassadorId !== null || cost.category === "Recompensa autorizada")
+            .reduce((total, cost) => total + cost.amountCents, 0)
+        : null,
       refunds,
       activePartners: detailedMode
         ? partners.length
@@ -283,7 +289,7 @@ function channelMetrics(data: DashboardData, filters: DashboardFilters, cities: 
   const detailedCityIds = new Set(cities.filter((city) => city.dataSource === "Detalhado").map((city) => city.id));
   const selectedLeads = data.leads.filter(
     (lead) => detailedCityIds.has(lead.cityId) &&
-      lead.status !== "Cancelado" &&
+      validLeadStatuses.has(lead.status) &&
       recordPeriodMatches(lead.createdAt, filters.period) &&
       (!filters.channel || lead.channel === filters.channel) &&
       (filters.ambassadorId === null || lead.ambassadorId === filters.ambassadorId),
@@ -339,17 +345,27 @@ function summaryMetrics(cities: CityMetric[], ambassadors: AmbassadorMetric[], c
     },
   );
   const activeAmbassadors = ambassadors.filter((item) => item.isActive).length;
+  const eligibleAmbassadors = ambassadors.filter((item) => eligibleStatuses.has(item.status)).length;
+  const programCostKnown = cities.every((city) => city.ambassadorProgramCostCents !== null);
+  const ambassadorProgramCostCents = cities.reduce(
+    (total, city) => total + (city.ambassadorProgramCostCents ?? 0),
+    0,
+  );
   const paidRevenue = channels.find((item) => item.channel === "Mídia paga")?.revenueCents ?? 0;
   return {
     ...base,
     activeAmbassadors,
+    eligibleAmbassadors,
     conversion: safeRatio(base.confirmedPayments, base.validLeads),
     cplCents: base.validLeads ? base.costCents / base.validLeads : null,
     cacCents: base.confirmedPayments ? base.costCents / base.confirmedPayments : null,
     organicShare: safeRatio(base.organicLeads, base.validLeads),
+    activation: safeRatio(activeAmbassadors, eligibleAmbassadors),
     roas: safeRatio(paidRevenue, base.mediaCostCents),
     roi: base.costCents ? (base.revenueCents - base.costCents) / base.costCents : null,
-    costPerActiveAmbassadorCents: activeAmbassadors ? base.costCents / activeAmbassadors : null,
+    costPerActiveAmbassadorCents: programCostKnown && activeAmbassadors
+      ? ambassadorProgramCostCents / activeAmbassadors
+      : null,
   };
 }
 

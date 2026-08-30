@@ -135,6 +135,7 @@ function AmbassadorFields({ data, ambassador, saving, onSave, mode }: { data: Da
   const [level, setLevel] = useState(ambassador?.level ?? "Indicador");
   const [status, setStatus] = useState(ambassador?.status ?? "Convidado");
   const [onboarding, setOnboarding] = useState(ambassador?.onboardingStatus ?? "Pendente");
+  const [whatsappAuthorized, setWhatsappAuthorized] = useState(Boolean(ambassador?.whatsappAuthorizedAt));
   return (
     <FormShell
       title={mode === "create" ? "Cadastrar embaixador" : `Acompanhar ${ambassador?.name}`}
@@ -144,9 +145,9 @@ function AmbassadorFields({ data, ambassador, saving, onSave, mode }: { data: Da
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         if (mode === "create") {
-          onSave("create_ambassador", { cityId: Number(cityId), name: form.get("name"), code: form.get("code"), email: form.get("email"), whatsapp: form.get("whatsapp"), level, status });
+          onSave("create_ambassador", { cityId: Number(cityId), name: form.get("name"), code: form.get("code"), email: form.get("email"), whatsapp: form.get("whatsapp"), whatsappAuthorized, level, status });
         } else {
-          onSave("update_ambassador", { ambassadorId: ambassador?.id, level, status, onboardingStatus: onboarding, trainingProgress: Number(form.get("trainingProgress") || 0), pauseReason: form.get("pauseReason") });
+          onSave("update_ambassador", { ambassadorId: ambassador?.id, level, status, onboardingStatus: onboarding, trainingProgress: Number(form.get("trainingProgress") || 0), whatsappAuthorized, pauseReason: form.get("pauseReason") });
         }
       }}
     >
@@ -155,10 +156,12 @@ function AmbassadorFields({ data, ambassador, saving, onSave, mode }: { data: Da
         <Field label="Nome"><Input name="name" required className={inputClass} /></Field>
         <Field label="Código único"><Input name="code" required placeholder="ESM001" className={`${inputClass} uppercase`} /></Field>
         <Field label="E-mail do perfil"><Input name="email" type="email" placeholder="Opcional" className={inputClass} /></Field>
-        <Field label="WhatsApp autorizado"><Input name="whatsapp" placeholder="(31) 99999-9999" className={inputClass} /></Field>
+        <Field label="WhatsApp"><Input name="whatsapp" placeholder="(31) 99999-9999" className={inputClass} /></Field>
+        <div className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-4"><Checkbox id="ambassador-whatsapp" checked={whatsappAuthorized} onCheckedChange={(value) => setWhatsappAuthorized(value === true)} /><label htmlFor="ambassador-whatsapp" className="text-sm leading-6 text-zinc-300">Confirmo que esta pessoa autorizou o contato por WhatsApp. Sem esta confirmação, o número não será salvo.</label></div>
       </> : <>
         <Field label="Treinamento concluído (%)"><Input name="trainingProgress" type="number" min="0" max="100" defaultValue={ambassador?.trainingProgress ?? 0} className={inputClass} /></Field>
         <Field label="Onboarding"><Select value={onboarding} onValueChange={setOnboarding}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Pendente", "Em andamento", "Concluído"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
+        <div className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-4"><Checkbox id="ambassador-whatsapp-edit" checked={whatsappAuthorized} onCheckedChange={(value) => setWhatsappAuthorized(value === true)} /><label htmlFor="ambassador-whatsapp-edit" className="text-sm leading-6 text-zinc-300">WhatsApp autorizado {ambassador?.whatsappAuthorizedAt ? `desde ${ambassador.whatsappAuthorizedAt.slice(0, 10).split("-").reverse().join("/")}` : "— autorização pendente"}. Desmarque para registrar a revogação.</label></div>
         <Field label="Motivo de pausa" wide><Input name="pauseReason" defaultValue={ambassador?.pauseReason} placeholder="Preencha somente quando necessário" className={inputClass} /></Field>
       </>}
       <Field label="Nível"><Select value={level} onValueChange={setLevel}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Indicador", "Embaixador ativo", "Referência", "Líder local"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
@@ -206,7 +209,7 @@ function LeadForm({ data, saving, onSave }: { data: DashboardData; saving: boole
   const [cityId, setCityId] = useState(String(fixedCityId ?? data.cities[0]?.id ?? ""));
   const [ambassadorId, setAmbassadorId] = useState(String(data.access.role === "Embaixador" ? data.access.ambassadorId ?? "none" : "none"));
   const [partnerId, setPartnerId] = useState("none"); const [eventId, setEventId] = useState("none"); const [contentId, setContentId] = useState("none");
-  const [status, setStatus] = useState("Lead válido"); const [channel, setChannel] = useState(data.access.role === "Embaixador" ? "Embaixador" : "Orgânico"); const [consent, setConsent] = useState(false);
+  const [status, setStatus] = useState(data.access.role === "Embaixador" ? "Lead informado" : "Lead válido"); const [channel, setChannel] = useState(data.access.role === "Embaixador" ? "Embaixador" : "Orgânico"); const [consent, setConsent] = useState(false);
   const selectedCity = Number(cityId);
   const cityAmbassadors = data.ambassadors.filter((item) => item.cityId === selectedCity);
   const cityPartners = data.partners.filter((item) => item.cityId === selectedCity);
@@ -215,14 +218,14 @@ function LeadForm({ data, saving, onSave }: { data: DashboardData; saving: boole
   return <FormShell title="Registrar lead autorizado" description="O contato só entra no CRM quando houver autorização registrada. Duplicidades por telefone ou e-mail são bloqueadas." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("create_lead", { cityId: Number(cityId), ambassadorId: ambassadorId === "none" ? null : Number(ambassadorId), partnerId: partnerId === "none" ? null : Number(partnerId), eventId: eventId === "none" ? null : Number(eventId), contentId: contentId === "none" ? null : Number(contentId), name: f.get("name"), email: f.get("email"), whatsapp: f.get("whatsapp"), status, channel, sourceLabel: f.get("sourceLabel"), campaign: f.get("campaign"), utmSource: f.get("utmSource"), utmMedium: f.get("utmMedium"), utmCampaign: f.get("utmCampaign"), consentAccepted: consent, consentSource: f.get("consentSource"), consentPurpose: f.get("consentPurpose"), assignedToEmail: f.get("assignedToEmail") }); }}>
     {data.access.role !== "Embaixador" && <Field label="Cidade"><Select value={cityId} onValueChange={(value) => { setCityId(value); setAmbassadorId("none"); setPartnerId("none"); setEventId("none"); }}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{data.cities.map((city) => <SelectItem key={city.id} value={String(city.id)}>{city.name}</SelectItem>)}</SelectContent></Select></Field>}
     <Field label="Nome"><Input name="name" required className={inputClass} /></Field><Field label="WhatsApp"><Input name="whatsapp" placeholder="Informe telefone ou e-mail" className={inputClass} /></Field><Field label="E-mail"><Input name="email" type="email" className={inputClass} /></Field>
-    <Field label="Etapa"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Lead informado", "Lead válido", "Oportunidade"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
+    {data.access.role !== "Embaixador" ? <Field label="Etapa"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Lead informado", "Lead válido", "Oportunidade"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field> : <div className="rounded-xl border border-white/8 bg-white/[0.025] p-4 text-sm leading-6 text-zinc-400">O contato entrará como <strong className="text-white">Lead informado</strong> e será validado pela equipe.</div>}
     {data.access.role !== "Embaixador" && <Field label="Canal"><Select value={channel} onValueChange={setChannel}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Mídia paga", "Embaixador", "Parceiro", "Evento", "Conteúdo", "Orgânico", "Outro"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>}
     {data.access.role !== "Embaixador" && <Field label="Embaixador"><Select value={ambassadorId} onValueChange={setAmbassadorId}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sem embaixador</SelectItem>{cityAmbassadors.map((item) => <SelectItem key={item.id} value={String(item.id)}>{item.name}</SelectItem>)}</SelectContent></Select></Field>}
     <Field label="Parceiro"><Select value={partnerId} onValueChange={setPartnerId}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sem parceiro</SelectItem>{cityPartners.map((item) => <SelectItem key={item.id} value={String(item.id)}>{item.name}</SelectItem>)}</SelectContent></Select></Field>
     <Field label="Evento"><Select value={eventId} onValueChange={setEventId}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sem evento</SelectItem>{cityEvents.map((item) => <SelectItem key={item.id} value={String(item.id)}>{item.name}</SelectItem>)}</SelectContent></Select></Field>
     <Field label="Conteúdo"><Select value={contentId} onValueChange={setContentId}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sem conteúdo</SelectItem>{cityContents.map((item) => <SelectItem key={item.id} value={String(item.id)}>{item.title}</SelectItem>)}</SelectContent></Select></Field>
     <Field label="Origem detalhada"><Input name="sourceLabel" placeholder="Ex.: indicação no encontro" className={inputClass} /></Field><Field label="Campanha"><Input name="campaign" className={inputClass} /></Field>
-    <Field label="UTM source"><Input name="utmSource" className={inputClass} /></Field><Field label="UTM medium"><Input name="utmMedium" className={inputClass} /></Field><Field label="UTM campaign"><Input name="utmCampaign" className={inputClass} /></Field><Field label="Responsável comercial"><Input name="assignedToEmail" type="email" placeholder="E-mail cadastrado" className={inputClass} /></Field>
+    <Field label="UTM source"><Input name="utmSource" className={inputClass} /></Field><Field label="UTM medium"><Input name="utmMedium" className={inputClass} /></Field><Field label="UTM campaign"><Input name="utmCampaign" className={inputClass} /></Field>{data.access.role !== "Embaixador" && <Field label="Responsável comercial"><Input name="assignedToEmail" type="email" placeholder="E-mail cadastrado" className={inputClass} /></Field>}
     <Field label="Como a autorização foi recebida"><Input name="consentSource" required placeholder="Ex.: formulário, WhatsApp ou evento" className={inputClass} /></Field><Field label="Finalidade informada"><Input name="consentPurpose" required placeholder="Ex.: contato sobre a Jornada U.F.A." className={inputClass} /></Field>
     <div className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-[#c9a227]/20 bg-[#c9a227]/5 p-4"><Checkbox id="consent" checked={consent} onCheckedChange={(value) => setConsent(value === true)} /><label htmlFor="consent" className="text-sm leading-6 text-zinc-300">Confirmo que este contato autorizou o registro e o atendimento para a finalidade informada.</label></div>
   </FormShell>;
@@ -230,9 +233,12 @@ function LeadForm({ data, saving, onSave }: { data: DashboardData; saving: boole
 
 function LeadStatusForm({ data, leadId, saving, onSave }: { data: DashboardData; leadId?: number; saving: boolean; onSave: Save }) {
   const lead = data.leads.find((item) => item.id === leadId); const [status, setStatus] = useState(lead?.status ?? "Lead válido");
-  return <FormShell title={`Atualizar lead #${lead?.id ?? ""}`} description="A etapa comercial não confirma uma venda ou pagamento. Use o registro de venda para isso." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("update_lead", { leadId: lead?.id, status, assignedToEmail: f.get("assignedToEmail") }); }}>
+  const [consentRevoked, setConsentRevoked] = useState(Boolean(lead?.consentRevokedAt));
+  return <FormShell title={`Atualizar lead #${lead?.id ?? ""}`} description="A etapa comercial não confirma uma venda ou pagamento. Use o registro de venda para isso." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("update_lead", { leadId: lead?.id, status, assignedToEmail: f.get("assignedToEmail"), consentRevoked, consentRevocationReason: f.get("consentRevocationReason") }); }}>
     <Field label="Etapa"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Lead informado", "Lead válido", "Oportunidade", "Cancelado"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
     <Field label="Responsável comercial"><Input name="assignedToEmail" type="email" defaultValue={lead?.assignedToEmail} className={inputClass} /></Field>
+    <div className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-4"><Checkbox id="lead-consent-revoked" checked={consentRevoked} disabled={Boolean(lead?.consentRevokedAt)} onCheckedChange={(value) => setConsentRevoked(value === true)} /><label htmlFor="lead-consent-revoked" className="text-sm leading-6 text-zinc-300">O contato revogou a autorização. Essa ação cancela o atendimento e não pode ser desfeita neste registro.</label></div>
+    {consentRevoked && <Field label="Motivo da revogação" wide><Input name="consentRevocationReason" required defaultValue={lead?.consentRevocationReason} className={inputClass} /></Field>}
   </FormShell>;
 }
 
