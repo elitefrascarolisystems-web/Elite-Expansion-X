@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   title: "Elite Expansão — Embaixadores",
   description: "Gestão de cidades, embaixadores, custos e resultados da Expansão Elite.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: "/elite-expansao-icon.png",
+    shortcut: "/elite-expansao-icon.png",
   },
 };
 

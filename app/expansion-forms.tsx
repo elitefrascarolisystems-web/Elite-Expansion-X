@@ -80,7 +80,7 @@ function FormShell({
       <div className="my-6 grid gap-4 sm:grid-cols-2">{children}</div>
       <DialogFooter>
         <DialogClose asChild><Button type="button" variant="outline" className="border-white/12 bg-transparent text-white">Cancelar</Button></DialogClose>
-        <Button disabled={saving} className="bg-[#c9a227] text-black hover:bg-[#ddbd48]">
+        <Button type="submit" disabled={saving} aria-busy={saving} className="bg-[#c9a227] text-black hover:bg-[#ddbd48]">
           {saving && <LoaderCircle className="animate-spin" />}{saving ? "Salvando" : "Salvar"}
         </Button>
       </DialogFooter>
@@ -243,10 +243,18 @@ function LeadStatusForm({ data, leadId, saving, onSave }: { data: DashboardData;
 }
 
 function SaleForm({ data, leadId, saving, onSave }: { data: DashboardData; leadId?: number; saving: boolean; onSave: Save }) {
-  const [selectedLead, setSelectedLead] = useState(String(leadId ?? data.leads[0]?.id ?? "")); const existing = data.sales.find((item) => item.leadId === Number(selectedLead)); const [status, setStatus] = useState(existing?.status ?? "Em negociação");
-  return <FormShell title="Registrar venda e pagamento" description="Receita e CAC só consideram o status Pagamento confirmado." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("record_sale", { leadId: Number(selectedLead), product: f.get("product"), amountCents: cents(f.get("amount")), status }); }}>
-    <Field label="Lead"><Select value={selectedLead} onValueChange={setSelectedLead}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{data.leads.filter((lead) => lead.status !== "Cancelado").map((lead) => <SelectItem key={lead.id} value={String(lead.id)}>#{lead.id} · {lead.name} · {lead.cityName}</SelectItem>)}</SelectContent></Select></Field>
-    <Field label="Produto"><Input name="product" required defaultValue={existing?.product} placeholder="Ex.: Jornada U.F.A. Premium" className={inputClass} /></Field><Field label="Valor (R$)"><Input name="amount" type="number" min="0" step="0.01" defaultValue={(existing?.amountCents ?? 0) / 100} className={inputClass} /></Field>
+  const eligibleLeads = data.leads.filter((lead) => lead.status !== "Cancelado" && !lead.consentRevokedAt);
+  const [selectedLead, setSelectedLead] = useState(String(leadId ?? eligibleLeads[0]?.id ?? ""));
+  const selectedSale = data.sales.find((item) => item.leadId === Number(selectedLead));
+  const [status, setStatus] = useState(selectedSale?.status ?? "Em negociação");
+  const [product, setProduct] = useState(selectedSale?.product ?? "");
+  const [amount, setAmount] = useState(String((selectedSale?.amountCents ?? 0) / 100));
+
+  if (!eligibleLeads.length) return <><DialogHeader><DialogTitle>Nenhum lead disponível</DialogTitle><DialogDescription className="leading-6 text-zinc-400">Cadastre um lead autorizado antes de registrar uma venda. Contatos cancelados ou com autorização revogada não podem receber vendas.</DialogDescription></DialogHeader><DialogFooter className="mt-6"><DialogClose asChild><Button type="button" variant="outline" className="border-white/12 bg-transparent text-white">Fechar</Button></DialogClose></DialogFooter></>;
+
+  return <FormShell title="Registrar venda e pagamento" description="Receita e CAC só consideram o status Pagamento confirmado." saving={saving} onSubmit={(event) => { event.preventDefault(); onSave("record_sale", { leadId: Number(selectedLead), product, amountCents: cents(amount), status }); }}>
+    <Field label="Lead"><Select value={selectedLead} onValueChange={(value) => { const sale = data.sales.find((item) => item.leadId === Number(value)); setSelectedLead(value); setStatus(sale?.status ?? "Em negociação"); setProduct(sale?.product ?? ""); setAmount(String((sale?.amountCents ?? 0) / 100)); }}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{eligibleLeads.map((lead) => <SelectItem key={lead.id} value={String(lead.id)}>#{lead.id} · {lead.name} · {lead.cityName}</SelectItem>)}</SelectContent></Select></Field>
+    <Field label="Produto"><Input name="product" required value={product} onChange={(event) => setProduct(event.target.value)} placeholder="Ex.: Jornada U.F.A. Premium" className={inputClass} /></Field><Field label="Valor (R$)"><Input name="amount" type="number" min="0" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} className={inputClass} /></Field>
     <Field label="Situação"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Em negociação", "Venda confirmada", "Pagamento confirmado", "Cancelada", "Reembolsada"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
   </FormShell>;
 }

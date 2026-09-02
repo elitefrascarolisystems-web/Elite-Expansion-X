@@ -40,6 +40,31 @@ async function ambassadorIdentity(ambassadorId: number) {
   return { id: asNumber(row.id), cityId: asNumber(row.city_id) };
 }
 
+async function refreshAmbassadorActivation(ambassadorId: number, timestamp: string) {
+  const db = database();
+  const profile = await db.prepare(`
+    SELECT status, onboarding_status, training_progress, terms_accepted_at
+    FROM ambassadors WHERE id = ? LIMIT 1
+  `).bind(ambassadorId).all();
+  const row = profile.results[0];
+  if (!row || ["Inativo", "Pausado", "Desligado"].includes(String(row.status))) return;
+  const activity = await db.prepare(`
+    SELECT EXISTS(
+      SELECT 1 FROM ambassador_updates WHERE ambassador_id = ?
+      UNION ALL SELECT 1 FROM leads WHERE ambassador_id = ?
+      UNION ALL SELECT 1 FROM tasks WHERE ambassador_id = ? AND status = 'Concluída'
+    ) AS has_activity
+  `).bind(ambassadorId, ambassadorId, ambassadorId).all();
+  const ready = String(row.onboarding_status) === "Concluído" &&
+    asNumber(row.training_progress) >= 100 &&
+    Boolean(row.terms_accepted_at) &&
+    Boolean(activity.results[0]?.has_activity);
+  if (ready && String(row.status) !== "Ativo") {
+    await db.prepare("UPDATE ambassadors SET status = 'Ativo', updated_at = ? WHERE id = ?")
+      .bind(timestamp, ambassadorId).run();
+  }
+}
+
 async function leadIdentity(leadId: number) {
   const result = await database().prepare(`
     SELECT id, city_id, ambassador_id, assigned_to_email, status, consent_revoked_at
@@ -201,6 +226,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       number(input, "costCents"), text(input, "note"), access.email, timestamp,
     ).run();
     await db.prepare("UPDATE ambassadors SET updated_at = ? WHERE id = ?").bind(timestamp, ambassadorId).run();
+    await refreshAmbassadorActivation(ambassadorId, timestamp);
     await audit(db, access.email, action, "ambassador_update", asNumber(result.meta.last_row_id), "Atividade do embaixador registrada.");
     return;
   }
@@ -248,6 +274,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       text(input, "consentPurpose"), assignedToEmail, timestamp, access.email, timestamp,
     ).run();
     const entityId = asNumber(result.meta.last_row_id);
+    if (ambassadorId !== null) await refreshAmbassadorActivation(ambassadorId, timestamp);
     await audit(db, access.email, action, "lead", entityId, `Lead autorizado registrado pelo canal ${channel}.`);
     return;
   }
@@ -425,6 +452,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     if (access.role !== "Embaixador" && cityId !== null) ensureCityPermission(access, cityId);
     await db.prepare("UPDATE tasks SET status = 'Concluída', completed_at = ?, updated_by = ? WHERE id = ?")
       .bind(timestamp, access.email, taskId).run();
+    if (ambassadorId !== null) await refreshAmbassadorActivation(ambassadorId, timestamp);
     await audit(db, access.email, action, "task", taskId, "Tarefa concluída.");
     return;
   }
@@ -436,9 +464,10 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     if (!canAccessAmbassador(access, ambassadorId, ambassador.cityId)) throw new Error("Embaixador fora do seu acesso.");
     await db.prepare(`
       UPDATE ambassadors SET training_progress = 100, onboarding_status = 'Concluído',
-        status = CASE WHEN status IN ('Convidado', 'Em análise', 'Aprovado', 'Em treinamento', 'Candidato') THEN 'Ativo' ELSE status END,
+        status = CASE WHEN status IN ('Convidado', 'Em análise', 'Em treinamento', 'Candidato') THEN 'Aprovado' ELSE status END,
         updated_at = ? WHERE id = ?
     `).bind(timestamp, ambassadorId).run();
+    await refreshAmbassadorActivation(ambassadorId, timestamp);
     await audit(db, access.email, action, "ambassador", ambassadorId, "Treinamento concluído.");
     return;
   }
@@ -450,6 +479,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     }
     await db.prepare("UPDATE ambassadors SET terms_accepted_at = ?, updated_at = ? WHERE id = ?")
       .bind(timestamp, timestamp, ambassadorId).run();
+    await refreshAmbassadorActivation(ambassadorId, timestamp);
     await audit(db, access.email, action, "ambassador", ambassadorId, "Regras aceitas pelo embaixador.");
     return;
   }

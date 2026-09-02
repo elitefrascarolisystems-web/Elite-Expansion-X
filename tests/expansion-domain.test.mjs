@@ -226,3 +226,23 @@ test("rejects unsafe links and contact data without authorization", async () => 
     organicGoalPercent: 0,
   }));
 });
+
+test("maps only cities with validated municipal references", async () => {
+  const { buildTerritorialPoints, cityReference } = await vite.ssrLoadModule("/lib/territorial-map.ts");
+  const points = buildTerritorialPoints([
+    { id: 1, name: "Esmeraldas", state: "MG" },
+    { id: 2, name: "Belo Horizonte", state: "MG" },
+    { id: 3, name: "Cidade sem referência", state: "MG" },
+  ]);
+
+  assert.equal(points.length, 2);
+  assert.equal(cityReference("Esmeraldas", "MG").municipalityCode, "3124104");
+  assert.equal(cityReference("Cidade sem referência", "MG"), null);
+  assert.ok(points.every((point) => point.x >= 12 && point.x <= 88));
+  assert.ok(points.every((point) => point.y >= 12 && point.y <= 88));
+});
+
+test("normalizes accents without changing the territorial match", async () => {
+  const { normalizeLocationName } = await vite.ssrLoadModule("/lib/territorial-map.ts");
+  assert.equal(normalizeLocationName("  Expansão São José  "), "expansao sao jose");
+});

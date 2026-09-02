@@ -2,6 +2,7 @@ import { chatGPTSignOutPath, requireChatGPTUser } from "@/app/chatgpt-auth";
 import { ExpansionDashboard } from "@/app/expansion-dashboard";
 import { getUserAccess } from "@/db/access";
 import { getDashboardData } from "@/db/queries";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export default async function Home() {
     return (
       <main className="elite-grid grid min-h-screen place-items-center bg-[#080807] px-5 text-zinc-100">
         <section className="elite-card max-w-xl p-8 text-center sm:p-10">
-          <div className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl border border-[#c9a227]/30 bg-[#c9a227]/10 font-black text-[#d6b94f]">EF</div>
+          <Image src="/elite-expansao-logo.png" alt="Elite Expansão" width={96} height={96} className="mx-auto mb-5 size-24 rounded-2xl object-contain" />
           <p className="section-kicker">Acesso protegido</p>
           <h1 className="text-2xl font-semibold text-white">Seu perfil ainda não foi liberado</h1>
           <p className="mt-4 text-sm leading-6 text-zinc-400">Você entrou com {user.email}, mas este e-mail não possui uma função cadastrada na Elite Expansão. Peça ao administrador para preparar seu perfil.</p>

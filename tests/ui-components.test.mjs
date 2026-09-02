@@ -83,3 +83,32 @@ test("renders sidebar skeletons deterministically", async () => {
   assert.equal(first, second);
   assert.match(first, /--skeleton-width:70%/);
 });
+
+test("renders the territorial map without personal contact data", async () => {
+  const { TerritorialMap } = await vite.ssrLoadModule("/app/territorial-map.tsx");
+  const city = {
+    id: 1, name: "Esmeraldas", state: "MG", phase: "Piloto", leaderName: "Líder local",
+    targetCacCents: 0, ambassadorGoal: 10, salesGoal: 100, status: "Ativa", budgetCents: 0,
+    trackingMode: "Detalhado", notes: "", updatedAt: "", createdAt: "", ambassadors: 1,
+    activeAmbassadors: 0, reach: 0, validLeads: 0, organicLeads: 0, confirmedSales: 0,
+    confirmedPayments: 0, revenueCents: 0, costCents: 0, mediaCostCents: 0,
+    ambassadorProgramCostCents: null, refunds: 0, activePartners: 0, eventsCount: 0,
+    periods: 0, cplCents: null, cacCents: null, organicShare: null, decision: "Preparar",
+    decisionReason: "Sem base suficiente.", dataSource: "Detalhado",
+  };
+  const ambassador = {
+    id: 1, cityId: 1, cityName: "Esmeraldas", name: "Pessoa teste", code: "ESM001",
+    email: "privado@example.com", whatsapp: "31999999999", whatsappAuthorizedAt: null,
+    level: "Indicador", status: "Convidado", onboardingStatus: "Pendente", trainingProgress: 0,
+    termsAcceptedAt: null, pauseReason: "", updatedAt: "", createdAt: "", isActive: false,
+    lastActivity: null, actions: 0, validLeads: 0, confirmedPayments: 0, revenueCents: 0,
+    costCents: 0, conversion: null, cacCents: null,
+  };
+  const html = renderToStaticMarkup(React.createElement(TerritorialMap, { view: { cities: [city], ambassadors: [ambassador] } }));
+
+  assert.match(html, /Mapa territorial da Elite/);
+  assert.match(html, /Esmeraldas/);
+  assert.match(html, /Pessoa teste/);
+  assert.doesNotMatch(html, /privado@example\.com/);
+  assert.doesNotMatch(html, /31999999999/);
+});
