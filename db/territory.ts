@@ -1,7 +1,7 @@
 import { database, brazilTimestamp } from '@/db/runtime';
 import { canAccessCity } from '@/lib/expansion-permissions';
 import { cityReference } from '@/lib/territorial-map';
-import { locationSchema, personSchema, activitySchema, displayedCoordinates } from '@/lib/territory-validation';
+import { locationSchema, personSchema, activitySchema, roleSchema, displayedCoordinates } from '@/lib/territory-validation';
 import type { AccessView } from '@/lib/expansion-types';
 import type { TerritoryRecord, TerritoryResponse } from '@/lib/territory-types';
 
@@ -28,10 +28,10 @@ const recordsSql = `WITH records AS (
  COALESCE((SELECT due_date FROM territory_actions WHERE person_id=p.id AND status='Programado' ORDER BY due_date LIMIT 1),''),
  (SELECT id FROM ambassadors WHERE person_id=p.id LIMIT 1),
  (SELECT id FROM leads WHERE person_id=p.id AND consent_revoked_at IS NULL LIMIT 1), p.referrer_id,
- 'Pessoa'||CASE WHEN p.leader=1 THEN ',Líder' ELSE '' END||CASE WHEN EXISTS(SELECT 1 FROM ambassadors WHERE person_id=p.id) THEN ',Embaixador' ELSE '' END||CASE WHEN EXISTS(SELECT 1 FROM leads WHERE person_id=p.id AND consent_revoked_at IS NULL) THEN ',Lead' ELSE '' END||CASE WHEN EXISTS(SELECT 1 FROM leads l JOIN sales s ON s.lead_id=l.id WHERE l.person_id=p.id AND l.consent_revoked_at IS NULL AND s.status='Pagamento confirmado' AND s.paid_at IS NOT NULL) THEN ',Cliente' ELSE '' END
+ 'Pessoa'||CASE WHEN p.leader=1 THEN ',Líder' ELSE '' END||CASE WHEN EXISTS(SELECT 1 FROM ambassadors WHERE person_id=p.id) THEN ',Embaixador' ELSE '' END||CASE WHEN EXISTS(SELECT 1 FROM leads WHERE person_id=p.id AND consent_revoked_at IS NULL) THEN ',Lead' ELSE '' END||CASE WHEN EXISTS(SELECT 1 FROM leads l JOIN sales s ON s.lead_id=l.id WHERE l.person_id=p.id AND l.consent_revoked_at IS NULL AND s.status='Pagamento confirmado' AND s.paid_at IS NOT NULL) THEN ',Cliente' ELSE '' END||COALESCE((SELECT ','||group_concat(role,',') FROM territory_roles WHERE person_id=p.id),'')
  FROM territory_people p
  WHERE NOT EXISTS(SELECT 1 FROM leads WHERE person_id=p.id AND consent_revoked_at IS NOT NULL)
- OR p.leader=1 OR EXISTS(SELECT 1 FROM ambassadors WHERE person_id=p.id)
+ OR p.leader=1 OR EXISTS(SELECT 1 FROM ambassadors WHERE person_id=p.id) OR EXISTS(SELECT 1 FROM territory_roles WHERE person_id=p.id AND status NOT IN ('Desligado','Inativo'))
  UNION ALL
  SELECT 'partner:'||id, CAST(id AS TEXT), 'partner',city_id,name,status,contact_name,created_at,next_action,'',NULL,NULL,NULL,'Parceiro' FROM partners
  UNION ALL
@@ -39,20 +39,39 @@ const recordsSql = `WITH records AS (
  UNION ALL
  SELECT 'action:'||id,id,'action',city_id,name,status,responsible,updated_at,'',due_date,NULL,NULL,NULL,category FROM territory_actions
 ) `;
+
+function coordinateSql(axis:'latitude'|'longitude') {
+ const refs=[['Esmeraldas',-19.7628,-44.3131],['Belo Horizonte',-19.9167,-43.9345],['Contagem',-19.9317,-44.0536],['Betim',-19.9678,-44.1983]];
+ return `CASE WHEN g.source IS NOT NULL THEN CASE WHEN g.validated=1 THEN g.${axis} ELSE NULL END ELSE CASE ${refs.map(r=>`WHEN lower(c.name)=lower('${r[0]}') AND upper(c.state)='MG' THEN ${r[axis==='latitude'?1:2]}`).join(' ')} ELSE NULL END END`;
+}
+function bounds(value:string|null) {if(!value)return null;const b=value.split(',').map(Number);if(b.length!==4||!b.every(Number.isFinite)||b[0]<-180||b[2]>180||b[1]<-85||b[3]>85||b[0]>b[2]||b[1]>b[3])throw new TerritoryError('Área geográfica inválida.');return b;}
 export async function getTerritory(a:AccessView, params:URLSearchParams):Promise<TerritoryResponse> {
   const s=scope(a); const conditions=[s.sql]; const args:(string|number)[]=[...s.values];
   const city=params.get('city'); if(city && /^\d+$/.test(city)) {conditions.push('r.city_id=?');args.push(Number(city));}
+  const key=params.get('key');if(key){conditions.push('r.entity_key=?');args.push(key);}
+  if(params.get('referrals')==='1')conditions.push("r.kind='person' AND r.referrer_id IS NOT NULL");
+  const referrer=params.get('referrer');if(referrer){conditions.push('r.referrer_id=?');args.push(referrer);}
   const q=params.get('q')?.trim().slice(0,160); if(q) {conditions.push('(r.name LIKE ? OR c.name LIKE ? OR COALESCE(g.region,\'\') LIKE ?)');args.push(`%${q}%`,`%${q}%`,`%${q}%`);}
   const leadId=params.get('leadId');if(leadId&&/^\d+$/.test(leadId)){conditions.push('r.lead_id=?');args.push(Number(leadId));}
   const category=params.get('category'); if(category) {conditions.push('(r.kind=? OR instr(r.roles,?)>0)');args.push(category,category);}
-  for(const [param,col] of [['status','r.status'],['state','c.state'],['responsible','r.responsible']] as const) {const v=params.get(param);if(v){conditions.push(`${col}=?`);args.push(v);}}
+  for(const [param,col] of [['status','r.status'],['state','c.state'],['responsible','r.responsible']] as const) {const v=params.get(param);if(v){if(param==='status'&&['Mentor','Mentorado','Equipe','Parceiro'].includes(category??'')){conditions.push("EXISTS(SELECT 1 FROM territory_roles tr WHERE r.kind='person' AND tr.person_id=r.id AND tr.role=? AND tr.status=?)");args.push(category!,v);}else if(param==='status'){conditions.push(`(${col}=? OR EXISTS(SELECT 1 FROM territory_roles tr WHERE r.kind='person' AND tr.person_id=r.id AND tr.status=?))`);args.push(v,v);}else if(param==='responsible'){conditions.push(`(${col}=? OR EXISTS(SELECT 1 FROM territory_roles tr WHERE r.kind='person' AND tr.person_id=r.id AND tr.responsible=?))`);args.push(v,v);}else{conditions.push(`${col}=?`);args.push(v);}}}
+  const training=params.get('training');if(training==='complete'||training==='pending'){conditions.push(`r.kind='person' AND EXISTS(SELECT 1 FROM ambassadors ab WHERE ab.person_id=r.id AND ab.training_progress ${training==='complete'?'>=100':'<100'})`);}
+  const activity=params.get('activity');if(activity==='pending'||activity==='overdue'){conditions.push("((r.kind='action' AND r.status='Programado') OR (r.kind='person' AND r.next_action<>''))");if(activity==='overdue'){conditions.push('r.due_date<?');args.push(brazilTimestamp().slice(0,10));}}
   const period=params.get('period');if(period && /^\d{4}-\d{2}$/.test(period)){conditions.push("substr(CASE WHEN r.due_date<>'' THEN r.due_date ELSE r.updated_at END,1,7)=?");args.push(period);}
+  const area=bounds(params.get('area'));if(area){conditions.push(`(${coordinateSql('longitude')}) BETWEEN ? AND ? AND (${coordinateSql('latitude')}) BETWEEN ? AND ?`);args.push(area[0],area[2],area[1],area[3]);}
+  if(params.get('location')==='pending')conditions.push(`(${coordinateSql('latitude')}) IS NULL`);
+  if(params.get('location')==='validated')conditions.push(`(${coordinateSql('latitude')}) IS NOT NULL`);
   const where=conditions.join(' AND ');
   // Restricted locations are never selected; city fallback is safe.
   const join=`FROM records r JOIN cities c ON c.id=r.city_id LEFT JOIN territory_locations g ON g.entity_key=r.entity_key AND (g.visibility='Equipe' OR ?='Administrador') WHERE ${where}`;
   const offset=Math.max(0,Math.min(100000,Number(params.get('offset'))||0));
-  const result=await dbRows(recordsSql+`SELECT r.*,c.name AS city_name,c.state,g.latitude,g.longitude,g.region,g.precision,g.source,g.validated,g.visibility,g.updated_at AS location_updated_at ${join} ORDER BY r.kind,r.name,r.id LIMIT 201 OFFSET ?`,[a.role,...args,offset]);
-  const count=await dbRows(recordsSql+`SELECT COUNT(*) AS total ${join}`,[a.role,...args]);
+  const result=await dbRows(recordsSql+`SELECT r.*,CASE WHEN r.kind='person' THEN (SELECT MAX(activity_at) FROM (SELECT updated_at AS activity_at FROM territory_actions WHERE person_id=r.id AND status='Realizado' UNION ALL SELECT u.created_at FROM ambassador_updates u JOIN ambassadors a ON a.id=u.ambassador_id WHERE a.person_id=r.id UNION ALL SELECT t.completed_at FROM tasks t JOIN ambassadors a ON a.id=t.ambassador_id WHERE a.person_id=r.id AND t.status='Concluída')) ELSE r.updated_at END AS activity_date,(SELECT json_group_array(json_object('role',role,'status',status,'responsible',responsible,'source',source)) FROM territory_roles WHERE r.kind='person' AND person_id=r.id) AS role_details,(SELECT name FROM territory_people WHERE id=r.referrer_id AND city_id=r.city_id) AS referrer_name,c.name AS city_name,c.state,g.latitude,g.longitude,g.region,g.precision,g.source,g.validated,g.visibility,g.updated_at AS location_updated_at ${join} ORDER BY r.kind,r.name,r.id LIMIT 201 OFFSET ?`,[a.role,...args,offset]);
+  const count=await dbRows(recordsSql+`SELECT COUNT(*) AS total,SUM(r.kind='person') AS people,SUM((${coordinateSql('latitude')}) IS NULL) AS pending,SUM(instr(','||r.roles||',',',Mentor,')>0) AS mentors,SUM(instr(','||r.roles||',',',Mentorado,')>0) AS members,SUM(instr(','||r.roles||',',',Embaixador,')>0) AS ambassadors,SUM(instr(','||r.roles||',',',Líder,')>0) AS leaders ${join}`,[a.role,...args]);
+  const viewport=bounds(params.get('viewport'));const vp=viewport?'WHERE longitude BETWEEN ? AND ? AND latitude BETWEEN ? AND ?':'WHERE latitude IS NOT NULL AND longitude IS NOT NULL';
+  const vpArgs=viewport?[viewport[0],viewport[2],viewport[1],viewport[3]]:[];
+  const located=recordsSql+`, located AS (SELECT r.entity_key,r.kind,r.roles,r.status,${coordinateSql('latitude')} AS latitude,${coordinateSql('longitude')} AS longitude ${join}) `;
+  const points=await dbRows(located+`SELECT latitude,longitude,COUNT(*) AS count,SUM(kind='person') AS people,MIN(entity_key) AS entity_key,MIN(kind) AS kind,MIN(roles) AS roles,MIN(status) AS status FROM located ${vp} GROUP BY latitude,longitude ORDER BY latitude,longitude LIMIT 1001`,[a.role,...args,...vpArgs]);
+  const inView=await dbRows(located+`SELECT COUNT(*) AS total FROM located ${vp}`,[a.role,...args,...vpArgs]);
   const records:TerritoryRecord[]=result.slice(0,200).map(row=>{
     const reference=cityReference(str(row.city_name),str(row.state));
     const explicit=Boolean(row.source);
@@ -60,9 +79,9 @@ export async function getTerritory(a:AccessView, params:URLSearchParams):Promise
       latitude: row.validated ? n(row.latitude):null, longitude:row.validated?n(row.longitude):null,
       region:str(row.region),precision:str(row.precision) as 'Cidade',source:str(row.source),validated:Boolean(row.validated),visibility:str(row.visibility) as 'Equipe',updatedAt:str(row.location_updated_at),
     } : reference ? {latitude:reference.latitude,longitude:reference.longitude,region:'',precision:'Cidade' as const,source:reference.sourceLabel,validated:true,visibility:'Equipe' as const,updatedAt:''}:null;
-    return {key:str(row.entity_key),id:str(row.id),kind:str(row.kind) as TerritoryRecord['kind'],cityId:Number(row.city_id),cityName:str(row.city_name),state:str(row.state),name:str(row.name),roles:str(row.roles).split(','),status:str(row.status),responsible:a.role==='Embaixador'?'':str(row.responsible),lastActivity:str(row.updated_at),nextAction:str(row.next_action),dueDate:str(row.due_date),location,ambassadorId:n(row.ambassador_id),leadId:a.role==='Embaixador'?null:n(row.lead_id),referrerId:a.role==='Embaixador'?null:row.referrer_id?str(row.referrer_id):null};
+    return {key:str(row.entity_key),id:str(row.id),kind:str(row.kind) as TerritoryRecord['kind'],cityId:Number(row.city_id),cityName:str(row.city_name),state:str(row.state),name:str(row.name),roles:str(row.roles).split(','),status:(['Mentor','Mentorado','Equipe','Parceiro'].includes(category??'')?JSON.parse(str(row.role_details)||'[]').find((v:{role:string;status:string})=>v.role===category)?.status:null)??str(row.status),responsible:a.role==='Embaixador'?'':str(row.responsible),lastActivity:str(row.activity_date),roleDetails:JSON.parse(str(row.role_details)||'[]'),nextAction:str(row.next_action),dueDate:str(row.due_date),location,ambassadorId:n(row.ambassador_id),leadId:a.role==='Embaixador'?null:n(row.lead_id),referrerName:['Administrador','Coordenação','Líder'].includes(a.role)?str(row.referrer_name):'',referrerId:a.role==='Embaixador'?null:row.referrer_id?str(row.referrer_id):null};
   });
-  return {records,total:Number(count[0]?.total??0),hasMore:result.length>200,nextOffset:result.length>200?offset+200:null,updatedAt:brazilTimestamp(),canEdit:management(a)};
+  return {roleCounts:{Mentor:Number(count[0]?.mentors??0),Mentorado:Number(count[0]?.members??0),Embaixador:Number(count[0]?.ambassadors??0),Líder:Number(count[0]?.leaders??0)},points:points.slice(0,1000).map(p=>({latitude:Number(p.latitude),longitude:Number(p.longitude),count:Number(p.count),people:Number(p.people),key:str(p.entity_key),kind:str(p.kind) as TerritoryRecord['kind'],roles:str(p.roles).split(','),status:str(p.status)})),pointsCapped:points.length>1000,inView:Number(inView[0]?.total??0),people:Number(count[0]?.people??0),pending:Number(count[0]?.pending??0),records,total:Number(count[0]?.total??0),hasMore:result.length>200,nextOffset:result.length>200?offset+200:null,updatedAt:brazilTimestamp(),canEdit:management(a)};
 }
 async function allowedCity(a:AccessView,cityId:number) {
   if(!management(a)||!canAccessCity(a,cityId)) throw new TerritoryError('Registro fora do seu acesso.',403);
@@ -85,6 +104,10 @@ export async function mutateTerritory(a:AccessView,action:string,input:unknown) 
     if(previous[0]?.visibility==='Admin' && a.role!=='Administrador') throw new TerritoryError('Localização restrita.',403);
     const coords=displayedCoordinates(str(row.kind),v.latitude,v.longitude);
     await db.batch([db.prepare(`INSERT INTO territory_locations(entity_key,city_id,latitude,longitude,region,precision,source,validated,visibility,authorized_by,authorized_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(entity_key) DO UPDATE SET latitude=excluded.latitude,longitude=excluded.longitude,region=excluded.region,precision=excluded.precision,source=excluded.source,validated=excluded.validated,visibility=excluded.visibility,authorized_by=excluded.authorized_by,authorized_at=excluded.authorized_at,updated_at=excluded.updated_at`).bind(v.key,row.city_id,coords.latitude,coords.longitude,v.region,v.precision,v.source,Number(v.validated),v.visibility,a.email,now,now),auditStatement(a,'update_location',v.key)]);return;
+  }
+  if(action==='role') {
+    const v=roleSchema.parse(input),p=await entity(a,`person:${v.personId}`);await allowedCity(a,Number(p.city_id));
+    await db.batch([db.prepare(`INSERT INTO territory_roles(id,person_id,city_id,role,status,responsible,source,authorized_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(person_id,city_id,role) DO UPDATE SET status=excluded.status,responsible=excluded.responsible,source=excluded.source,authorized_by=excluded.authorized_by,updated_at=excluded.updated_at`).bind(crypto.randomUUID(),v.personId,p.city_id,v.role,v.status,v.responsible,v.source,a.email,now,now),auditStatement(a,'save_role',v.personId)]);return;
   }
   if(action==='person') {
     const v=personSchema.parse(input);await allowedCity(a,v.cityId);const id=v.id??v.requestId??crypto.randomUUID();

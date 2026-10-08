@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, type ReactNode, useMemo, useState } from "react";
+import { TerritoryPersonPicker } from '@/app/territory-person-picker';
 import { LoaderCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -349,6 +350,6 @@ export function ExpansionDialog({ dialog, data, saving, onClose, onSave }: { dia
   </DialogContent></Dialog>;
 }
 
-function PersonPicker({data,cityId}:{data:DashboardData;cityId:number}) {
-  return <Field label="Pessoa já cadastrada" hint="Selecione para manter a mesma identidade no mapa. O nome do cadastro será preservado."><select name="personId" onChange={e=>{const person=data.people?.find(p=>p.id===e.target.value);const field=e.currentTarget.form?.elements.namedItem("name") as HTMLInputElement|null;if(field){field.value=person?.name??"";field.readOnly=Boolean(person);}}} className="h-10 rounded-md border border-white/15 bg-zinc-900 px-3"><option value="">Nova pessoa</option>{data.people?.filter(p=>p.cityId===cityId).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>;
+function PersonPicker({cityId}:{data:DashboardData;cityId:number}) {
+ return <Field label="Pessoa já cadastrada" hint="Pesquise e selecione para manter uma única identidade. Sem seleção, será criada uma pessoa."><TerritoryPersonPicker key={cityId} cityId={cityId} copyName/></Field>;
 }

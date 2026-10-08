@@ -117,3 +117,33 @@ test('database failure returns no success and rolls back territorial write with 
  const response=await api.POST(request('person',person()));assert.equal(response.status,503);const body=await response.json();assert.equal(body.ok,undefined);assert.ok(!body.error.includes('simulated'));
  assert.equal(sqlite.prepare('SELECT count(*) AS n FROM territory_people').get().n,0);assert.ok(m.access);
 });
+
+test('v7 roles are separate from access, multi-role people remain unique, role status is specific',async()=>{
+ const m=await modules(),p=await m.mutateTerritory(m.access,'person',person());
+ await m.mutateTerritory(m.access,'role',{personId:p.id,role:'Mentorado',status:'Ativo',responsible:'Responsável teste',source:'Cadastro autorizado',authorized:true});
+ await m.mutateTerritory(m.access,'role',{personId:p.id,role:'Mentor',status:'Pausado',responsible:'',source:'Cadastro autorizado',authorized:true});
+ const all=await m.getTerritory(m.access,new URLSearchParams('category=person'));assert.equal(all.people,1);assert.equal(all.records.length,1);assert.ok(all.records[0].roles.includes('Mentorado'));assert.equal(all.records[0].roleDetails.length,2);assert.equal(all.records[0].lastActivity,'');
+ assert.equal((await m.getTerritory(m.access,new URLSearchParams('category=Mentor&status=Ativo'))).total,0);
+ assert.equal((await m.getTerritory(m.access,new URLSearchParams('category=Mentorado&status=Ativo'))).total,1);
+ assert.equal(sqlite.prepare('SELECT count(*) AS n FROM app_users').get().n,1);
+ await assert.rejects(m.mutateTerritory({...m.access,role:'Líder',cityId:2},'role',{personId:p.id,role:'Mentor',status:'Ativo',responsible:'',source:'Teste',authorized:true}),/fora do seu acesso/);
+});
+test('v7 all-filter map totals exceed one list page and viewport respects privacy',async()=>{
+ const m=await modules();const stmt=sqlite.prepare('INSERT INTO territory_people(id,city_id,name,created_by,created_at,updated_at) VALUES(?,1,?,?,?,?)');for(let i=0;i<250;i++)stmt.run(crypto.randomUUID(),'Registro '+i,m.access.email,'2026-10-08','2026-10-08');
+ let map=await m.getTerritory(m.access,new URLSearchParams('category=person'));assert.equal(map.total,250);assert.equal(map.records.length,200);assert.equal(map.points.reduce((n,p)=>n+p.count,0),250);assert.equal(map.people,250);
+ map=await m.getTerritory(m.access,new URLSearchParams('category=person&viewport=-1,-1,1,1'));assert.equal(map.points.length,0);assert.equal(map.inView,0);assert.equal(map.total,250);
+ const leader={...m.access,role:'Líder',cityId:2};map=await m.getTerritory(leader,new URLSearchParams('category=person'));assert.equal(map.people,0);assert.equal(map.points.length,0);
+ await assert.rejects(m.getTerritory(m.access,new URLSearchParams('viewport=nan,1,2,3')),/inválida/);
+});
+
+test('v7 referrals and person lookup reach later pages; operational filters and activity dates',async()=>{
+ const m=await modules();const parent=await m.mutateTerritory(m.access,'person',person('Indicador'));
+ const child=await m.mutateTerritory(m.access,'person',{...person('Mentorado indicado'),referrerId:parent.id});
+ await m.mutateTerritory(m.access,'activity',{cityId:1,personId:child.id,name:'Acompanhamento atrasado',category:'Follow-up',status:'Programado',responsible:'Responsável',dueDate:'2020-01-01'});
+ let r=await m.getTerritory(m.access,new URLSearchParams('referrals=1'));assert.equal(r.total,1);assert.equal(r.records[0].referrerName,'Indicador');assert.equal(r.records[0].lastActivity,'');
+ assert.equal((await m.getTerritory(m.access,new URLSearchParams('category=person&activity=overdue'))).total,1);
+ await m.mutateTerritory(m.access,'activity',{cityId:1,personId:child.id,name:'Interação concluída',category:'Interação',status:'Realizado',responsible:'Responsável',dueDate:'2026-10-08'});
+ r=await m.getTerritory(m.access,new URLSearchParams('key=person:'+child.id));assert.ok(r.records[0].lastActivity);
+ const stmt=sqlite.prepare('INSERT INTO territory_people(id,city_id,name,created_by,created_at,updated_at) VALUES(?,1,?,?,?,?)');for(let i=0;i<220;i++)stmt.run(crypto.randomUUID(),'AAA '+i,m.access.email,'2026-10-08','2026-10-08');
+ r=await m.getTerritory(m.access,new URLSearchParams('category=person&q=Mentorado indicado'));assert.equal(r.total,1);assert.equal(r.records[0].id,child.id);
+});

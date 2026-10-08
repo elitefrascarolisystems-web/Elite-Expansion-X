@@ -273,3 +273,9 @@ export const territoryActions = sqliteTable("territory_actions", {
   dueDate: text("due_date").notNull(), createdBy: text("created_by").notNull(),
   createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
 }, t => [index("territory_actions_city_date_idx").on(t.cityId,t.dueDate),index("territory_actions_person_idx").on(t.personId)]);
+export const territoryRoles = sqliteTable('territory_roles', {
+ id:text('id').primaryKey(),personId:text('person_id').notNull().references(()=>territoryPeople.id),
+ cityId:integer('city_id').notNull().references(()=>cities.id),role:text('role').notNull(),status:text('status').notNull(),
+ responsible:text('responsible').notNull().default(''),source:text('source').notNull(),authorizedBy:text('authorized_by').notNull(),
+ createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
+},t=>[uniqueIndex('territory_roles_unique').on(t.personId,t.cityId,t.role),index('territory_roles_city_role_idx').on(t.cityId,t.role,t.status)]);
