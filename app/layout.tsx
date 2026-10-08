@@ -1,3 +1,4 @@
+import "maplibre-gl/dist/maplibre-gl.css";
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";

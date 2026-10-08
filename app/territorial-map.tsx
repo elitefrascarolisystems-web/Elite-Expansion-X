@@ -1,188 +1,80 @@
-"use client";
+'use client';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MapPin, Users, Plus, Search, Maximize2, Minimize2, LocateFixed, List, RefreshCcw } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { TerritoryCanvas } from '@/app/territory-canvas';
+import { buildDashboardView, EMPTY_FILTERS } from '@/lib/expansion-domain';
+import { displayedCoordinates } from '@/lib/territory-validation';
+import type { DashboardData, DashboardView } from '@/lib/expansion-types';
+import type { TerritoryRecord, TerritoryResponse } from '@/lib/territory-types';
+import type { DialogState } from '@/app/expansion-forms';
 
-import { useMemo, useState } from "react";
-import {
-  Activity,
-  BadgeCheck,
-  Building2,
-  CircleDollarSign,
-  Compass,
-  Handshake,
-  LocateFixed,
-  MapPin,
-  Minus,
-  Plus,
-  RotateCcw,
-  Search,
-  Target,
-  UserRound,
-  Users,
-} from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { buildTerritorialPoints, cityReference, normalizeLocationName } from "@/lib/territorial-map";
-import type { AmbassadorMetric, CityMetric, DashboardView } from "@/lib/expansion-types";
-
-const money = (cents: number | null) => cents === null
-  ? "Sem dados suficientes"
-  : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
-const ratio = (value: number | null) => value === null ? "Sem dados suficientes" : `${Math.round(value * 100)}%`;
-
-function mapBadgeClass(value: string) {
-  if (["Ativa", "Ativo", "Avançar"].includes(value)) return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
-  if (["Pausada", "Pausado", "Desligado", "Corrigir", "Pausar"].includes(value)) return "border-red-400/30 bg-red-400/10 text-red-200";
-  if (["Planejada", "Preparar", "Convidado", "Em análise"].includes(value)) return "border-zinc-400/30 bg-zinc-400/10 text-zinc-300";
-  return "border-amber-300/30 bg-amber-300/10 text-amber-100";
+type FormKind='person'|'activity'|'location';
+const labels={city:'Cidade',person:'Pessoa',partner:'Parceiro',event:'Evento',action:'Ação'};
+const date=(v:string)=>v?new Date(v.length===10?`${v}T12:00:00-03:00`:v).toLocaleDateString('pt-BR'):'Sem registro';
+export function TerritorialMap({view,data,focusLeadId,onConfigureCity,onOpen,onRefresh}:{view:DashboardView;data?:DashboardData;focusLeadId?:number;onConfigureCity?:(id:number)=>void;onOpen?:(d:DialogState)=>void;onRefresh?:()=>Promise<void>}){
+ const [leadFilter,setLeadFilter]=useState(focusLeadId??null);
+ const [result,setResult]=useState<TerritoryResponse|null>(null),[query,setQuery]=useState(''),[category,setCategory]=useState(''),[city,setCity]=useState(''),[status,setStatus]=useState(''),[period,setPeriod]=useState('');
+ const [selected,setSelected]=useState<string|null>(null),[group,setGroup]=useState<TerritoryRecord[]>([]),[expanded,setExpanded]=useState(false),[listOnly,setListOnly]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(''),[revision,setRevision]=useState(0),[fit,setFit]=useState(0),[offset,setOffset]=useState(0);
+ const [form,setForm]=useState<FormKind|null>(null),[editing,setEditing]=useState<TerritoryRecord|null>(null),[saving,setSaving]=useState(false);
+ const lock=useRef(false);
+ const params=useMemo(()=>new URLSearchParams({q:query,category,city,status,period,leadId:leadFilter?String(leadFilter):'',offset:String(offset)}).toString(),[query,category,city,status,period,offset,leadFilter]);
+ useEffect(()=>{const controller=new AbortController();const timer=setTimeout(()=>{setLoading(true);setError('');fetch(`/api/territory?${params}`,{signal:controller.signal}).then(async r=>{const v=await r.json();if(!r.ok)throw new Error(v.error||'Falha ao consultar o mapa.');return v;}).then(v=>setResult(v)).catch(e=>{if(e.name!=='AbortError')setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});},250);return()=>{clearTimeout(timer);controller.abort();};},[params,revision,data?.lastUpdated]);
+ const records=result?.records??[],chosen=records.find(r=>r.key===selected)??null;
+ const canEdit=result?.canEdit??false;
+ const selectGroup=useCallback((items:TerritoryRecord[])=>{setGroup(items);setSelected(items[0]?.key??null);},[]);
+ function filter(fn:()=>void){setOffset(0);setGroup([]);fn();}
+ async function submit(action:string,payload:Record<string,unknown>){if(lock.current)return;lock.current=true;setSaving(true);try{const r=await fetch('/api/territory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,data:payload})});const v=await r.json();if(!r.ok||!v.ok)throw new Error(v.error||'Não foi possível salvar.');setForm(null);setRevision(r=>r+1);toast.success('Registro salvo. Atualizando o mapa…');try{await onRefresh?.();}catch{toast.info('Registro salvo. Atualize o painel para rever os indicadores.');}}catch(e){toast.error(e instanceof Error?e.message:'Falha ao salvar.');}finally{lock.current=false;setSaving(false);}}
+ function open(kind:FormKind,record:TerritoryRecord|null=null){setEditing(record);setForm(kind);}
+ const groupKeys=new Set(group.map(r=>r.key));const shown=group.length>1?records.filter(r=>groupKeys.has(r.key)):records;
+ return <section className={`territory-shell ${expanded?'is-expanded':''}`} aria-label="Elite Territory Map">
+  <div className="territory-toolbar"><div className="mr-auto"><p className="section-kicker">Presença e próxima ação</p><h2 className="text-xl font-semibold">Elite Territory Map</h2><p className="text-sm text-zinc-400">Elite Esmeraldas · laboratório da expansão</p></div><Button variant="outline" onClick={()=>setListOnly(v=>!v)}><List size={17}/>{listOnly?'Mostrar mapa':'Usar lista'}</Button><Button variant="outline" onClick={()=>setFit(v=>v+1)} disabled={listOnly}><LocateFixed size={17}/>Enquadrar</Button><Button variant="outline" aria-label={expanded?'Fechar modo ampliado':'Elite Expansion Command Map'} onClick={()=>setExpanded(v=>!v)}>{expanded?<Minimize2/>:<Maximize2/>}</Button>{canEdit&&<Button onClick={()=>open('person')} className="bg-[#d6b94f] text-black"><Plus/>Pessoa</Button>}</div>
+  <div className="territory-toolbar"><label className="flex min-w-48 flex-1 items-center gap-2"><Search size={18}/><input className="w-full" aria-label="Buscar cidade, pessoa ou região" placeholder="Cidade, pessoa, parceiro ou região" value={query} onChange={e=>filter(()=>setQuery(e.target.value))}/></label><select className="territory-select" aria-label="Cidade" value={city} onChange={e=>filter(()=>setCity(e.target.value))}><option value="">Todas as cidades</option>{view.cities.map(c=><option key={c.id} value={c.id}>{c.name}/{c.state}</option>)}</select><select className="territory-select" aria-label="Camada" value={category} onChange={e=>filter(()=>setCategory(e.target.value))}><option value="">Todas as camadas</option>{Object.entries(labels).map(([k,v])=><option key={k} value={k}>{v}</option>)}<option>Líder</option><option>Embaixador</option><option>Lead</option><option>Cliente</option><option>Follow-up</option></select><select className="territory-select" aria-label="Status" value={status} onChange={e=>filter(()=>setStatus(e.target.value))}><option value="">Todas as situações</option>{['Ativa','Planejada','Cadastrado','Convidado','Em treinamento','Ativo','Pausado','Inativo','Cliente','Lead válido','Oportunidade','Programado','Planejado','Realizado','Cancelado'].map(s=><option key={s}>{s}</option>)}</select><label className="territory-field">Mês da atualização ou atividade<input type="month" value={period} onChange={e=>filter(()=>setPeriod(e.target.value))}/></label><Button variant="ghost" onClick={()=>filter(()=>{setLeadFilter(null);setQuery('');setCity('');setCategory('');setStatus('');setPeriod('');})}>Limpar filtros</Button></div>
+  <div className="flex flex-wrap items-center gap-4 border-b border-white/10 px-5 py-3 text-sm text-zinc-300" aria-live="polite"><span><strong className="text-[#e1c96e]">{result?.total??'—'}</strong> registros no filtro</span><span>{records.filter(r=>r.location?.latitude!=null).length} localizados nesta página</span><span>{records.filter(r=>r.location?.latitude==null).length} com localização pendente</span>{loading&&<span>Atualizando…</span>}<span className="ml-auto text-zinc-400">{result?`Atualizado: ${date(result.updatedAt)}`:''}</span></div>
+  {error&&<div className="p-4 text-amber-200" role="alert">{error}<Button variant="outline" onClick={()=>setRevision(v=>v+1)}><RefreshCcw/>Tentar novamente</Button></div>}
+  <div className={listOnly?'':'territory-grid'}>
+   {!listOnly&&<TerritoryCanvas records={records} onSelect={selectGroup} focus={chosen} fitToken={fit}/>}
+   <aside className="territory-list" aria-label="Registros do mapa">{group.length>1&&<div className="p-3"><p className="text-sm">Registros no mesmo ponto ou agrupamento.</p><Button variant="ghost" onClick={()=>setGroup([])}>Mostrar todos</Button></div>}{!loading&&!shown.length&&<p className="p-6 text-sm text-zinc-400">Nenhum registro encontrado. Ajuste os filtros ou cadastre uma pessoa.</p>}{shown.map(r=><button type="button" key={r.key} className="record" aria-pressed={selected===r.key} onClick={()=>setSelected(r.key)}><span className="flex items-center gap-2 font-medium">{r.kind==='person'?<Users size={16}/>:<MapPin size={16}/>} {r.name}</span><span className="mt-1 block text-sm text-zinc-400">{r.roles.join(' · ')} · {r.cityName}</span><span className="mt-1 block text-sm text-[#dbc76c]">{r.status} · {r.location?.latitude!=null?r.location.precision:'Localização pendente'}</span></button>)}</aside>
+  </div>
+  <div className="territory-toolbar text-sm"><span>C: cidade · P: pessoa · ◆: parceiro · E: evento · A: ação</span><span className="text-zinc-400">Pessoas aparecem por cidade ou região aproximada.</span>{offset>0&&<Button variant="outline" onClick={()=>setOffset(v=>Math.max(0,v-200))}>Página anterior</Button>}{result?.hasMore&&<Button variant="outline" onClick={()=>{setOffset(result.nextOffset!);setGroup([]);}}>Próximos registros</Button>}</div>
+  {chosen?.kind==='city'&&data&&<CitySummary data={data} cityId={chosen.cityId} period={period}/>}
+  {chosen&&<div className="territory-detail"><div className="flex items-center justify-between"><div><p className="section-kicker">Ficha territorial</p><h3 className="text-xl font-semibold">{chosen.name}</h3></div><Button variant="ghost" onClick={()=>setSelected(null)}>Fechar ficha</Button></div><dl><div><dt>Cidade e região</dt><dd>{chosen.cityName}/{chosen.state} · {chosen.location?.region||'Região não informada'}</dd></div><div><dt>Papéis</dt><dd>{chosen.roles.join(', ')}</dd></div><div><dt>Situação</dt><dd>{chosen.status}</dd></div><div><dt>Responsável</dt><dd>{chosen.responsible||'Ainda não definido'}</dd></div><div><dt>Próxima ação</dt><dd>{chosen.nextAction||'Nenhuma registrada'} {chosen.dueDate?`· ${date(chosen.dueDate)}`:''}</dd></div><div><dt>Origem e precisão</dt><dd>{chosen.location?`${chosen.location.source} · ${chosen.location.precision}`:'Localização pendente'}</dd></div></dl><div className="flex flex-wrap gap-2">
+   {canEdit&&<><Button variant="outline" onClick={()=>open('location',chosen)}>Validar localização</Button>{chosen.kind==='person'&&<><Button variant="outline" onClick={()=>open('person',chosen)}>Editar pessoa e indicação</Button><Button onClick={()=>open('activity',chosen)}>Interação ou follow-up</Button></>}{chosen.kind==='action'&&<Button onClick={()=>open('activity',chosen)}>Atualizar ação</Button>}{chosen.kind==='city'&&onConfigureCity&&<Button onClick={()=>onConfigureCity(Number(chosen.id))}>Configurar cidade</Button>}</>}
+   {chosen.ambassadorId&&<Button variant="outline" onClick={()=>onOpen?.({name:'ambassador-edit',entityId:chosen.ambassadorId!})}>Abrir embaixador</Button>}{chosen.leadId&&<Button variant="outline" onClick={()=>onOpen?.({name:'lead-status',entityId:chosen.leadId!})}>Abrir no CRM</Button>}
+   {chosen.kind==='person'&&canEdit&&!chosen.ambassadorId&&<Button variant="outline" onClick={()=>onOpen?.({name:'ambassador'})}>Cadastrar papel de embaixador</Button>}
+   {chosen.kind==='event'&&canEdit&&<select className="territory-select" aria-label="Atualizar situação do evento" value={chosen.status} disabled={saving} onChange={e=>submit('event_status',{id:Number(chosen.id),status:e.target.value})}>{['Planejado','Confirmado','Realizado','Cancelado'].map(s=><option key={s}>{s}</option>)}</select>}
+   {['partner','event','action'].includes(chosen.kind)&&chosen.location?.precision==='Local comercial'&&chosen.location.validated&&chosen.location.visibility==='Equipe'&&<Button asChild variant="outline"><a href={`https://www.google.com/maps/dir/?api=1&destination=${chosen.location.latitude},${chosen.location.longitude}`} target="_blank" rel="noreferrer">Abrir rota externa</a></Button>}
+  </div></div>}
+  {canEdit&&<div className="territory-toolbar"><Button variant="outline" onClick={()=>onOpen?.({name:'partner'})}>Cadastrar parceiro</Button><Button variant="outline" onClick={()=>onOpen?.({name:'event'})}>Cadastrar evento</Button><Button variant="outline" onClick={()=>open('activity')}>Registrar ação</Button><Button variant="outline" onClick={()=>onOpen?.({name:'lead'})}>Registrar lead autorizado</Button></div>}
+  <div className="px-5 pb-4 text-sm text-zinc-400">Mapa de ruas disponível. Satélite, híbrido e edifícios 3D aguardam configuração e validação de cobertura do provedor. <a className="underline" href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer">Informar erro cartográfico</a>.</div>
+  <ReferralList records={records} onSelect={r=>{setSelected(r.key);setGroup([]);}}/>
+  <Dialog open={Boolean(form)} onOpenChange={v=>{if(!v&&!saving)setForm(null);}}><DialogContent className="max-h-[90dvh] overflow-y-auto bg-[#11120f] text-white sm:max-w-2xl"><DialogHeader><DialogTitle>{form==='location'?'Confirmar localização':form==='person'?'Pessoa e papéis':'Ação e acompanhamento'}</DialogTitle><DialogDescription>As alterações atualizam o mesmo cadastro na operação territorial.</DialogDescription></DialogHeader>{form==='location'&&editing?<LocationForm record={editing} saving={saving} submit={submit}/>:form&&<TerritoryForm kind={form as 'person'|'activity'} record={editing} cities={view.cities} people={data?.people??[]} saving={saving} submit={submit}/>}</DialogContent></Dialog>
+ </section>;
+}
+function ReferralList({records,onSelect}:{records:TerritoryRecord[];onSelect:(r:TerritoryRecord)=>void}){const people=records.filter(r=>r.kind==='person');return <details className="border-t border-white/10 p-5"><summary className="cursor-pointer font-medium">Rede de indicações · registros desta página</summary><ul className="mt-4 space-y-2">{people.filter(p=>p.referrerId).map(p=><li key={p.id} className="flex items-center gap-3 text-sm"><span>{people.find(r=>r.id===p.referrerId)?.name??'Indicador cadastrado'} indicou {p.name}</span><Button variant="ghost" onClick={()=>onSelect(p)}>Ver no mapa</Button></li>)}{!people.some(p=>p.referrerId)&&<li className="text-sm text-zinc-400">Nenhuma indicação vinculada neste recorte. Edite a pessoa para registrar quem a indicou.</li>}</ul></details>;}
+function TerritoryForm({kind,record,cities,people,saving,submit}:{kind:'person'|'activity';record:TerritoryRecord|null;cities:DashboardView['cities'];people:NonNullable<DashboardData['people']>;saving:boolean;submit:(action:string,data:Record<string,unknown>)=>Promise<void>}){
+ const [requestId]=useState(()=>crypto.randomUUID());const isPerson=kind==='person',isEdit=record?.kind===(isPerson?'person':'action');const [city,setCity]=useState(String(record?.cityId??cities[0]?.id??''));
+ return <form className="grid gap-4 sm:grid-cols-2" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);submit(kind,{...(isEdit?{id:record!.id}:{requestId}),cityId:Number(city),name:f.get('name'),...(isPerson?{leader:f.get('leader')==='on',referrerId:f.get('referrerId')||null,authorized:f.get('authorized')==='on'}:{personId:record?.kind==='person'?record.id:null,category:f.get('category'),status:f.get('status'),responsible:f.get('responsible'),dueDate:f.get('dueDate')})});}}>
+ <label className="territory-field">Cidade<select value={city} disabled={Boolean(isEdit)} onChange={e=>setCity(e.target.value)} required><option value="">Selecionar</option>{cities.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label className="territory-field">{isPerson?'Nome da pessoa':'O que será feito'}<input name="name" required maxLength={200} defaultValue={isEdit?record?.name:''}/></label>
+ {isPerson?<><label className="flex items-center gap-2 text-sm"><input name="leader" type="checkbox" defaultChecked={record?.roles.includes('Líder')}/>Definir como líder da cidade</label><label className="territory-field">Quem indicou<select name="referrerId" defaultValue={record?.referrerId??''}><option value="">Sem indicação registrada</option>{people.filter(p=>p.cityId===Number(city)&&p.id!==record?.id).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label className="flex items-start gap-2 text-sm sm:col-span-2"><input name="authorized" type="checkbox" required/>Confirmo a autorização para cadastrar esta pessoa na operação territorial.</label></>:<><label className="territory-field">Tipo<select name="category" defaultValue={isEdit?record?.roles[0]:'Follow-up'}>{['Ação','Visita','Follow-up','Interação','Missão'].map(v=><option key={v}>{v}</option>)}</select></label><label className="territory-field">Situação<select name="status" defaultValue={isEdit?record?.status:'Programado'}>{['Programado','Realizado','Cancelado'].map(v=><option key={v}>{v}</option>)}</select></label><label className="territory-field">Data<input type="date" name="dueDate" required defaultValue={isEdit?record?.dueDate:new Date().toISOString().slice(0,10)}/></label><label className="territory-field">Responsável<input name="responsible" maxLength={200} required defaultValue={isEdit?record?.responsible:''}/></label></>}
+ <Button type="submit" disabled={saving} aria-busy={saving} className="bg-[#d6b94f] text-black sm:col-span-2">{saving?'Salvando…':'Salvar cadastro'}</Button></form>;
+}
+function LocationForm({record,saving,submit}:{record:TerritoryRecord;saving:boolean;submit:(a:string,d:Record<string,unknown>)=>Promise<void>}){
+ const l=record.location;const [lat,setLat]=useState(l?.latitude==null?'':String(l.latitude)),[lng,setLng]=useState(l?.longitude==null?'':String(l.longitude));const [source,setSource]=useState(l?.source??'Ponto informado e conferido'),[search,setSearch]=useState(''),[results,setResults]=useState<{name:string;latitude:number;longitude:number}[]>([]),[searching,setSearching]=useState(false),[searchError,setSearchError]=useState('');
+ const [precision,setPrecision]=useState(l?.precision??(record.kind==='person'?'Região aproximada':'Local comercial'));
+ const preview={...record,location:{latitude:lat===''?null:Number(lat),longitude:lng===''?null:Number(lng),region:'',precision,source,validated:true,visibility:'Equipe' as const,updatedAt:''}};
+ function pick(a:number,b:number){const p=displayedCoordinates(record.kind,a,b);setLat(String(p.latitude));setLng(String(p.longitude));setSource('Pino conferido manualmente');}
+ async function find(){setSearching(true);setSearchError('');try{const r=await fetch('/api/territory/geocode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:search,cityId:record.cityId,kind:record.kind})});const v=await r.json();if(!r.ok)throw new Error(v.error);setResults(v.results);if(!v.results.length)setSearchError("Nenhum local encontrado. Ajuste a busca ou selecione o pino.");}catch(e){setSearchError(e instanceof Error?e.message:'Busca indisponível. Use o pino ou salve como pendente.');}finally{setSearching(false);}}
+ return <form className="space-y-4" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);submit('location',{key:record.key,latitude:lat===''?null:Number(lat),longitude:lng===''?null:Number(lng),region:f.get('region'),precision,source,validated:f.get('validated')==='on',authorized:f.get('authorized')==='on',visibility:f.get('visibility')});}}><p className="text-sm text-zinc-300">{record.kind==='person'?'Selecione uma referência do bairro. A posição será aproximada em cerca de 1 km. Não informe residência.':'Selecione o local comercial ou público autorizado.'} Clique no mapa para ajustar o pino.</p><div className="flex gap-2"><input aria-label="Buscar local autorizado" className="territory-select min-w-0 flex-1" placeholder={record.kind==='person'?'Bairro ou região, sem endereço residencial':'Endereço comercial ou local do evento'} value={search} onChange={e=>setSearch(e.target.value)}/><Button type="button" variant="outline" disabled={searching||search.trim().length<3} onClick={find}>{searching?'Buscando…':'Buscar'}</Button></div>{searchError&&<p role="alert" className="text-sm text-amber-200">{searchError}</p>}{results.map((r,i)=><Button key={i} type="button" variant="outline" className="h-auto whitespace-normal text-left" onClick={()=>{pick(r.latitude,r.longitude);setSource('MapTiler / OpenStreetMap — conferido pelo operador');setResults([]);}}>{r.name}</Button>)}<div className="h-64 overflow-hidden rounded-lg [&_.territory-canvas-wrap]:min-h-64"><TerritoryCanvas records={[preview]} onSelect={()=>{}} onPick={pick} focus={preview}/></div><div className="grid gap-3 sm:grid-cols-2"><label className="territory-field">Latitude<input type="number" min="-85" max="85" step="any" value={lat} onChange={e=>setLat(e.target.value)}/></label><label className="territory-field">Longitude<input type="number" min="-180" max="180" step="any" value={lng} onChange={e=>setLng(e.target.value)}/></label><label className="territory-field">Bairro ou região<input name="region" maxLength={200} defaultValue={l?.region}/></label><label className="territory-field">Precisão<select value={precision} onChange={e=>setPrecision(e.target.value as typeof precision)}><option>Cidade</option><option>Região aproximada</option>{record.kind!=='person'&&<option>Local comercial</option>}</select></label><label className="territory-field">Fonte<input required minLength={3} maxLength={200} value={source} onChange={e=>setSource(e.target.value)}/></label><label className="territory-field">Visibilidade<select name="visibility" defaultValue={l?.visibility??'Equipe'}><option>Equipe</option><option>Admin</option></select></label></div><label className="flex gap-2 text-sm"><input name="validated" type="checkbox"/>Conferi o ponto e confirmo sua localização. Desmarcado: localização pendente.</label><label className="flex gap-2 text-sm"><input name="authorized" type="checkbox" required/>Tenho autorização para registrar esta referência territorial para a operação.</label><div className="flex gap-2"><Button type="button" variant="outline" onClick={()=>{setLat('');setLng('');}}>Deixar localização pendente</Button><Button type="submit" disabled={saving}>{saving?'Salvando…':'Salvar localização'}</Button></div></form>;
 }
 
-function cityPeople(ambassadors: AmbassadorMetric[], city: CityMetric) {
-  const leader = city.leaderName
-    ? [{ id: `leader-${city.id}`, name: city.leaderName, role: "Líder", status: "Responsável", level: "Liderança", active: city.status === "Ativa", lastActivity: null }]
-    : [];
-  return [
-    ...leader,
-    ...ambassadors.filter((item) => item.cityId === city.id).map((item) => ({
-      id: `ambassador-${item.id}`,
-      name: item.name,
-      role: "Embaixador",
-      status: item.status,
-      level: item.level,
-      active: item.isActive,
-      lastActivity: item.lastActivity,
-      ambassador: item,
-    })),
-  ];
-}
-
-export function TerritorialMap({ view, onConfigureCity }: { view: DashboardView; onConfigureCity?: (id: number) => void }) {
-  const [selectedCityId, setSelectedCityId] = useState<number | null>(view.cities[0]?.id ?? null);
-  const [query, setQuery] = useState("");
-  const [role, setRole] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [level, setLevel] = useState("all");
-  const [activity, setActivity] = useState("all");
-  const [zoom, setZoom] = useState(1);
-
-  const points = useMemo(() => buildTerritorialPoints(view.cities), [view.cities]);
-  const selectedCity = view.cities.find((city) => city.id === selectedCityId) ?? view.cities[0] ?? null;
-
-  function peopleFor(city: CityMetric) {
-    const search = normalizeLocationName(query);
-    return cityPeople(view.ambassadors, city).filter((person) => {
-      if (role !== "all" && person.role !== role) return false;
-      if (status !== "all" && person.status !== status) return false;
-      if (level !== "all" && person.level !== level) return false;
-      if (activity === "active" && !person.active) return false;
-      if (activity === "inactive" && person.active) return false;
-      if (search && !normalizeLocationName(`${person.name} ${city.name}`).includes(search)) return false;
-      return true;
-    });
-  }
-
-  const selectedPeople = selectedCity ? peopleFor(selectedCity) : [];
-  const statuses = [...new Set(view.ambassadors.map((item) => item.status))].sort();
-  const levels = [...new Set(view.ambassadors.map((item) => item.level))].sort();
-  const totalPeople = view.cities.reduce((total, city) => total + cityPeople(view.ambassadors, city).length, 0);
-  const activeCities = view.cities.filter((city) => city.status === "Ativa").length;
-  const missingLocations = view.cities.filter((city) => !cityReference(city.name, city.state));
-  const selectedReference = selectedCity ? cityReference(selectedCity.name, selectedCity.state) : null;
-
-  return <div className="space-y-5">
-    <section className="grid gap-3 sm:grid-cols-3">
-      <article className="map-summary-card"><span><MapPin /></span><div><strong>{view.cities.length}</strong><p>Cidades no recorte atual</p></div></article>
-      <article className="map-summary-card"><span><Users /></span><div><strong>{totalPeople}</strong><p>Líderes e embaixadores registrados</p></div></article>
-      <article className="map-summary-card"><span><BadgeCheck /></span><div><strong>{activeCities}</strong><p>Cidades com operação ativa</p></div></article>
-    </section>
-
-    <section className="elite-card p-4 sm:p-5">
-      <div className="mb-4 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
-        <div>
-          <p className="section-kicker">Presença por cidade</p>
-          <h2 className="section-title">Mapa territorial da Elite</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Os pontos representam a sede de cada cidade. Nenhum endereço pessoal ou posição exata é exibido.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button type="button" size="icon" variant="outline" className="map-control" onClick={() => setZoom((value) => Math.max(.85, value - .15))} disabled={zoom <= .85} aria-label="Diminuir mapa"><Minus /></Button>
-          <Button type="button" size="icon" variant="outline" className="map-control" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label="Restaurar mapa"><RotateCcw /></Button>
-          <Button type="button" size="icon" variant="outline" className="map-control" onClick={() => setZoom((value) => Math.min(1.45, value + .15))} disabled={zoom >= 1.45} aria-label="Ampliar mapa"><Plus /></Button>
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_repeat(4,minmax(0,.7fr))]">
-        <label className="relative block"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" /><span className="sr-only">Buscar cidade ou pessoa</span><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar cidade ou pessoa" className="border-white/10 bg-white/[0.035] pl-10" /></label>
-        <Select value={role} onValueChange={setRole}><SelectTrigger className="border-white/10 bg-white/[0.035]" aria-label="Filtrar função"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as funções</SelectItem><SelectItem value="Líder">Líderes</SelectItem><SelectItem value="Embaixador">Embaixadores</SelectItem></SelectContent></Select>
-        <Select value={status} onValueChange={setStatus}><SelectTrigger className="border-white/10 bg-white/[0.035]" aria-label="Filtrar situação"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as situações</SelectItem>{statuses.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>
-        <Select value={level} onValueChange={setLevel}><SelectTrigger className="border-white/10 bg-white/[0.035]" aria-label="Filtrar nível"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos os níveis</SelectItem>{levels.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>
-        <Select value={activity} onValueChange={setActivity}><SelectTrigger className="border-white/10 bg-white/[0.035]" aria-label="Filtrar atividade"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Toda atividade</SelectItem><SelectItem value="active">Ativos agora</SelectItem><SelectItem value="inactive">Sem ativação</SelectItem></SelectContent></Select>
-      </div>
-    </section>
-
-    <section className="grid gap-5 xl:grid-cols-[1.45fr_.75fr]">
-      <article className="territorial-map-shell" aria-label="Mapa das cidades da Elite">
-        <div className="map-compass" aria-hidden="true"><Compass /><span>N</span></div>
-        <div className="map-scale">Referência territorial · não mostra endereços</div>
-        <div className="territorial-map-layer" style={{ transform: `scale(${zoom})` }}>
-          <div className="territorial-route" aria-hidden="true" />
-          {points.map((point) => {
-            const city = view.cities.find((item) => item.id === point.id);
-            if (!city) return null;
-            const people = peopleFor(city);
-            const searchMatchesCity = !query || normalizeLocationName(city.name).includes(normalizeLocationName(query));
-            const faded = Boolean(query) && !people.length && !searchMatchesCity;
-            return <button
-              type="button"
-              key={city.id}
-              className={`territorial-marker ${selectedCity?.id === city.id ? "is-selected" : ""} ${faded ? "is-faded" : ""}`}
-              style={{ left: `${point.x}%`, top: `${point.y}%` }}
-              onClick={() => setSelectedCityId(city.id)}
-              aria-label={`${city.name}: ${people.length} pessoas visíveis`}
-              aria-pressed={selectedCity?.id === city.id}
-            >
-              <span className="marker-count">{people.length}</span>
-              <span className="marker-label">{city.name}<small>{city.status}</small></span>
-            </button>;
-          })}
-        </div>
-        {!points.length && <div className="absolute inset-0 grid place-items-center px-6 text-center"><div><LocateFixed className="mx-auto mb-3 size-8 text-[#d6b94f]" /><p className="font-semibold text-white">Nenhuma cidade localizada</p><p className="mt-2 max-w-sm text-sm leading-6 text-zinc-400">As cidades continuam disponíveis na lista. Cadastre uma referência municipal validada antes de colocá-las no mapa.</p></div></div>}
-      </article>
-
-      <article className="elite-card overflow-hidden">
-        {selectedCity ? <>
-          <div className="border-b border-white/8 p-5">
-            <div className="flex items-start justify-between gap-3"><div><p className="section-kicker">Cidade selecionada</p><h3 className="text-xl font-semibold text-white">{selectedCity.name}/{selectedCity.state}</h3><p className="mt-1 text-sm text-zinc-500">{selectedCity.leaderName || "Líder ainda não definido"}</p></div><Badge variant="outline" className={mapBadgeClass(selectedCity.status)}>{selectedCity.status}</Badge></div>
-            <div className="mt-4 flex flex-wrap gap-2"><Badge variant="outline" className={mapBadgeClass(selectedCity.decision)}>{selectedCity.decision}</Badge><span className="text-xs leading-6 text-zinc-500">{selectedCity.decisionReason}</span></div>
-          </div>
-          <dl className="map-city-metrics">
-            <div><dt><Users /> Pessoas</dt><dd>{cityPeople(view.ambassadors, selectedCity).length}</dd></div>
-            <div><dt><Activity /> Ativos</dt><dd>{selectedCity.activeAmbassadors}</dd></div>
-            <div><dt><Handshake /> Parceiros</dt><dd>{selectedCity.activePartners}</dd></div>
-            <div><dt><Target /> Leads válidos</dt><dd>{selectedCity.validLeads}</dd></div>
-            <div><dt><BadgeCheck /> Pagamentos</dt><dd>{selectedCity.confirmedPayments}</dd></div>
-            <div><dt><CircleDollarSign /> CAC</dt><dd>{money(selectedCity.cacCents)}</dd></div>
-          </dl>
-          <div className="border-t border-white/8 p-5">
-            <div className="grid gap-2 text-sm"><div className="flex justify-between gap-4"><span className="text-zinc-500">Participação orgânica</span><strong className="text-white">{ratio(selectedCity.organicShare)}</strong></div><div className="flex justify-between gap-4"><span className="text-zinc-500">Receita confirmada</span><strong className="text-white">{money(selectedCity.revenueCents)}</strong></div><div className="flex justify-between gap-4"><span className="text-zinc-500">Custo atribuído</span><strong className="text-white">{money(selectedCity.costCents)}</strong></div></div>
-            {onConfigureCity && <Button type="button" onClick={() => onConfigureCity(selectedCity.id)} variant="outline" className="mt-5 w-full border-white/10 bg-white/5 text-white"><Building2 /> Configurar cidade</Button>}
-          </div>
-        </> : <div className="grid min-h-80 place-items-center p-6 text-center text-sm text-zinc-500">Selecione uma cidade.</div>}
-      </article>
-    </section>
-
-    <section className="grid gap-5 xl:grid-cols-[1fr_.55fr]">
-      <article className="elite-card overflow-hidden">
-        <div className="border-b border-white/8 p-5"><p className="section-kicker">Lista ligada ao mapa</p><h3 className="text-lg font-semibold text-white">Pessoas em {selectedCity?.name ?? "cada cidade"}</h3><p className="mt-2 text-sm text-zinc-500">Somente função, etapa e atividade. Dados de contato não aparecem aqui.</p></div>
-        {selectedPeople.length ? <div className="divide-y divide-white/7">{selectedPeople.map((person) => <div key={person.id} className="flex items-center justify-between gap-4 p-4"><div className="flex min-w-0 items-center gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl border border-[#c9a227]/20 bg-[#c9a227]/8 text-[#d6b94f]"><UserRound className="size-4" /></span><div className="min-w-0"><p className="truncate font-medium text-white">{person.name}</p><p className="mt-1 text-xs text-zinc-500">{person.role} · {person.level}</p></div></div><div className="text-right"><Badge variant="outline" className={mapBadgeClass(person.status)}>{person.status}</Badge><p className={`mt-1 text-xs ${person.active ? "text-emerald-300" : "text-zinc-600"}`}>{person.active ? "Ativo agora" : "Sem ativação"}</p></div></div>)}</div> : <div className="grid min-h-48 place-items-center p-6 text-center"><div><Users className="mx-auto mb-3 size-7 text-[#d6b94f]" /><p className="font-medium text-white">Nenhuma pessoa neste filtro</p><p className="mt-2 max-w-sm text-sm leading-6 text-zinc-500">Cadastre o líder e os embaixadores ou limpe os filtros acima.</p></div></div>}
-      </article>
-
-      <article className="elite-card p-5">
-        <p className="section-kicker">Segurança do mapa</p><h3 className="text-lg font-semibold text-white">Como a localização funciona</h3>
-        <ul className="mt-4 space-y-3 text-sm leading-6 text-zinc-400"><li className="flex gap-2"><MapPin className="mt-1 size-4 shrink-0 text-[#d6b94f]" />O ponto representa a cidade, não a casa ou posição da pessoa.</li><li className="flex gap-2"><Users className="mt-1 size-4 shrink-0 text-[#d6b94f]" />Os marcadores agrupam líderes e embaixadores por cidade.</li><li className="flex gap-2"><BadgeCheck className="mt-1 size-4 shrink-0 text-[#d6b94f]" />Telefone, e-mail e dados de leads não são exibidos.</li></ul>
-        {selectedReference && <p className="mt-5 rounded-xl border border-white/8 bg-white/[0.025] p-3 text-xs leading-5 text-zinc-500">Referência de {selectedCity?.name}: código municipal {selectedReference.municipalityCode}. <a href={selectedReference.sourceUrl} target="_blank" rel="noreferrer" className="text-[#d6b94f] underline-offset-4 hover:underline">{selectedReference.sourceLabel}</a>.</p>}
-        {missingLocations.length > 0 && <div className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/5 p-3 text-xs leading-5 text-amber-100"><strong>{missingLocations.length} cidade(s) sem ponto validado:</strong> {missingLocations.map((city) => city.name).join(", ")}. Elas permanecem na lista e não recebem posição inventada.</div>}
-      </article>
-    </section>
-  </div>;
+function CitySummary({data,cityId,period}:{data:DashboardData;cityId:number;period:string}) {
+ const v=buildDashboardView(data,{...EMPTY_FILTERS,cityId,period}),c=v.cities[0];if(!c)return null;
+ const a=data.ambassadors.filter(a=>a.cityId===cityId),summary=v.summary;
+ const money=(n:number|null)=>n===null?'Sem dados suficientes':new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n/100);
+ const pct=(n:number|null)=>n===null?'Sem dados suficientes':new Intl.NumberFormat('pt-BR',{style:'percent',maximumFractionDigits:1}).format(n);
+ const rows:[string,string|number][]=[['Fase',c.phase],['Líder',c.leaderName||'Não definido'],['Embaixadores cadastrados',a.length],['Convidados',a.filter(a=>a.status==='Convidado').length],['Em treinamento',a.filter(a=>a.status==='Em treinamento').length],['Ativos elegíveis',c.activeAmbassadors],['Pausados ou inativos',a.filter(a=>['Pausado','Inativo','Desligado'].includes(a.status)).length],['Parceiros ativos',c.activePartners],['Eventos',c.eventsCount],['Leads válidos',c.validLeads],['Pagamentos confirmados',c.confirmedPayments],['Receita atribuída',c.periods?money(c.revenueCents):'Sem dados suficientes'],['Custos atribuíveis',c.periods?money(c.costCents):'Sem dados suficientes'],['Conversão',pct(summary.conversion)],['CPL',money(c.cplCents)],['CAC',money(c.cacCents)],['ROI',pct(summary.roi)],['Participação orgânica',pct(c.organicShare)],['Decisão',c.decision]];
+ return <section className="territory-detail" aria-label="Indicadores da cidade"><h3 className="text-lg font-semibold">{c.name} · indicadores</h3><p className="text-sm text-zinc-400">{period||'Todos os períodos'} · Fonte: {c.dataSource}. Camada e busca não alteram os indicadores da cidade.</p><dl>{rows.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl><p className="text-sm">Próximo passo: {c.decisionReason}</p><details className="mt-3 text-sm text-zinc-400"><summary>Como os indicadores são calculados</summary><p>Conversão = pagamentos confirmados ÷ leads válidos. CPL = custos de aquisição atribuíveis ÷ leads válidos. CAC = custos de aquisição atribuíveis ÷ clientes com pagamento confirmado. ROI = (receita atribuída − custos atribuíveis) ÷ custos atribuíveis. Participação orgânica = leads orgânicos válidos ÷ leads válidos. Não representam lucro líquido; custos incompletos precisam de revisão. Os registros detalhados ou fechamentos consolidados da cidade alimentam os indicadores, conforme a configuração.</p></details></section>;
 }

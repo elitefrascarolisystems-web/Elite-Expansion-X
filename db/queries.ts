@@ -22,15 +22,15 @@ import { asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runt
 type Scope = { where: string; values: Array<string | number> };
 
 function cityScope(access: AccessView, column = "city_id"): Scope {
-  if (["Administrador", "Coordenação"].includes(access.role)) return { where: "1 = 1", values: [] };
+  if (access.role === "Administrador") return { where: "1 = 1", values: [] };
   if (access.cityId !== null) return { where: `${column} = ?`, values: [access.cityId] };
   if (access.role === "Comercial") return { where: "1 = 1", values: [] };
   return { where: "1 = 0", values: [] };
 }
 
 function leadScope(access: AccessView, alias = "l"): Scope {
-  if (["Administrador", "Coordenação"].includes(access.role)) return { where: "1 = 1", values: [] };
-  if (access.role === "Líder" && access.cityId !== null) return { where: `${alias}.city_id = ?`, values: [access.cityId] };
+  if (access.role === "Administrador") return { where: "1 = 1", values: [] };
+  if (["Líder", "Coordenação"].includes(access.role) && access.cityId !== null) return { where: `${alias}.city_id = ?`, values: [access.cityId] };
   if (access.role === "Embaixador" && access.ambassadorId !== null) return { where: `${alias}.ambassador_id = ?`, values: [access.ambassadorId] };
   if (access.role === "Comercial") return { where: `lower(${alias}.assigned_to_email) = lower(?)`, values: [access.email] };
   return { where: "1 = 0", values: [] };
@@ -192,7 +192,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     name: String(row.name),
     state: String(row.state),
     phase: String(row.phase),
-    leaderName: String(row.leader_name ?? ""),
+    leaderName: access.role === "Embaixador" ? "" : String(row.leader_name ?? ""),
     targetCacCents: access.role === "Embaixador" ? 0 : asNumber(row.target_cac_cents),
     ambassadorGoal: access.role === "Embaixador" ? 0 : asNumber(row.ambassador_goal),
     salesGoal: access.role === "Embaixador" ? 0 : asNumber(row.sales_goal),
@@ -313,7 +313,9 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     summary: String(row.summary ?? ""), createdAt: String(row.created_at),
   }));
 
+  const people = ["Administrador", "Coordenação", "Líder"].includes(access.role) ? await rows(`SELECT id, city_id, name FROM territory_people WHERE (${tableScope.where}) AND (leader=1 OR EXISTS(SELECT 1 FROM ambassadors a WHERE a.person_id=territory_people.id) OR NOT EXISTS(SELECT 1 FROM leads l WHERE l.person_id=territory_people.id AND l.consent_revoked_at IS NOT NULL)) ORDER BY name LIMIT 200`, tableScope.values) : [];
   return {
+    people: people.map(p => ({id: String(p.id), cityId: Number(p.city_id), name: String(p.name)})),
     access,
     settings,
     cities,

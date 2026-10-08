@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const cities = sqliteTable("cities", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -20,6 +20,7 @@ export const cities = sqliteTable("cities", {
 });
 
 export const ambassadors = sqliteTable("ambassadors", {
+  personId: text("person_id"),
   id: integer("id").primaryKey({ autoIncrement: true }),
   cityId: integer("city_id")
     .notNull()
@@ -39,6 +40,7 @@ export const ambassadors = sqliteTable("ambassadors", {
   createdBy: text("created_by").notNull().default(""),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
+  uniqueIndex("ambassadors_person_unique").on(table.personId),
   index("ambassadors_city_idx").on(table.cityId),
   index("ambassadors_email_idx").on(table.email),
 ]);
@@ -157,6 +159,7 @@ export const contents = sqliteTable("contents", {
 }, (table) => [index("contents_city_idx").on(table.cityId)]);
 
 export const leads = sqliteTable("leads", {
+  personId: text("person_id"),
   id: integer("id").primaryKey({ autoIncrement: true }),
   cityId: integer("city_id").notNull().references(() => cities.id, { onDelete: "cascade" }),
   ambassadorId: integer("ambassador_id").references(() => ambassadors.id, { onDelete: "set null" }),
@@ -185,6 +188,7 @@ export const leads = sqliteTable("leads", {
   createdBy: text("created_by").notNull().default(""),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
+  uniqueIndex("leads_person_unique").on(table.personId),
   index("leads_city_idx").on(table.cityId),
   index("leads_ambassador_idx").on(table.ambassadorId),
   index("leads_normalized_email_idx").on(table.normalizedEmail),
@@ -246,3 +250,26 @@ export const auditLogs = sqliteTable("audit_logs", {
   summary: text("summary").notNull().default(""),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [index("audit_logs_actor_idx").on(table.actorEmail)]);
+
+// Additive territorial records. No precise residential locations are stored.
+export const territoryPeople = sqliteTable("territory_people", {
+  id: text("id").primaryKey(), cityId: integer("city_id").notNull().references(() => cities.id),
+  name: text("name").notNull(), leader: integer("leader").notNull().default(0),
+  referrerId: text("referrer_id"), createdBy: text("created_by").notNull(),
+  createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
+}, t => [index("territory_people_city_idx").on(t.cityId), index("territory_people_referrer_idx").on(t.referrerId)]);
+export const territoryLocations = sqliteTable("territory_locations", {
+  entityKey: text("entity_key").primaryKey(), cityId: integer("city_id").notNull().references(() => cities.id),
+  latitude: real("latitude"), longitude: real("longitude"), region: text("region").notNull().default(""),
+  precision: text("precision").notNull(), source: text("source").notNull(),
+  validated: integer("validated").notNull().default(0), visibility: text("visibility").notNull().default("Equipe"),
+  authorizedBy: text("authorized_by").notNull(), authorizedAt: text("authorized_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, t => [index("territory_locations_city_idx").on(t.cityId), index("territory_locations_bounds_idx").on(t.longitude,t.latitude)]);
+export const territoryActions = sqliteTable("territory_actions", {
+  id: text("id").primaryKey(), cityId: integer("city_id").notNull().references(() => cities.id),
+  personId: text("person_id").references(() => territoryPeople.id), name: text("name").notNull(),
+  category: text("category").notNull(), status: text("status").notNull(), responsible: text("responsible").notNull(),
+  dueDate: text("due_date").notNull(), createdBy: text("created_by").notNull(),
+  createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
+}, t => [index("territory_actions_city_date_idx").on(t.cityId,t.dueDate),index("territory_actions_person_idx").on(t.personId)]);

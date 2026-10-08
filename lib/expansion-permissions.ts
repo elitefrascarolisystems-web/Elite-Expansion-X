@@ -26,7 +26,7 @@ export type ActionName = (typeof ACTIONS)[number];
 
 const roleActions: Record<AccessView["role"], readonly ActionName[]> = {
   Administrador: ACTIONS,
-  Coordenação: ACTIONS.filter((action) => !["update_settings", "create_user"].includes(action)),
+  Coordenação: ACTIONS.filter((action) => !["update_settings", "create_user", "create_city"].includes(action)),
   Líder: [
     "create_ambassador",
     "update_ambassador",
@@ -52,7 +52,7 @@ export function canPerform(access: AccessView, action: ActionName) {
 
 export function canAccessCity(access: AccessView, cityId: number) {
   if (!access.active) return false;
-  if (["Administrador", "Coordenação"].includes(access.role)) return true;
+  if (access.role === "Administrador") return true;
   if (access.role === "Comercial" && access.cityId === null) return true;
   return access.cityId === cityId;
 }
@@ -65,8 +65,8 @@ export function canAccessAmbassador(access: AccessView, ambassadorId: number, ci
 
 export function canAccessLead(access: AccessView, lead: Pick<LeadRecord, "cityId" | "ambassadorId" | "assignedToEmail">) {
   if (!access.active) return false;
-  if (["Administrador", "Coordenação"].includes(access.role)) return true;
-  if (access.role === "Líder") return access.cityId === lead.cityId;
+  if (access.role === "Administrador") return true;
+  if (["Líder", "Coordenação"].includes(access.role)) return access.cityId !== null && access.cityId === lead.cityId;
   if (access.role === "Embaixador") return access.ambassadorId !== null && access.ambassadorId === lead.ambassadorId;
   return access.role === "Comercial" && lead.assignedToEmail.toLowerCase() === access.email.toLowerCase();
 }

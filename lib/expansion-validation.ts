@@ -14,7 +14,7 @@ const webUrlOrEmpty = z.string().trim().max(1000).refine((value) => {
   try { return ["http:", "https:"].includes(new URL(value).protocol); } catch { return false; }
 }, "Informe um link iniciado por http ou https.");
 const month = z.string().regex(/^\d{4}-\d{2}$/, "Informe o período no formato AAAA-MM.");
-const date = z.string().regex(/^\d{4}-\d{2}$/, "Informe a data no formato AAAA-MM-DD.");
+const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => { const d = new Date(value + 'T00:00:00Z'); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0,10) === value; }, 'Informe uma data válida no formato AAAA-MM-DD.');
 
 export const actionNameSchema = z.enum(ACTIONS);
 
@@ -45,6 +45,7 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     notes: noteText,
   }),
   create_ambassador: z.object({
+    personId: z.string().uuid().optional(),
     cityId: id,
     name: shortText,
     code: z.string().trim().min(3).max(30).regex(/^[A-Za-z0-9_-]+$/, "Use letras, números, hífen ou sublinhado."),
@@ -101,6 +102,7 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     note: noteText,
   }),
   create_lead: z.object({
+    personId: z.string().uuid().optional(),
     cityId: id,
     ambassadorId: optionalId,
     partnerId: optionalId,
@@ -214,7 +216,7 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     cityId: optionalId,
     ambassadorId: optionalId,
   }).superRefine((value, context) => {
-    if (["Líder", "Embaixador"].includes(value.role) && !value.cityId) {
+    if (["Líder", "Embaixador", "Coordenação"].includes(value.role) && !value.cityId) {
       context.addIssue({ code: "custom", path: ["cityId"], message: "Selecione a cidade deste perfil." });
     }
     if (value.role === "Embaixador" && !value.ambassadorId) {

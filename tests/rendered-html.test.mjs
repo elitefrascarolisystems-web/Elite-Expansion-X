@@ -22,7 +22,7 @@ test("ships the territorial map and official expansion identity", async () => {
 
   assert.match(clientFiles, /Mapa territorial/);
   assert.match(clientFiles, /elite-expansao-logo\.png/);
-  assert.match(mapSource, /Nenhum endereço pessoal ou posição exata é exibido/);
-  assert.match(mapSource, /Somente função, etapa e atividade/);
+  assert.match(mapSource, /Pessoas aparecem por cidade ou região aproximada/);
+  assert.match(mapSource, /Não informe residência/);
   assert.match(layout, /elite-expansao-icon\.png/);
 });

@@ -108,6 +108,22 @@ function ensureCityPermission(access: AccessView, cityId: number) {
   if (!canAccessCity(access, cityId)) throw new Error("Seu perfil não possui acesso a esta cidade.");
 }
 
+async function resolvePerson(input: Input, access: AccessView, cityId: number, table: "leads" | "ambassadors") {
+  const id = typeof input.personId === "string" ? input.personId : crypto.randomUUID();
+  const db = database();
+  if (input.personId) {
+    if (!["Administrador", "Coordenação", "Líder"].includes(access.role)) throw new Error("Seu perfil não possui permissão para vincular pessoas existentes.");
+    const p = (await db.prepare("SELECT name, city_id FROM territory_people WHERE id=?").bind(id).all()).results[0];
+    if (!p || Number(p.city_id) !== cityId) throw new Error("Pessoa fora do seu acesso.");
+    const duplicate = (await db.prepare(`SELECT id FROM ${table} WHERE person_id=?`).bind(id).all()).results[0];
+    if (duplicate) throw new Error("Esta pessoa já possui este cadastro. Abra a ficha existente.");
+    input.name = String(p.name);
+  }
+  const now = brazilTimestamp();
+  const statement = db.prepare("INSERT OR IGNORE INTO territory_people(id,city_id,name,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?)").bind(id,cityId,text(input,"name"),access.email,now,now);
+  return {id,statement};
+}
+
 export async function executeAction(action: ActionName, input: Input, access: AccessView) {
   ensurePermission(access, action);
   const db = database();
@@ -151,16 +167,19 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     const cityId = number(input, "cityId");
     await cityExists(cityId);
     ensureCityPermission(access, cityId);
-    const result = await db.prepare(`
+    if (text(input, "status") === "Ativo") throw new Error("Cadastre o embaixador e conclua treinamento, aceite e atividade antes de ativar.");
+    const person = await resolvePerson(input, access, cityId, "ambassadors");
+    const insert = db.prepare(`
       INSERT INTO ambassadors
-        (city_id, name, code, email, whatsapp, whatsapp_authorized_at, level, status, onboarding_status,
+        (person_id, city_id, name, code, email, whatsapp, whatsapp_authorized_at, level, status, onboarding_status,
          training_progress, updated_at, created_by, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pendente', 0, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pendente', 0, ?, ?, ?)
     `).bind(
-      cityId, text(input, "name"), text(input, "code").toUpperCase(), normalizeEmail(text(input, "email")) ?? "",
+      person.id, cityId, text(input, "name"), text(input, "code").toUpperCase(), normalizeEmail(text(input, "email")) ?? "",
       normalizeWhatsapp(text(input, "whatsapp")) ?? "", input.whatsappAuthorized ? timestamp : null,
       text(input, "level"), text(input, "status"), timestamp, access.email, timestamp,
-    ).run();
+    );
+    const result = (await db.batch([person.statement, insert]))[1];
     const entityId = asNumber(result.meta.last_row_id);
     await audit(db, access.email, action, "ambassador", entityId, `Embaixador ${text(input, "name")} cadastrado.`);
     return;
@@ -170,6 +189,11 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     const ambassadorId = number(input, "ambassadorId");
     const ambassador = await ambassadorIdentity(ambassadorId);
     if (!canAccessAmbassador(access, ambassadorId, ambassador.cityId)) throw new Error("Embaixador fora do seu acesso.");
+    if (text(input, "status") === "Ativo") {
+      const prior = (await db.prepare("SELECT terms_accepted_at FROM ambassadors WHERE id=?").bind(ambassadorId).all()).results[0];
+      const activity = (await db.prepare("SELECT EXISTS(SELECT 1 FROM ambassador_updates WHERE ambassador_id=? UNION ALL SELECT 1 FROM tasks WHERE ambassador_id=? AND status='Concluída') AS present").bind(ambassadorId,ambassadorId).all()).results[0];
+      if (!prior?.terms_accepted_at || text(input,"onboardingStatus") !== "Concluído" || number(input,"trainingProgress") < 100 || !activity?.present) throw new Error("Ativação exige treinamento concluído, aceite pessoal e atividade registrada.");
+    }
     await db.prepare(`
       UPDATE ambassadors SET level = ?, status = ?, onboarding_status = ?, training_progress = ?,
         whatsapp_authorized_at = CASE WHEN ? THEN COALESCE(whatsapp_authorized_at, ?) ELSE NULL END,
@@ -250,7 +274,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       const duplicate = await db.prepare(`
         SELECT id FROM leads WHERE status <> 'Cancelado' AND (${duplicateConditions.join(" OR ")}) LIMIT 1
       `).bind(...duplicateValues).all();
-      if (duplicate.results[0]) throw new Error(`Este contato já existe como lead #${asNumber(duplicate.results[0].id)}.`);
+      if (duplicate.results[0]) throw new Error("Este contato já está cadastrado. Solicite ao responsável a revisão do atendimento.");
     }
     const channel = access.role === "Embaixador" ? "Embaixador" : text(input, "channel");
     const leadStatus = access.role === "Embaixador" ? "Lead informado" : text(input, "status");
@@ -259,20 +283,22 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       : access.role === "Embaixador"
         ? ""
       : text(input, "assignedToEmail").toLowerCase();
-    const result = await db.prepare(`
+    const person = await resolvePerson(input, access, cityId, "leads");
+    const insert = db.prepare(`
       INSERT INTO leads
-        (city_id, ambassador_id, partner_id, event_id, content_id, name, email, whatsapp,
+        (person_id, city_id, ambassador_id, partner_id, event_id, content_id, name, email, whatsapp,
          normalized_email, normalized_whatsapp, status, channel, source_label, campaign,
          utm_source, utm_medium, utm_campaign, consent_at, consent_source, consent_purpose,
          assigned_to_email, updated_at, created_by, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      cityId, ambassadorId, nullableId(input, "partnerId"), nullableId(input, "eventId"), nullableId(input, "contentId"),
+      person.id, cityId, ambassadorId, nullableId(input, "partnerId"), nullableId(input, "eventId"), nullableId(input, "contentId"),
       text(input, "name"), text(input, "email"), text(input, "whatsapp"), normalizedEmail, normalizedWhatsapp,
       leadStatus, channel, text(input, "sourceLabel"), text(input, "campaign"), text(input, "utmSource"),
       text(input, "utmMedium"), text(input, "utmCampaign"), timestamp, text(input, "consentSource"),
       text(input, "consentPurpose"), assignedToEmail, timestamp, access.email, timestamp,
-    ).run();
+    );
+    const result = (await db.batch([person.statement, insert]))[1];
     const entityId = asNumber(result.meta.last_row_id);
     if (ambassadorId !== null) await refreshAmbassadorActivation(ambassadorId, timestamp);
     await audit(db, access.email, action, "lead", entityId, `Lead autorizado registrado pelo canal ${channel}.`);
@@ -396,8 +422,8 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
   }
 
   if (action === "create_content") {
-    const cityId = access.role === "Líder" ? access.cityId : nullableId(input, "cityId");
-    if (access.role === "Líder" && cityId === null) throw new Error("O perfil de líder precisa estar vinculado a uma cidade.");
+    const cityId = ["Líder", "Coordenação"].includes(access.role) ? access.cityId : nullableId(input, "cityId");
+    if (["Líder", "Coordenação"].includes(access.role) && cityId === null) throw new Error("O perfil de líder precisa estar vinculado a uma cidade.");
     if (cityId !== null) {
       await cityExists(cityId);
       ensureCityPermission(access, cityId);
@@ -416,9 +442,9 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
   }
 
   if (action === "create_task") {
-    let cityId = access.role === "Líder" ? access.cityId : nullableId(input, "cityId");
+    let cityId = ["Líder", "Coordenação"].includes(access.role) ? access.cityId : nullableId(input, "cityId");
     const ambassadorId = nullableId(input, "ambassadorId");
-    if (access.role === "Líder" && cityId === null) throw new Error("O perfil de líder precisa estar vinculado a uma cidade.");
+    if (["Líder", "Coordenação"].includes(access.role) && cityId === null) throw new Error("O perfil de líder precisa estar vinculado a uma cidade.");
     if (ambassadorId !== null) {
       const ambassador = await ambassadorIdentity(ambassadorId);
       cityId ??= ambassador.cityId;
@@ -449,6 +475,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     const cityId = asNullableNumber(row.city_id);
     const ambassadorId = asNullableNumber(row.ambassador_id);
     if (access.role === "Embaixador" && ambassadorId !== access.ambassadorId) throw new Error("Tarefa fora do seu acesso.");
+    if (access.role !== "Administrador" && cityId === null) throw new Error("Tarefa global fora do seu acesso.");
     if (access.role !== "Embaixador" && cityId !== null) ensureCityPermission(access, cityId);
     await db.prepare("UPDATE tasks SET status = 'Concluída', completed_at = ?, updated_by = ? WHERE id = ?")
       .bind(timestamp, access.email, taskId).run();
