@@ -5,7 +5,7 @@ const OWNER_EMAIL = "teamfrascaroli@gmail.com";
 
 async function ensureInitialCities(createdBy: string) {
   const db = database();
-  const count = await db.prepare("SELECT COUNT(*) AS total FROM cities").all();
+  const count = await db.prepare("SELECT COUNT(*) AS total FROM cities WHERE organization_id=1").all();
   if (asNumber(count.results[0]?.total) > 0) return;
   const insert = `
     INSERT INTO cities
@@ -24,6 +24,7 @@ export async function ensureSystemData(currentEmail: string, displayName: string
   const db = database();
   const timestamp = brazilTimestamp();
   await db.batch([
+    db.prepare("INSERT OR IGNORE INTO organizations(id,name,owner_email,active,created_at) VALUES(1,'Elite Frascaroli Academy',?,1,?)").bind(OWNER_EMAIL,timestamp),
     db.prepare(`
       INSERT OR IGNORE INTO settings
         (id, owner_email, referral_base_url, attribution_model, updated_by, updated_at)
@@ -36,23 +37,24 @@ export async function ensureSystemData(currentEmail: string, displayName: string
     `).bind(OWNER_EMAIL, OWNER_EMAIL, timestamp),
   ]);
   if (currentEmail.toLowerCase() === OWNER_EMAIL) {
-    await db.prepare("UPDATE app_users SET name = ? WHERE email = ? AND (name = '' OR name IS NULL)")
+    await db.prepare("UPDATE app_users SET name = ? WHERE organization_id=1 AND email = ? AND (name = '' OR name IS NULL)")
       .bind(displayName || "Felipe Frascaroli", OWNER_EMAIL).run();
   }
   await ensureInitialCities(OWNER_EMAIL);
 }
 
-export async function getUserAccess(email: string, displayName: string): Promise<AccessView | null> {
+export async function getUserAccess(email: string, displayName: string, organizationId?: number): Promise<AccessView | null> {
   await ensureSystemData(email, displayName);
   const db = database();
   const result = await db.prepare(`
-    SELECT id, email, name, role, city_id, ambassador_id, active
-    FROM app_users WHERE lower(email) = lower(?) LIMIT 1
-  `).bind(email).all();
+    SELECT u.id,u.email,u.name,u.role,u.city_id,u.ambassador_id,u.active,u.organization_id,o.name AS organization_name
+    FROM app_users u JOIN organizations o ON o.id=u.organization_id AND o.active=1 WHERE lower(u.email)=lower(?) AND u.active=1 AND (? IS NULL OR u.organization_id=?) ORDER BY u.organization_id LIMIT 1
+  `).bind(email,organizationId??null,organizationId??null).all();
   const row = result.results[0];
   if (!row || !Boolean(row.active)) return null;
   const role = String(row.role) as UserRole;
   return {
+    organizationId:asNumber(row.organization_id),organizationName:String(row.organization_name),isPlatformOwner:email.toLowerCase()===OWNER_EMAIL && asNumber(row.organization_id)===1 && role==="Administrador",
     id: asNumber(row.id),
     email: String(row.email),
     name: String(row.name || displayName || email),
@@ -67,13 +69,13 @@ export async function getUserAccess(email: string, displayName: string): Promise
   };
 }
 
-export async function getSettings(): Promise<SettingsView> {
+export async function getSettings(organizationId=1): Promise<SettingsView> {
   const result = await database().prepare(`
     SELECT owner_email, referral_base_url, attribution_model, min_active_ambassadors,
       min_confirmed_payments, min_active_partners, min_data_periods, inactivity_days,
       organic_goal_percent, updated_by, updated_at
-    FROM settings WHERE id = 1
-  `).all();
+    FROM settings WHERE organization_id = ?
+  `).bind(organizationId).all();
   const row = result.results[0] ?? {};
   return {
     ownerEmail: String(row.owner_email ?? OWNER_EMAIL),

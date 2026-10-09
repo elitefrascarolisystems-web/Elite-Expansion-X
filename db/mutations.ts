@@ -3,6 +3,8 @@ import type { ActionName } from "@/lib/expansion-permissions";
 import { canAccessAmbassador, canAccessCity, canAccessLead, canPerform } from "@/lib/expansion-permissions";
 import { audit, asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runtime";
 
+export class ActionError extends Error {}
+
 type Input = Record<string, unknown>;
 
 function text(input: Input, key: string) {
@@ -29,14 +31,14 @@ function normalizeWhatsapp(value: string) {
 
 async function cityExists(cityId: number) {
   const result = await database().prepare("SELECT id FROM cities WHERE id = ? LIMIT 1").bind(cityId).all();
-  if (!result.results[0]) throw new Error("Cidade não encontrada.");
+  if (!result.results[0]) throw new ActionError("Cidade não encontrada.");
 }
 
 async function ambassadorIdentity(ambassadorId: number) {
   const result = await database().prepare("SELECT id, city_id FROM ambassadors WHERE id = ? LIMIT 1")
     .bind(ambassadorId).all();
   const row = result.results[0];
-  if (!row) throw new Error("Embaixador não encontrado.");
+  if (!row) throw new ActionError("Embaixador não encontrado.");
   return { id: asNumber(row.id), cityId: asNumber(row.city_id) };
 }
 
@@ -71,7 +73,7 @@ async function leadIdentity(leadId: number) {
     FROM leads WHERE id = ? LIMIT 1
   `).bind(leadId).all();
   const row = result.results[0];
-  if (!row) throw new Error("Lead não encontrado.");
+  if (!row) throw new ActionError("Lead não encontrado.");
   return {
     id: asNumber(row.id),
     cityId: asNumber(row.city_id),
@@ -86,37 +88,37 @@ async function assertOptionalReferenceCity(table: "ambassadors" | "partners" | "
   if (id === null) return;
   const result = await database().prepare(`SELECT city_id FROM ${table} WHERE id = ? LIMIT 1`).bind(id).all();
   const row = result.results[0];
-  if (!row || asNumber(row.city_id) !== cityId) throw new Error("A origem selecionada não pertence a esta cidade.");
+  if (!row || asNumber(row.city_id) !== cityId) throw new ActionError("A origem selecionada não pertence a esta cidade.");
 }
 
-async function assertOptionalContentCity(id: number | null, cityId: number) {
+async function assertOptionalContentCity(id: number | null, cityId: number, organizationId:number) {
   if (id === null) return;
-  const result = await database().prepare("SELECT city_id FROM contents WHERE id = ? LIMIT 1").bind(id).all();
+  const result = await database().prepare("SELECT city_id FROM contents WHERE id = ? AND organization_id=? LIMIT 1").bind(id,organizationId).all();
   const row = result.results[0];
-  if (!row) throw new Error("Conteúdo não encontrado.");
+  if (!row) throw new ActionError("Conteúdo não encontrado.");
   const contentCityId = asNullableNumber(row.city_id);
   if (contentCityId !== null && contentCityId !== cityId) {
-    throw new Error("O conteúdo selecionado não pertence a esta cidade.");
+    throw new ActionError("O conteúdo selecionado não pertence a esta cidade.");
   }
 }
 
 function ensurePermission(access: AccessView, action: ActionName) {
-  if (!canPerform(access, action)) throw new Error("Seu perfil não possui permissão para esta ação.");
+  if (!canPerform(access, action)) throw new ActionError("Seu perfil não possui permissão para esta ação.");
 }
 
 function ensureCityPermission(access: AccessView, cityId: number) {
-  if (!canAccessCity(access, cityId)) throw new Error("Seu perfil não possui acesso a esta cidade.");
+  if (!canAccessCity(access, cityId)) throw new ActionError("Seu perfil não possui acesso a esta cidade.");
 }
 
 async function resolvePerson(input: Input, access: AccessView, cityId: number, table: "leads" | "ambassadors") {
   const id = typeof input.personId === "string" ? input.personId : crypto.randomUUID();
   const db = database();
   if (input.personId) {
-    if (!["Administrador", "Coordenação", "Líder"].includes(access.role)) throw new Error("Seu perfil não possui permissão para vincular pessoas existentes.");
+    if (!["Administrador", "Coordenação", "Líder"].includes(access.role)) throw new ActionError("Seu perfil não possui permissão para vincular pessoas existentes.");
     const p = (await db.prepare("SELECT name, city_id FROM territory_people WHERE id=?").bind(id).all()).results[0];
-    if (!p || Number(p.city_id) !== cityId) throw new Error("Pessoa fora do seu acesso.");
+    if (!p || Number(p.city_id) !== cityId) throw new ActionError("Pessoa fora do seu acesso.");
     const duplicate = (await db.prepare(`SELECT id FROM ${table} WHERE person_id=?`).bind(id).all()).results[0];
-    if (duplicate) throw new Error("Esta pessoa já possui este cadastro. Abra a ficha existente.");
+    if (duplicate) throw new ActionError("Esta pessoa já possui este cadastro. Abra a ficha existente.");
     input.name = String(p.name);
   }
   const now = brazilTimestamp();
@@ -128,21 +130,28 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
   ensurePermission(access, action);
   const db = database();
   const timestamp = brazilTimestamp();
+  if(!Number.isInteger(access.organizationId)||access.organizationId<1)throw new ActionError("Organização fora do seu acesso.");
+  // Resolve all supplied record identifiers before any write. IDs are not authorization.
+  const candidateCities:number[]=[];
+  if(input.cityId!=null)candidateCities.push(Number(input.cityId));
+  for(const [field,table] of [['ambassadorId','ambassadors'],['leadId','leads']] as const){if(input[field]!=null){const row=(await db.prepare(`SELECT city_id FROM ${table} WHERE id=?`).bind(Number(input[field])).all()).results[0];if(!row)throw new ActionError("Registro fora do seu acesso.");candidateCities.push(Number(row.city_id));}}
+  if(access.role==='Embaixador'&&access.ambassadorId!=null){const row=(await db.prepare('SELECT city_id FROM ambassadors WHERE id=?').bind(access.ambassadorId).all()).results[0];if(!row)throw new ActionError("Registro fora do seu acesso.");candidateCities.push(Number(row.city_id));}
+  for(const cityId of candidateCities){const row=(await db.prepare('SELECT id FROM cities WHERE id=? AND organization_id=?').bind(cityId,access.organizationId).all()).results[0];if(!row)throw new ActionError("Registro fora do seu acesso.");}
 
   if (action === "create_city") {
     const result = await db.prepare(`
       INSERT INTO cities
-        (name, state, phase, leader_name, target_cac_cents, ambassador_goal, sales_goal,
+        (organization_id, name, state, phase, leader_name, target_cac_cents, ambassador_goal, sales_goal,
          status, budget_cents, tracking_mode, notes, updated_at, created_by, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      text(input, "name"), text(input, "state"), text(input, "phase"), text(input, "leaderName"),
+      access.organizationId,text(input, "name"), text(input, "state"), text(input, "phase"), text(input, "leaderName"),
       number(input, "targetCacCents"), number(input, "ambassadorGoal"), number(input, "salesGoal"),
       text(input, "status"), number(input, "budgetCents"), text(input, "trackingMode"), text(input, "notes"),
       timestamp, access.email, timestamp,
     ).run();
     const entityId = asNumber(result.meta.last_row_id);
-    await audit(db, access.email, action, "city", entityId, `Cidade ${text(input, "name")} criada.`);
+    await audit(db, access.organizationId, access.email, action, "city", entityId, `Cidade ${text(input, "name")} criada.`);
     return;
   }
 
@@ -159,7 +168,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       number(input, "ambassadorGoal"), number(input, "salesGoal"), text(input, "status"),
       number(input, "budgetCents"), text(input, "trackingMode"), text(input, "notes"), timestamp, cityId,
     ).run();
-    await audit(db, access.email, action, "city", cityId, "Configuração da cidade atualizada.");
+    await audit(db, access.organizationId, access.email, action, "city", cityId, "Configuração da cidade atualizada.");
     return;
   }
 
@@ -167,7 +176,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     const cityId = number(input, "cityId");
     await cityExists(cityId);
     ensureCityPermission(access, cityId);
-    if (text(input, "status") === "Ativo") throw new Error("Cadastre o embaixador e conclua treinamento, aceite e atividade antes de ativar.");
+    if (text(input, "status") === "Ativo") throw new ActionError("Cadastre o embaixador e conclua treinamento, aceite e atividade antes de ativar.");
     const person = await resolvePerson(input, access, cityId, "ambassadors");
     const insert = db.prepare(`
       INSERT INTO ambassadors
@@ -181,18 +190,18 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     );
     const result = (await db.batch([person.statement, insert]))[1];
     const entityId = asNumber(result.meta.last_row_id);
-    await audit(db, access.email, action, "ambassador", entityId, `Embaixador ${text(input, "name")} cadastrado.`);
+    await audit(db, access.organizationId, access.email, action, "ambassador", entityId, `Embaixador ${text(input, "name")} cadastrado.`);
     return;
   }
 
   if (action === "update_ambassador") {
     const ambassadorId = number(input, "ambassadorId");
     const ambassador = await ambassadorIdentity(ambassadorId);
-    if (!canAccessAmbassador(access, ambassadorId, ambassador.cityId)) throw new Error("Embaixador fora do seu acesso.");
+    if (!canAccessAmbassador(access, ambassadorId, ambassador.cityId)) throw new ActionError("Embaixador fora do seu acesso.");
     if (text(input, "status") === "Ativo") {
       const prior = (await db.prepare("SELECT terms_accepted_at FROM ambassadors WHERE id=?").bind(ambassadorId).all()).results[0];
       const activity = (await db.prepare("SELECT EXISTS(SELECT 1 FROM ambassador_updates WHERE ambassador_id=? UNION ALL SELECT 1 FROM tasks WHERE ambassador_id=? AND status='Concluída') AS present").bind(ambassadorId,ambassadorId).all()).results[0];
-      if (!prior?.terms_accepted_at || text(input,"onboardingStatus") !== "Concluído" || number(input,"trainingProgress") < 100 || !activity?.present) throw new Error("Ativação exige treinamento concluído, aceite pessoal e atividade registrada.");
+      if (!prior?.terms_accepted_at || text(input,"onboardingStatus") !== "Concluído" || number(input,"trainingProgress") < 100 || !activity?.present) throw new ActionError("Ativação exige treinamento concluído, aceite pessoal e atividade registrada.");
     }
     await db.prepare(`
       UPDATE ambassadors SET level = ?, status = ?, onboarding_status = ?, training_progress = ?,
@@ -203,7 +212,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       number(input, "trainingProgress"), input.whatsappAuthorized, timestamp,
       text(input, "pauseReason"), timestamp, ambassadorId,
     ).run();
-    await audit(db, access.email, action, "ambassador", ambassadorId, "Situação do embaixador atualizada.");
+    await audit(db, access.organizationId, access.email, action, "ambassador", ambassadorId, "Situação do embaixador atualizada.");
     return;
   }
 
@@ -213,7 +222,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     ensureCityPermission(access, cityId);
     const city = await db.prepare("SELECT tracking_mode FROM cities WHERE id = ?").bind(cityId).all();
     if (String(city.results[0]?.tracking_mode) === "Detalhado") {
-      throw new Error("Esta cidade usa acompanhamento detalhado. Registre leads, pagamentos e custos em seus módulos.");
+      throw new ActionError("Esta cidade usa acompanhamento detalhado. Registre leads, pagamentos e custos em seus módulos.");
     }
     const insert = db.prepare(`
       INSERT INTO city_updates
@@ -230,7 +239,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     const update = db.prepare("UPDATE cities SET phase = ?, status = ?, updated_at = ? WHERE id = ?")
       .bind(text(input, "phase"), text(input, "status"), timestamp, cityId);
     const results = await db.batch([insert, update]);
-    await audit(db, access.email, action, "city_update", asNumber(results[0].meta.last_row_id), "Resultado consolidado registrado.");
+    await audit(db, access.organizationId, access.email, action, "city_update", asNumber(results[0].meta.last_row_id), "Resultado consolidado registrado.");
     return;
   }
 
@@ -239,7 +248,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       ? access.ambassadorId
       : number(input, "ambassadorId");
     const ambassador = await ambassadorIdentity(ambassadorId);
-    if (!canAccessAmbassador(access, ambassadorId, ambassador.cityId)) throw new Error("Embaixador fora do seu acesso.");
+    if (!canAccessAmbassador(access, ambassadorId, ambassador.cityId)) throw new ActionError("Embaixador fora do seu acesso.");
     const result = await db.prepare(`
       INSERT INTO ambassador_updates
         (ambassador_id, period, leads, sales, actions, contents, events, cost_cents, note, created_by, created_at)
@@ -251,7 +260,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     ).run();
     await db.prepare("UPDATE ambassadors SET updated_at = ? WHERE id = ?").bind(timestamp, ambassadorId).run();
     await refreshAmbassadorActivation(ambassadorId, timestamp);
-    await audit(db, access.email, action, "ambassador_update", asNumber(result.meta.last_row_id), "Atividade do embaixador registrada.");
+    await audit(db, access.organizationId, access.email, action, "ambassador_update", asNumber(result.meta.last_row_id), "Atividade do embaixador registrada.");
     return;
   }
 
@@ -263,7 +272,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     await assertOptionalReferenceCity("ambassadors", ambassadorId, cityId);
     await assertOptionalReferenceCity("partners", nullableId(input, "partnerId"), cityId);
     await assertOptionalReferenceCity("events", nullableId(input, "eventId"), cityId);
-    await assertOptionalContentCity(nullableId(input, "contentId"), cityId);
+    await assertOptionalContentCity(nullableId(input, "contentId"), cityId,access.organizationId);
     const normalizedEmail = normalizeEmail(text(input, "email"));
     const normalizedWhatsapp = normalizeWhatsapp(text(input, "whatsapp"));
     const duplicateConditions: string[] = [];
@@ -272,9 +281,9 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     if (normalizedWhatsapp) { duplicateConditions.push("normalized_whatsapp = ?"); duplicateValues.push(normalizedWhatsapp); }
     if (duplicateConditions.length) {
       const duplicate = await db.prepare(`
-        SELECT id FROM leads WHERE status <> 'Cancelado' AND (${duplicateConditions.join(" OR ")}) LIMIT 1
-      `).bind(...duplicateValues).all();
-      if (duplicate.results[0]) throw new Error("Este contato já está cadastrado. Solicite ao responsável a revisão do atendimento.");
+        SELECT id FROM leads WHERE city_id IN (SELECT id FROM cities WHERE organization_id=?) AND status <> 'Cancelado' AND (${duplicateConditions.join(" OR ")}) LIMIT 1
+      `).bind(access.organizationId,...duplicateValues).all();
+      if (duplicate.results[0]) throw new ActionError("Este contato já está cadastrado. Solicite ao responsável a revisão do atendimento.");
     }
     const channel = access.role === "Embaixador" ? "Embaixador" : text(input, "channel");
     const leadStatus = access.role === "Embaixador" ? "Lead informado" : text(input, "status");
@@ -301,14 +310,14 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     const result = (await db.batch([person.statement, insert]))[1];
     const entityId = asNumber(result.meta.last_row_id);
     if (ambassadorId !== null) await refreshAmbassadorActivation(ambassadorId, timestamp);
-    await audit(db, access.email, action, "lead", entityId, `Lead autorizado registrado pelo canal ${channel}.`);
+    await audit(db, access.organizationId, access.email, action, "lead", entityId, `Lead autorizado registrado pelo canal ${channel}.`);
     return;
   }
 
   if (action === "update_lead") {
     const leadId = number(input, "leadId");
     const lead = await leadIdentity(leadId);
-    if (!canAccessLead(access, lead)) throw new Error("Lead fora do seu acesso.");
+    if (!canAccessLead(access, lead)) throw new ActionError("Lead fora do seu acesso.");
     const consentRevoked = Boolean(input.consentRevoked) || Boolean(lead.consentRevokedAt);
     const revocationNow = Boolean(input.consentRevoked) && !lead.consentRevokedAt;
     const status = consentRevoked ? "Cancelado" : text(input, "status");
@@ -321,15 +330,15 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       status, text(input, "assignedToEmail").toLowerCase(), revocationNow, timestamp,
       revocationNow, text(input, "consentRevocationReason"), timestamp, leadId,
     ).run();
-    await audit(db, access.email, action, "lead", leadId, revocationNow ? "Autorização revogada e contato cancelado." : `Etapa alterada para ${status}.`);
+    await audit(db, access.organizationId, access.email, action, "lead", leadId, revocationNow ? "Autorização revogada e contato cancelado." : `Etapa alterada para ${status}.`);
     return;
   }
 
   if (action === "record_sale") {
     const leadId = number(input, "leadId");
     const lead = await leadIdentity(leadId);
-    if (!canAccessLead(access, lead)) throw new Error("Lead fora do seu acesso.");
-    if (lead.status === "Cancelado" || lead.consentRevokedAt) throw new Error("Não é permitido registrar venda para um contato cancelado ou com autorização revogada.");
+    if (!canAccessLead(access, lead)) throw new ActionError("Lead fora do seu acesso.");
+    if (lead.status === "Cancelado" || lead.consentRevokedAt) throw new ActionError("Não é permitido registrar venda para um contato cancelado ou com autorização revogada.");
     const existing = await db.prepare("SELECT id FROM sales WHERE lead_id = ? LIMIT 1").bind(leadId).all();
     const status = text(input, "status");
     const paidAt = status === "Pagamento confirmado" ? timestamp : null;
@@ -352,7 +361,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     }
     await db.prepare("UPDATE leads SET status = 'Oportunidade', updated_at = ? WHERE id = ?")
       .bind(timestamp, leadId).run();
-    await audit(db, access.email, action, "sale", entityId, `Venda atualizada para ${status}.`);
+    await audit(db, access.organizationId, access.email, action, "sale", entityId, `Venda atualizada para ${status}.`);
     return;
   }
 
@@ -372,7 +381,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       text(input, "category"), text(input, "channel"), text(input, "period"), number(input, "amountCents"),
       text(input, "note"), access.email, timestamp,
     ).run();
-    await audit(db, access.email, action, "cost", asNumber(result.meta.last_row_id), `Custo de ${text(input, "category")} registrado.`);
+    await audit(db, access.organizationId, access.email, action, "cost", asNumber(result.meta.last_row_id), `Custo de ${text(input, "category")} registrado.`);
     return;
   }
 
@@ -388,7 +397,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       cityId, text(input, "name"), text(input, "type"), text(input, "contactName"), text(input, "whatsapp"),
       text(input, "status"), text(input, "nextAction"), access.email, timestamp,
     ).run();
-    await audit(db, access.email, action, "partner", asNumber(result.meta.last_row_id), `Parceiro ${text(input, "name")} cadastrado.`);
+    await audit(db, access.organizationId, access.email, action, "partner", asNumber(result.meta.last_row_id), `Parceiro ${text(input, "name")} cadastrado.`);
     return;
   }
 
@@ -417,13 +426,13 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
         number(input, "costCents"), `Custo do evento ${text(input, "name")}.`, access.email, timestamp,
       ).run();
     }
-    await audit(db, access.email, action, "event", entityId, `Evento ${text(input, "name")} cadastrado.`);
+    await audit(db, access.organizationId, access.email, action, "event", entityId, `Evento ${text(input, "name")} cadastrado.`);
     return;
   }
 
   if (action === "create_content") {
     const cityId = ["Líder", "Coordenação"].includes(access.role) ? access.cityId : nullableId(input, "cityId");
-    if (["Líder", "Coordenação"].includes(access.role) && cityId === null) throw new Error("O perfil de líder precisa estar vinculado a uma cidade.");
+    if (["Líder", "Coordenação"].includes(access.role) && cityId === null) throw new ActionError("O perfil de líder precisa estar vinculado a uma cidade.");
     if (cityId !== null) {
       await cityExists(cityId);
       ensureCityPermission(access, cityId);
@@ -431,25 +440,25 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     const status = access.role === "Líder" ? "Em revisão" : text(input, "status");
     const result = await db.prepare(`
       INSERT INTO contents
-        (city_id, title, type, channel, version, status, url, instructions, expires_at, created_by, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (organization_id, city_id, title, type, channel, version, status, url, instructions, expires_at, created_by, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      cityId, text(input, "title"), text(input, "type"), text(input, "channel"), text(input, "version"), status,
+      access.organizationId,cityId, text(input, "title"), text(input, "type"), text(input, "channel"), text(input, "version"), status,
       text(input, "url"), text(input, "instructions"), text(input, "expiresAt") || null, access.email, timestamp,
     ).run();
-    await audit(db, access.email, action, "content", asNumber(result.meta.last_row_id), `Conteúdo ${text(input, "title")} criado como ${status}.`);
+    await audit(db, access.organizationId, access.email, action, "content", asNumber(result.meta.last_row_id), `Conteúdo ${text(input, "title")} criado como ${status}.`);
     return;
   }
 
   if (action === "create_task") {
     let cityId = ["Líder", "Coordenação"].includes(access.role) ? access.cityId : nullableId(input, "cityId");
     const ambassadorId = nullableId(input, "ambassadorId");
-    if (["Líder", "Coordenação"].includes(access.role) && cityId === null) throw new Error("O perfil de líder precisa estar vinculado a uma cidade.");
+    if (["Líder", "Coordenação"].includes(access.role) && cityId === null) throw new ActionError("O perfil de líder precisa estar vinculado a uma cidade.");
     if (ambassadorId !== null) {
       const ambassador = await ambassadorIdentity(ambassadorId);
       cityId ??= ambassador.cityId;
-      if (cityId !== null && ambassador.cityId !== cityId) throw new Error("O embaixador não pertence à cidade selecionada.");
-      if (!canAccessAmbassador(access, ambassadorId, ambassador.cityId)) throw new Error("Embaixador fora do seu acesso.");
+      if (cityId !== null && ambassador.cityId !== cityId) throw new ActionError("O embaixador não pertence à cidade selecionada.");
+      if (!canAccessAmbassador(access, ambassadorId, ambassador.cityId)) throw new ActionError("Embaixador fora do seu acesso.");
     }
     if (cityId !== null) {
       await cityExists(cityId);
@@ -457,57 +466,57 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     }
     const result = await db.prepare(`
       INSERT INTO tasks
-        (city_id, ambassador_id, title, category, due_date, status, updated_by, created_by, created_at)
-      VALUES (?, ?, ?, ?, ?, 'Pendente', ?, ?, ?)
+        (organization_id,city_id, ambassador_id, title, category, due_date, status, updated_by, created_by, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'Pendente', ?, ?, ?)
     `).bind(
-      cityId, ambassadorId, text(input, "title"), text(input, "category"), text(input, "dueDate") || null,
+      access.organizationId,cityId, ambassadorId, text(input, "title"), text(input, "category"), text(input, "dueDate") || null,
       access.email, access.email, timestamp,
     ).run();
-    await audit(db, access.email, action, "task", asNumber(result.meta.last_row_id), `Tarefa ${text(input, "title")} criada.`);
+    await audit(db, access.organizationId, access.email, action, "task", asNumber(result.meta.last_row_id), `Tarefa ${text(input, "title")} criada.`);
     return;
   }
 
   if (action === "complete_task") {
     const taskId = number(input, "taskId");
-    const task = await db.prepare("SELECT id, city_id, ambassador_id FROM tasks WHERE id = ? LIMIT 1").bind(taskId).all();
+    const task = await db.prepare("SELECT id, city_id, ambassador_id FROM tasks WHERE id = ? AND organization_id=? LIMIT 1").bind(taskId,access.organizationId).all();
     const row = task.results[0];
-    if (!row) throw new Error("Tarefa não encontrada.");
+    if (!row) throw new ActionError("Tarefa não encontrada.");
     const cityId = asNullableNumber(row.city_id);
     const ambassadorId = asNullableNumber(row.ambassador_id);
-    if (access.role === "Embaixador" && ambassadorId !== access.ambassadorId) throw new Error("Tarefa fora do seu acesso.");
-    if (access.role !== "Administrador" && cityId === null) throw new Error("Tarefa global fora do seu acesso.");
+    if (access.role === "Embaixador" && ambassadorId !== access.ambassadorId) throw new ActionError("Tarefa fora do seu acesso.");
+    if (access.role !== "Administrador" && cityId === null) throw new ActionError("Tarefa global fora do seu acesso.");
     if (access.role !== "Embaixador" && cityId !== null) ensureCityPermission(access, cityId);
     await db.prepare("UPDATE tasks SET status = 'Concluída', completed_at = ?, updated_by = ? WHERE id = ?")
       .bind(timestamp, access.email, taskId).run();
     if (ambassadorId !== null) await refreshAmbassadorActivation(ambassadorId, timestamp);
-    await audit(db, access.email, action, "task", taskId, "Tarefa concluída.");
+    await audit(db, access.organizationId, access.email, action, "task", taskId, "Tarefa concluída.");
     return;
   }
 
   if (action === "complete_training") {
     const ambassadorId = number(input, "ambassadorId");
-    if (access.role === "Embaixador" && ambassadorId !== access.ambassadorId) throw new Error("Embaixador fora do seu acesso.");
+    if (access.role === "Embaixador" && ambassadorId !== access.ambassadorId) throw new ActionError("Embaixador fora do seu acesso.");
     const ambassador = await ambassadorIdentity(ambassadorId);
-    if (!canAccessAmbassador(access, ambassadorId, ambassador.cityId)) throw new Error("Embaixador fora do seu acesso.");
+    if (!canAccessAmbassador(access, ambassadorId, ambassador.cityId)) throw new ActionError("Embaixador fora do seu acesso.");
     await db.prepare(`
       UPDATE ambassadors SET training_progress = 100, onboarding_status = 'Concluído',
         status = CASE WHEN status IN ('Convidado', 'Em análise', 'Em treinamento', 'Candidato') THEN 'Aprovado' ELSE status END,
         updated_at = ? WHERE id = ?
     `).bind(timestamp, ambassadorId).run();
     await refreshAmbassadorActivation(ambassadorId, timestamp);
-    await audit(db, access.email, action, "ambassador", ambassadorId, "Treinamento concluído.");
+    await audit(db, access.organizationId, access.email, action, "ambassador", ambassadorId, "Treinamento concluído.");
     return;
   }
 
   if (action === "accept_terms") {
     const ambassadorId = number(input, "ambassadorId");
     if (access.role !== "Embaixador" || ambassadorId !== access.ambassadorId) {
-      throw new Error("O aceite das regras deve ser feito pelo próprio embaixador.");
+      throw new ActionError("O aceite das regras deve ser feito pelo próprio embaixador.");
     }
     await db.prepare("UPDATE ambassadors SET terms_accepted_at = ?, updated_at = ? WHERE id = ?")
       .bind(timestamp, timestamp, ambassadorId).run();
     await refreshAmbassadorActivation(ambassadorId, timestamp);
-    await audit(db, access.email, action, "ambassador", ambassadorId, "Regras aceitas pelo embaixador.");
+    await audit(db, access.organizationId, access.email, action, "ambassador", ambassadorId, "Regras aceitas pelo embaixador.");
     return;
   }
 
@@ -515,13 +524,13 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     await db.prepare(`
       UPDATE settings SET referral_base_url = ?, attribution_model = ?, min_active_ambassadors = ?,
         min_confirmed_payments = ?, min_active_partners = ?, min_data_periods = ?, inactivity_days = ?,
-        organic_goal_percent = ?, updated_by = ?, updated_at = ? WHERE id = 1
+        organic_goal_percent = ?, updated_by = ?, updated_at = ? WHERE organization_id = ?
     `).bind(
       text(input, "referralBaseUrl"), text(input, "attributionModel"), number(input, "minActiveAmbassadors"),
       number(input, "minConfirmedPayments"), number(input, "minActivePartners"), number(input, "minDataPeriods"),
-      number(input, "inactivityDays"), number(input, "organicGoalPercent"), access.email, timestamp,
+      number(input, "inactivityDays"), number(input, "organicGoalPercent"), access.email, timestamp,access.organizationId,
     ).run();
-    await audit(db, access.email, action, "settings", 1, "Critérios de decisão atualizados.");
+    await audit(db, access.organizationId, access.email, action, "settings", 1, "Critérios de decisão atualizados.");
     return;
   }
 
@@ -531,10 +540,10 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     if (cityId !== null) await cityExists(cityId);
     if (ambassadorId !== null) {
       const ambassador = await ambassadorIdentity(ambassadorId);
-      if (cityId !== ambassador.cityId) throw new Error("O embaixador não pertence à cidade selecionada.");
+      if (cityId !== ambassador.cityId) throw new ActionError("O embaixador não pertence à cidade selecionada.");
     }
     const email = text(input, "email").toLowerCase();
-    const existing = await db.prepare("SELECT id FROM app_users WHERE lower(email) = lower(?) LIMIT 1").bind(email).all();
+    const existing = await db.prepare("SELECT id FROM app_users WHERE lower(email) = lower(?) AND organization_id=? LIMIT 1").bind(email,access.organizationId).all();
     let entityId: number;
     if (existing.results[0]) {
       entityId = asNumber(existing.results[0].id);
@@ -543,14 +552,14 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       `).bind(text(input, "name"), text(input, "role"), cityId, ambassadorId, entityId).run();
     } else {
       const result = await db.prepare(`
-        INSERT INTO app_users (email, name, role, city_id, ambassador_id, active, created_by, created_at)
-        VALUES (?, ?, ?, ?, ?, 1, ?, ?)
-      `).bind(email, text(input, "name"), text(input, "role"), cityId, ambassadorId, access.email, timestamp).run();
+        INSERT INTO app_users (organization_id,email, name, role, city_id, ambassador_id, active, created_by, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
+      `).bind(access.organizationId,email, text(input, "name"), text(input, "role"), cityId, ambassadorId, access.email, timestamp).run();
       entityId = asNumber(result.meta.last_row_id);
     }
-    await audit(db, access.email, action, "app_user", entityId, `Perfil interno preparado para ${email}; nenhum convite foi enviado.`);
+    await audit(db, access.organizationId, access.email, action, "app_user", entityId, `Perfil interno preparado para ${email}; nenhum convite foi enviado.`);
     return;
   }
 
-  throw new Error("Ação não implementada.");
+  throw new ActionError("Ação não implementada.");
 }

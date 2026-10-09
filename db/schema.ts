@@ -1,9 +1,17 @@
 import { sql } from "drizzle-orm";
 import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+export const organizations = sqliteTable('organizations', {
+  requestId:text('request_id').unique(),
+  id: integer('id').primaryKey({autoIncrement:true}), name:text('name').notNull(),
+  ownerEmail:text('owner_email').notNull(), active:integer('active').notNull().default(1),
+  createdAt:text('created_at').notNull(),
+});
+
 export const cities = sqliteTable("cities", {
+  organizationId: integer("organization_id").notNull().default(1),
   id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull().unique(),
+  name: text("name").notNull(),
   state: text("state").notNull().default("MG"),
   phase: text("phase").notNull().default("Preparação"),
   leaderName: text("leader_name").notNull().default(""),
@@ -17,7 +25,7 @@ export const cities = sqliteTable("cities", {
   updatedAt: text("updated_at").notNull().default(""),
   createdBy: text("created_by").notNull().default(""),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-});
+}, t => [uniqueIndex("cities_name_unique").on(t.organizationId,t.name,t.state)]);
 
 export const ambassadors = sqliteTable("ambassadors", {
   personId: text("person_id"),
@@ -46,6 +54,7 @@ export const ambassadors = sqliteTable("ambassadors", {
 ]);
 
 export const appUsers = sqliteTable("app_users", {
+  organizationId: integer("organization_id").notNull().default(1),
   id: integer("id").primaryKey({ autoIncrement: true }),
   email: text("email").notNull(),
   name: text("name").notNull().default(""),
@@ -56,11 +65,12 @@ export const appUsers = sqliteTable("app_users", {
   createdBy: text("created_by").notNull().default(""),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
-  uniqueIndex("app_users_email_unique").on(table.email),
+  uniqueIndex("app_users_email_unique").on(table.organizationId,table.email),
   index("app_users_city_idx").on(table.cityId),
 ]);
 
 export const settings = sqliteTable("settings", {
+  organizationId: integer("organization_id").notNull().default(1),
   id: integer("id").primaryKey(),
   ownerEmail: text("owner_email").notNull().default("teamfrascaroli@gmail.com"),
   referralBaseUrl: text("referral_base_url").notNull().default(""),
@@ -144,6 +154,7 @@ export const events = sqliteTable("events", {
 }, (table) => [index("events_city_date_idx").on(table.cityId, table.eventDate)]);
 
 export const contents = sqliteTable("contents", {
+  organizationId: integer("organization_id").notNull().default(1),
   id: integer("id").primaryKey({ autoIncrement: true }),
   cityId: integer("city_id").references(() => cities.id, { onDelete: "set null" }),
   title: text("title").notNull(),
@@ -228,6 +239,7 @@ export const costs = sqliteTable("costs", {
 }, (table) => [index("costs_city_period_idx").on(table.cityId, table.period)]);
 
 export const tasks = sqliteTable("tasks", {
+  organizationId: integer("organization_id").notNull().default(1),
   id: integer("id").primaryKey({ autoIncrement: true }),
   cityId: integer("city_id").references(() => cities.id, { onDelete: "cascade" }),
   ambassadorId: integer("ambassador_id").references(() => ambassadors.id, { onDelete: "cascade" }),
@@ -242,6 +254,7 @@ export const tasks = sqliteTable("tasks", {
 }, (table) => [index("tasks_ambassador_idx").on(table.ambassadorId)]);
 
 export const auditLogs = sqliteTable("audit_logs", {
+  organizationId: integer("organization_id").notNull().default(1),
   id: integer("id").primaryKey({ autoIncrement: true }),
   actorEmail: text("actor_email").notNull(),
   action: text("action").notNull(),

@@ -29,6 +29,7 @@ export function brazilTimestamp(date = new Date()) {
 
 export async function audit(
   db: ReturnType<typeof database>,
+  organizationId: number,
   actorEmail: string,
   action: string,
   entityType: string,
@@ -36,7 +37,7 @@ export async function audit(
   summary: string,
 ) {
   await db.prepare(`
-    INSERT INTO audit_logs (actor_email, action, entity_type, entity_id, summary, created_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).bind(actorEmail, action, entityType, entityId, summary, brazilTimestamp()).run();
+    INSERT INTO audit_logs (organization_id,actor_email, action, entity_type, entity_id, summary, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).bind(organizationId,actorEmail, action, entityType, entityId, summary, brazilTimestamp()).run();
 }

@@ -10,7 +10,7 @@ const dbRows = async (sql:string, args:(string|number|null)[] = []) => (await da
 const n = (v:unknown) => v === null || v === undefined ? null : Number(v);
 const str = (v:unknown) => String(v ?? '');
 function management(a:AccessView) { return a.active && ['Administrador','Coordenação','Líder'].includes(a.role); }
-function scope(a:AccessView, alias = 'r') {
+function localScope(a:AccessView, alias = 'r') {
   if (!a.active) return {sql:'1=0',values:[] as (string|number)[]};
   if (a.role === 'Administrador') return {sql:'1=1',values:[] as (string|number)[]};
   if (['Coordenação','Líder'].includes(a.role) && a.cityId !== null) return {sql:`${alias}.city_id = ?`,values:[a.cityId]};
@@ -18,6 +18,7 @@ function scope(a:AccessView, alias = 'r') {
   if (a.role === 'Comercial') return {sql:`${alias}.kind = 'person' AND ${alias}.lead_id IN (SELECT id FROM leads WHERE lower(assigned_to_email)=lower(?) AND consent_revoked_at IS NULL)`,values:[a.email]};
   return {sql:'1=0',values:[]};
 }
+function scope(a:AccessView,alias='r') {const local=localScope(a,alias);return {sql:`(${local.sql}) AND ${alias}.city_id IN (SELECT id FROM cities WHERE organization_id=?)`,values:[...local.values,a.organizationId]};}
 const recordsSql = `WITH records AS (
  SELECT 'city:'||id AS entity_key, CAST(id AS TEXT) AS id, 'city' AS kind, id AS city_id, name, status,
  leader_name AS responsible, updated_at, '' AS next_action, '' AS due_date,
@@ -90,14 +91,14 @@ export async function getTerritory(a:AccessView, params:URLSearchParams):Promise
 }
 async function allowedCity(a:AccessView,cityId:number) {
   if(!management(a)||!canAccessCity(a,cityId)) throw new TerritoryError('Registro fora do seu acesso.',403);
-  if(!(await dbRows('SELECT id FROM cities WHERE id=?',[cityId]))[0]) throw new TerritoryError('Cidade não encontrada.',404);
+  if(!(await dbRows('SELECT id FROM cities WHERE id=? AND organization_id=?',[cityId,a.organizationId]))[0]) throw new TerritoryError('Cidade não encontrada.',404);
 }
 async function entity(a:AccessView,key:string) {
   const s=scope(a);const rows=await dbRows(recordsSql+`SELECT r.* FROM records r WHERE r.entity_key=? AND ${s.sql}`,[key,...s.values]);
   if(!rows[0]) throw new TerritoryError('Registro fora do seu acesso.',403);return rows[0];
 }
 function auditStatement(a:AccessView,action:string,key:string) {
-  return database().prepare('INSERT INTO audit_logs(actor_email,action,entity_type,summary,created_at) VALUES(?,?,?,?,?)').bind(a.email,action,'territory',`Registro territorial ${key}.`,brazilTimestamp());
+  return database().prepare('INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,summary,created_at) VALUES(?,?,?,?,?,?)').bind(a.organizationId,a.email,action,'territory',`Registro territorial ${key}.`,brazilTimestamp());
 }
 export async function mutateTerritory(a:AccessView,action:string,input:unknown) {
   if(!management(a)) throw new TerritoryError('Seu perfil não pode alterar o território.',403);

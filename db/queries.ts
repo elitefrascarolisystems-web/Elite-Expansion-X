@@ -21,11 +21,16 @@ import { asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runt
 
 type Scope = { where: string; values: Array<string | number> };
 
-function cityScope(access: AccessView, column = "city_id"): Scope {
+function legacyCityScope(access: AccessView, column = "city_id"): Scope {
   if (access.role === "Administrador") return { where: "1 = 1", values: [] };
   if (access.cityId !== null) return { where: `${column} = ?`, values: [access.cityId] };
   if (access.role === "Comercial") return { where: "1 = 1", values: [] };
   return { where: "1 = 0", values: [] };
+}
+
+function cityScope(access:AccessView,column="city_id"):Scope {
+ const local=legacyCityScope(access,column);
+ return {where:`(${local.where}) AND ${column} IN (SELECT id FROM cities WHERE organization_id=?)`,values:[...local.values,access.organizationId]};
 }
 
 function leadScope(access: AccessView, alias = "l"): Scope {
@@ -49,7 +54,8 @@ function nullableText(value: unknown) {
 export async function getDashboardData(access: AccessView): Promise<DashboardData> {
   const scope = cityScope(access, "c.id");
   const tableScope = cityScope(access);
-  const leadsScope = leadScope(access, "l");
+  const leadLocal = leadScope(access, "l");
+  const leadsScope={where:`(${leadLocal.where}) AND l.city_id IN (SELECT id FROM cities WHERE organization_id=?)`,values:[...leadLocal.values,access.organizationId]};
   const ambassadorWhere = access.role === "Embaixador" && access.ambassadorId !== null
     ? { where: "a.id = ?", values: [access.ambassadorId] }
     : access.role === "Comercial"
@@ -93,7 +99,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     userRows,
     auditRows,
   ] = await Promise.all([
-    getSettings(),
+    getSettings(access.organizationId),
     rows(`
       SELECT c.id, c.name, c.state, c.phase, c.leader_name, c.target_cac_cents,
         c.ambassador_goal, c.sales_goal, c.status, c.budget_cents, c.tracking_mode,
@@ -106,9 +112,9 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
         a.level, a.status, a.onboarding_status, a.training_progress, a.terms_accepted_at,
         a.pause_reason, a.updated_at, a.created_at
       FROM ambassadors a JOIN cities c ON c.id = a.city_id
-      WHERE ${ambassadorWhere.where}
+      WHERE c.organization_id=? AND (${ambassadorWhere.where})
       ORDER BY CASE a.status WHEN 'Ativo' THEN 1 WHEN 'Em treinamento' THEN 2 ELSE 3 END, a.name
-    `, ambassadorWhere.values),
+    `, [access.organizationId,...ambassadorWhere.values]),
     rows(`
       SELECT id, city_id, period, reach, leads, organic_leads, sales, revenue_cents,
         cost_cents, media_cost_cents, refunds, satisfaction, partners, events, note, created_at
@@ -120,9 +126,9 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
       FROM ambassador_updates u
       JOIN ambassadors a ON a.id = u.ambassador_id
       JOIN cities c ON c.id = a.city_id
-      WHERE ${ambassadorUpdateWhere.where}
+      WHERE c.organization_id=? AND (${ambassadorUpdateWhere.where})
       ORDER BY u.period DESC, u.id DESC LIMIT 1000
-    `, ambassadorUpdateWhere.values),
+    `, [access.organizationId,...ambassadorUpdateWhere.values]),
     rows(`
       SELECT l.id, l.city_id, c.name AS city_name, l.ambassador_id,
         COALESCE(a.name, '') AS ambassador_name, l.partner_id, l.event_id, l.content_id,
@@ -145,8 +151,8 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     rows(`
       SELECT id, city_id, ambassador_id, partner_id, event_id, category, channel,
         period, amount_cents, note, created_at
-      FROM costs WHERE ${costWhere.where} ORDER BY period DESC, id DESC LIMIT 1000
-    `, costWhere.values),
+      FROM costs WHERE city_id IN (SELECT id FROM cities WHERE organization_id=?) AND (${costWhere.where}) ORDER BY period DESC, id DESC LIMIT 1000
+    `, [access.organizationId,...costWhere.values]),
     rows(`
       SELECT p.id, p.city_id, c.name AS city_name, p.name, p.type, p.contact_name,
         p.whatsapp, p.status, p.next_action, p.created_at
@@ -164,27 +170,28 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
         x.title, x.type, x.channel, x.version, x.status, x.url, x.instructions,
         x.expires_at, x.created_at
       FROM contents x LEFT JOIN cities c ON c.id = x.city_id
-      WHERE ${contentWhere.where}
+      WHERE x.organization_id=? AND (${contentWhere.where})
       ORDER BY CASE x.status WHEN 'Aprovado' THEN 1 WHEN 'Em revisão' THEN 2 ELSE 3 END, x.id DESC LIMIT 500
-    `, contentWhere.values),
+    `, [access.organizationId,...contentWhere.values]),
     rows(`
       SELECT t.id, t.city_id, t.ambassador_id, COALESCE(a.name, 'Equipe da cidade') AS ambassador_name,
         t.title, t.category, t.due_date, t.status, t.completed_at, t.created_at
       FROM tasks t LEFT JOIN ambassadors a ON a.id = t.ambassador_id
-      WHERE ${taskWhere.where} ORDER BY CASE t.status WHEN 'Pendente' THEN 1 ELSE 2 END, t.due_date, t.id DESC LIMIT 500
-    `, taskWhere.values),
+      WHERE t.organization_id=? AND (${access.role === "Administrador" ? "t.city_id IS NULL OR " : ""}${taskWhere.where}) ORDER BY CASE t.status WHEN 'Pendente' THEN 1 ELSE 2 END, t.due_date, t.id DESC LIMIT 500
+    `, [access.organizationId,...taskWhere.values]),
     access.role === "Administrador" ? rows(`
       SELECT u.id, u.email, u.name, u.role, u.city_id, COALESCE(c.name, '') AS city_name,
         u.ambassador_id, COALESCE(a.name, '') AS ambassador_name, u.active, u.created_at
       FROM app_users u
       LEFT JOIN cities c ON c.id = u.city_id
       LEFT JOIN ambassadors a ON a.id = u.ambassador_id
+      WHERE u.organization_id=?
       ORDER BY CASE u.role WHEN 'Administrador' THEN 1 WHEN 'Coordenação' THEN 2 ELSE 3 END, u.name
-    `) : Promise.resolve([]),
+    `, [access.organizationId]) : Promise.resolve([]),
     access.role === "Administrador" ? rows(`
       SELECT id, actor_email, action, entity_type, entity_id, summary, created_at
-      FROM audit_logs ORDER BY id DESC LIMIT 100
-    `) : Promise.resolve([]),
+      FROM audit_logs WHERE organization_id=? ORDER BY id DESC LIMIT 100
+    `, [access.organizationId]) : Promise.resolve([]),
   ]);
 
   const cities: CityRecord[] = cityRows.map((row) => ({
