@@ -205,3 +205,66 @@ test('dashboard fails safely on malformed organization and storage outage',async
  globalThis.__eliteTestD1={prepare(){throw new Error('D1_ERROR SELECT secret_table private@example.invalid');}};
  const r=await api.POST(new Request('https://test.invalid/api/dashboard',{method:'POST',headers:{origin:'https://test.invalid'},body:JSON.stringify({action:'create_city',data:{}})}));assert.equal(r.status,503);const body=await r.json();assert.ok(body.error);assert.ok(!body.data);assert.ok(!JSON.stringify(body).includes('secret_table'));assert.ok(!JSON.stringify(body).includes('private@example.invalid'));
 });
+
+test('commercial lifecycle: business, opportunity, history, goals, payment and privacy',async()=>{
+ const m=await modules();const {saveCommercial,getCommercial}=await vite.ssrLoadModule('/db/commercial.ts');
+ const business={id:crypto.randomUUID(),cityId:1,name:'Empresa teste',segment:'Salão',source:'Cadastro manual autorizado',ownerEmail:m.access.email,status:'Identificada',publicBusiness:true};
+ await saveCommercial(m.access,'business',business);await saveCommercial(m.access,'business',business);
+ assert.equal(sqlite.prepare('SELECT count(*) n FROM businesses').get().n,1);assert.equal((await m.getTerritory(m.access,new URLSearchParams('category=business'))).total,1);
+ await assert.rejects(saveCommercial(m.access,'business',{...business,id:crypto.randomUUID()}),/UNIQUE/);
+ const p=await m.mutateTerritory(m.access,'person',person());await m.executeAction('create_lead',m.parseActionPayload('create_lead',leadData(p.id)),m.access);
+ const o={id:crypto.randomUUID(),leadId:1,businessId:business.id,ownerEmail:m.access.email,temperature:'Quente',stage:'Novo',nextAction:'Reunião inicial',dueDate:'2026-10-10'};
+ await saveCommercial(m.access,'opportunity',o);await saveCommercial(m.access,'opportunity',o);
+ await saveCommercial(m.access,'opportunity',{...o,version:1,stage:'Ganho'});assert.equal(sqlite.prepare('SELECT count(*) n FROM sales').get().n,0);
+ await assert.rejects(saveCommercial(m.access,'opportunity',{...o,version:1,stage:'Contato'}),/atualizado/);
+ await saveCommercial(m.access,'activity',{id:crypto.randomUUID(),opportunityId:o.id,kind:'Contato',note:'Conversa realizada em ambiente de teste',day:'2026-10-09'});
+ await saveCommercial(m.access,'goal',{cityId:1,ownerEmail:m.access.email,day:'2026-10-09',cold:3,hot:2,contacts:5});
+ await saveCommercial(m.access,'report',{cityId:1,day:'2026-10-09',blockers:'',nextPlan:'Retomar proposta'});
+ const d=await getCommercial(m.access,new URLSearchParams('day=2026-10-09'));assert.equal(d.businesses.length,1);assert.equal(d.opportunities[0].stage,'Ganho');assert.equal(d.goals[0].hot,2);assert.equal(d.reports.length,1);assert.equal(d.pipelineTotals[0].payments,0);
+ await m.executeAction('update_lead',m.parseActionPayload('update_lead',{leadId:1,status:'Cancelado',consentRevoked:true,consentRevocationReason:'Pedido teste'}),m.access);
+ assert.equal((await getCommercial(m.access,new URLSearchParams('day=2026-10-09'))).opportunities.length,0);
+});
+
+test('commercial API isolates organization, city and seller; denies unauthorized goals',async()=>{
+ const m=await modules();const {saveCommercial,getCommercial}=await vite.ssrLoadModule('/db/commercial.ts');const {createOrganization}=await vite.ssrLoadModule('/db/organizations.ts');const {getUserAccess}=await vite.ssrLoadModule('/db/access.ts');
+ const b={id:crypto.randomUUID(),cityId:1,name:'Empresa restrita',segment:'Imobiliária',source:'Cadastro manual',ownerEmail:m.access.email,status:'Identificada',publicBusiness:true};await saveCommercial(m.access,'business',b);
+ const org=await createOrganization(m.access,{name:'Outra organização',requestId:crypto.randomUUID()}),other=await getUserAccess(m.access.email,'Teste',org);
+ assert.equal((await getCommercial(other,new URLSearchParams())).businesses.length,0);await assert.rejects(saveCommercial(other,'business',{...b,version:1}),/fora do seu acesso/);
+ const leader={...m.access,role:'Líder',cityId:2};assert.equal((await getCommercial(leader,new URLSearchParams())).businesses.length,0);await assert.rejects(saveCommercial(leader,'business',{...b,version:1}),/fora do seu acesso/);
+ const seller={...m.access,role:'Comercial',email:'other@example.invalid'};assert.equal((await getCommercial(seller,new URLSearchParams())).businesses.length,0);await assert.rejects(saveCommercial(seller,'goal',{cityId:1,ownerEmail:seller.email,day:'2026-10-09',cold:1,hot:1,contacts:1}),/Somente/);
+ globalThis.__eliteTestUser=null;const api=await vite.ssrLoadModule('/app/api/commercial/route.ts');assert.equal((await api.GET(new Request('https://test.invalid/api/commercial'))).status,401);assert.equal((await api.POST(new Request('https://test.invalid/api/commercial',{method:'POST',headers:{origin:'https://evil.invalid'},body:'{}'}))).status,403);
+});
+
+test('business import previews duplicates, commits per row and retries without duplication',async()=>{
+ const m=await modules();const {saveCommercial}=await vite.ssrLoadModule('/db/commercial.ts');const b={id:crypto.randomUUID(),cityId:1,name:'Empresa importada',segment:'Nails',source:'Arquivo autorizado',ownerEmail:m.access.email,status:'Identificada',publicBusiness:true};
+ const preview=await saveCommercial(m.access,'import_preview',{rows:[b,{...b,id:crypto.randomUUID()}]});assert.deepEqual(preview.rows.map(r=>r.ok),[true,false]);assert.equal(sqlite.prepare('SELECT count(*) n FROM businesses').get().n,0);
+ await assert.rejects(saveCommercial(m.access,'import_commit',{rows:[b]}),/Confirme/);
+ const imported=await saveCommercial(m.access,'import_commit',{rows:[b],confirmed:true});assert.equal(imported.rows[0].ok,true);await saveCommercial(m.access,'import_commit',{rows:[b],confirmed:true});assert.equal(sqlite.prepare('SELECT count(*) n FROM businesses').get().n,1);
+ await m.executeAction('create_partner',m.parseActionPayload('create_partner',{cityId:1,name:'Parceiro cadastrado',type:'Comércio',status:'Ativo'}),m.access);
+ await saveCommercial(m.access,'link_partner',{id:b.id,partnerId:1});const map=await m.getTerritory(m.access,new URLSearchParams('layers=business|Parceiro'));assert.equal(map.total,1);assert.deepEqual(map.records[0].roles,['Empresa','Parceiro']);
+ const {parseCsv}=await vite.ssrLoadModule('/lib/commercial-import.ts');assert.deepEqual(parseCsv('Nome;Fonte\n"Loja; Centro";Manual'),[['Nome','Fonte'],['Loja; Centro','Manual']]);assert.throws(()=>parseCsv('Nome;Fonte\n"Sem fim;Manual'),/Aspas/);const {csvCell}=await vite.ssrLoadModule('/lib/commercial.ts');assert.equal(csvCell('=HYPERLINK("https://example.invalid")'),'"\'=HYPERLINK(""https://example.invalid"")"');
+});
+
+test('commercial reassignment immediately removes old seller access and failed updates create no history',async()=>{
+ const m=await modules();const {saveCommercial,getCommercial}=await vite.ssrLoadModule('/db/commercial.ts');const p=await m.mutateTerritory(m.access,'person',person());await m.executeAction('create_lead',m.parseActionPayload('create_lead',leadData(p.id)),m.access);
+ const o={id:crypto.randomUUID(),leadId:1,ownerEmail:m.access.email,temperature:'Frio',stage:'Novo',nextAction:'Conversar',dueDate:'2026-10-10'};await saveCommercial(m.access,'opportunity',o);const before=sqlite.prepare('SELECT count(*) n FROM commercial_activities').get().n;
+ await assert.rejects(saveCommercial(m.access,'opportunity',{...o,version:999,stage:'Contato'}),/atualizado/);assert.equal(sqlite.prepare('SELECT count(*) n FROM commercial_activities').get().n,before);
+ sqlite.prepare("UPDATE leads SET assigned_to_email='new@example.invalid' WHERE id=1").run();const seller={...m.access,role:'Comercial'};assert.equal((await getCommercial(seller,new URLSearchParams())).opportunities.length,0);await assert.rejects(saveCommercial(seller,'activity',{id:crypto.randomUUID(),opportunityId:o.id,kind:'Contato',day:'2026-10-09',note:'Sem acesso'}),/fora do seu acesso/);
+});
+
+test('map providers remain disabled without configuration and Street View rejects personal points',async()=>{
+ const m=await modules();const config=await vite.ssrLoadModule('/app/api/map-config/route.ts');const r=await config.GET(new Request('https://test.invalid/api/map-config'));const c=await r.json();assert.equal(c.satellite,null);assert.equal(c.hybrid,null);assert.equal(c.streetView,false);
+ const street=await vite.ssrLoadModule('/app/api/territory/street-view/route.ts');const personal=await street.POST(new Request('https://test.invalid/api/territory/street-view',{method:'POST',headers:{origin:'https://test.invalid'},body:JSON.stringify({key:'person:'+crypto.randomUUID()})}));assert.equal(personal.status,400);
+ const {saveCommercial}=await vite.ssrLoadModule('/db/commercial.ts');const id=crypto.randomUUID();await saveCommercial(m.access,'business',{id,cityId:1,name:'Empresa pública',segment:'Comércio',source:'Cadastro autorizado',ownerEmail:m.access.email,status:'Identificada',publicBusiness:true});
+ await m.mutateTerritory(m.access,'location',{key:'business:'+id,latitude:-19.7628,longitude:-44.3131,region:'Centro',precision:'Local comercial',source:'Validação de teste',validated:true,authorized:true,visibility:'Equipe'});
+ const absent=await street.POST(new Request('https://test.invalid/api/territory/street-view',{method:'POST',headers:{origin:'https://test.invalid'},body:JSON.stringify({key:'business:'+id})}));assert.equal(absent.status,503);assert.match((await absent.json()).error,/pendente/);
+ const {buildingLayer,applyBuildings}=await vite.ssrLoadModule('/lib/building-layer.ts');let added;const layers=[{id:'existing',type:'fill-extrusion'},{id:'labels',type:'symbol'}];const visible={};const fake={getStyle:()=>({layers}),getSource:()=>false,addSource:()=>{},getLayer:id=>id===added?.id?added:null,addLayer:layer=>{added=layer;},setLayoutProperty:(id,property,value)=>{visible[id]=value;}};applyBuildings(fake,true);assert.equal(added.type,'fill-extrusion');assert.deepEqual(buildingLayer.paint['fill-extrusion-height'],['coalesce',['get','render_height'],0]);assert.equal(visible['elite-buildings-3d'],'visible');applyBuildings(fake,false);assert.equal(visible['elite-buildings-3d'],'none');
+});
+
+test('city decisions, draft plans and exports are scoped and audited',async()=>{
+ const m=await modules();const {saveCommercial,getCommercial}=await vite.ssrLoadModule('/db/commercial.ts');
+ const d={id:crypto.randomUUID(),cityId:1,decision:'Sem dados suficientes',reason:'Ainda não há um período completo.',nextAction:'Concluir primeiro período',reviewDate:'2026-10-30'};await saveCommercial(m.access,'decision',d);await saveCommercial(m.access,'decision',d);assert.equal(sqlite.prepare('SELECT count(*) n FROM city_decisions').get().n,1);
+ await saveCommercial(m.access,'plan',{name:'Plano em avaliação',userLimit:10,cityLimit:4});const result=await getCommercial(m.access,new URLSearchParams('city=1'));assert.equal(result.decisions.length,1);assert.equal(result.plan.user_limit,10);
+ await assert.rejects(saveCommercial({...m.access,role:'Comercial'},'decision',d),/gestão/);await assert.rejects(saveCommercial({...m.access,role:'Líder',cityId:1},'plan',{name:'Tentativa',userLimit:1,cityLimit:1}),/administrador/);
+ const api=await vite.ssrLoadModule('/app/api/commercial/route.ts');const csv=await api.GET(new Request('https://test.invalid/api/commercial?format=csv&mode=businesses'));assert.equal(csv.status,200);assert.match(csv.headers.get('content-type'),/text\/csv/);assert.equal(sqlite.prepare("SELECT count(*) n FROM audit_logs WHERE action='export_commercial'").get().n,1);
+});

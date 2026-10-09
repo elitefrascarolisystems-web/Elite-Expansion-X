@@ -1,4 +1,4 @@
-export type TerritoryKind = 'city' | 'person' | 'partner' | 'event' | 'action';
+export type TerritoryKind = 'city' | 'person' | 'partner' | 'business' | 'event' | 'action';
 export type TerritoryLocation = {
   latitude: number | null; longitude: number | null; region: string;
   precision: 'Cidade' | 'Região aproximada' | 'Local comercial';

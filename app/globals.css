@@ -374,3 +374,5 @@ button:disabled { cursor: not-allowed; }
 .elite-brand-logo{display:block;width:80px;height:80px;flex-shrink:0;object-fit:contain;background:#000;border-radius:12px}
 .elite-brand-logo-access{width:176px;height:176px}
 @media(min-width:640px){.elite-brand-logo{width:96px;height:96px}.elite-brand-logo-access{width:192px;height:192px}}
+
+.commercial-input{min-height:44px;width:100%;border:1px solid #484842;border-radius:8px;background:#181816;color:#f4f4f0;padding:10px 12px}.commercial-input:focus-visible{outline:2px solid #d6b94f;outline-offset:2px}.commercial-workspace button{min-height:40px}

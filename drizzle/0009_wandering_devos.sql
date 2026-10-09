@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `business_partner_unique` ON `businesses` (`partner_id`);

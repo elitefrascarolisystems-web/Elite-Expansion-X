@@ -292,3 +292,33 @@ export const territoryRoles = sqliteTable('territory_roles', {
  responsible:text('responsible').notNull().default(''),source:text('source').notNull(),authorizedBy:text('authorized_by').notNull(),
  createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
 },t=>[uniqueIndex('territory_roles_unique').on(t.personId,t.cityId,t.role),index('territory_roles_city_role_idx').on(t.cityId,t.role,t.status)]);
+
+export const businesses = sqliteTable('businesses', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),cityId:integer('city_id').notNull().references(()=>cities.id),
+ name:text('name').notNull(),segment:text('segment').notNull(),district:text('district').notNull().default(''),address:text('address').notNull().default(''),
+ source:text('source').notNull(),externalId:text('external_id'),identityKey:text('identity_key').notNull(),verifiedAt:text('verified_at'),
+ ownerEmail:text('owner_email').notNull(),status:text('status').notNull(),nextAction:text('next_action').notNull().default(''),
+ partnerId:integer('partner_id').references(()=>partners.id),version:integer('version').notNull().default(1),createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
+},t=>[uniqueIndex('business_identity_unique').on(t.organizationId,t.cityId,t.identityKey),uniqueIndex('business_partner_unique').on(t.partnerId),uniqueIndex('business_external_unique').on(t.organizationId,t.source,t.externalId),index('business_org_city').on(t.organizationId,t.cityId)]);
+export const opportunities = sqliteTable('opportunities', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),cityId:integer('city_id').notNull().references(()=>cities.id),
+ leadId:integer('lead_id').notNull().references(()=>leads.id),businessId:text('business_id').references(()=>businesses.id),ownerEmail:text('owner_email').notNull(),
+ temperature:text('temperature').notNull(),stage:text('stage').notNull(),nextAction:text('next_action').notNull(),dueDate:text('due_date').notNull(),lostReason:text('lost_reason').notNull().default(''),
+ version:integer('version').notNull().default(1),createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
+},t=>[uniqueIndex('opportunity_lead_unique').on(t.organizationId,t.leadId),index('opportunity_owner_due').on(t.organizationId,t.ownerEmail,t.dueDate)]);
+export const commercialActivities = sqliteTable('commercial_activities', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),cityId:integer('city_id').notNull().references(()=>cities.id),
+ opportunityId:text('opportunity_id').references(()=>opportunities.id),ownerEmail:text('owner_email').notNull(),kind:text('kind').notNull(),note:text('note').notNull(),activityDate:text('activity_date').notNull(),createdAt:text('created_at').notNull(),
+},t=>[index('commercial_activity_day').on(t.organizationId,t.ownerEmail,t.activityDate)]);
+export const sellerGoals = sqliteTable('seller_goals', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),cityId:integer('city_id').notNull().references(()=>cities.id),ownerEmail:text('owner_email').notNull(),day:text('day').notNull(),cold:integer('cold').notNull(),hot:integer('hot').notNull(),contacts:integer('contacts').notNull(),updatedBy:text('updated_by').notNull(),updatedAt:text('updated_at').notNull(),
+},t=>[uniqueIndex('seller_goals_day').on(t.organizationId,t.cityId,t.ownerEmail,t.day)]);
+export const sellerReports = sqliteTable('seller_reports', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),cityId:integer('city_id').notNull().references(()=>cities.id),ownerEmail:text('owner_email').notNull(),day:text('day').notNull(),blockers:text('blockers').notNull(),nextPlan:text('next_plan').notNull(),updatedAt:text('updated_at').notNull(),
+},t=>[uniqueIndex('seller_report_day').on(t.organizationId,t.cityId,t.ownerEmail,t.day)]);
+export const cityDecisions = sqliteTable('city_decisions', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),cityId:integer('city_id').notNull().references(()=>cities.id),ownerEmail:text('owner_email').notNull(),decision:text('decision').notNull(),reason:text('reason').notNull(),nextAction:text('next_action').notNull(),reviewDate:text('review_date').notNull(),createdAt:text('created_at').notNull(),
+},t=>[index('city_decisions_scope').on(t.organizationId,t.cityId,t.createdAt)]);
+export const organizationPlans = sqliteTable('organization_plans', {
+ organizationId:integer('organization_id').primaryKey(),name:text('name'),userLimit:integer('user_limit'),cityLimit:integer('city_limit'),updatedBy:text('updated_by').notNull(),updatedAt:text('updated_at').notNull(),
+});

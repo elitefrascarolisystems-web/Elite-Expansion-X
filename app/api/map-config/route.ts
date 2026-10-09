@@ -1,0 +1,6 @@
+import {env} from 'cloudflare:workers';
+import {getChatGPTUser} from '@/app/chatgpt-auth';
+import {getUserAccess} from '@/db/access';
+import {organizationIdFromCookie} from '@/lib/organization-selection';
+export const dynamic='force-dynamic';const headers={'Cache-Control':'no-store'};
+export async function GET(r:Request){try{const u=await getChatGPTUser();if(!u)return Response.json({error:'Entre para acessar.'},{status:401,headers});const a=await getUserAccess(u.email,u.displayName,organizationIdFromCookie(r.headers.get('cookie')));if(!a)return Response.json({error:'Acesso não autorizado.'},{status:403,headers});const e=env as unknown as Record<string,string>;const approved=e.MAPS_EXTERNAL_ENABLED==='true',key=e.PUBLIC_MAPTILER_KEY;const style=(id?:string)=>approved&&key&&id&&/^[a-zA-Z0-9_-]+$/.test(id)?`https://api.maptiler.com/maps/${id}/style.json?key=${encodeURIComponent(key)}`:null;return Response.json({satellite:style(e.PUBLIC_MAPTILER_SATELLITE_ID),hybrid:style(e.PUBLIC_MAPTILER_HYBRID_ID),streetView:approved&&!!e.PUBLIC_GOOGLE_EMBED_KEY&&!!e.GOOGLE_STREETVIEW_SERVER_KEY,provider:'MapTiler / Google',externalEnabled:approved},{headers});}catch{return Response.json({error:'Configuração indisponível.'},{status:503,headers});}}

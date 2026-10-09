@@ -2,7 +2,7 @@ import { z } from 'zod';
 const text = z.string().trim().max(200);
 const id = z.number().int().positive();
 export const locationSchema = z.object({
-  key: z.string().regex(/^(city|partner|event):[1-9][0-9]*$|^(person|action):[a-f0-9-]{36}$/),
+  key: z.string().regex(/^(city|partner|event):[1-9][0-9]*$|^(person|action|business):[a-f0-9-]{36}$/),
   latitude: z.number().finite().min(-85).max(85).nullable(),
   longitude: z.number().finite().min(-180).max(180).nullable(),
   region: text.default(''),
@@ -30,4 +30,4 @@ export function displayedCoordinates(kind: string, latitude: number | null, long
   // Personal coordinates are never accepted; reads resolve the city reference server-side.
   return kind === 'person' ? {latitude:null,longitude:null} : {latitude,longitude};
 }
-export const roleSchema=z.object({personId:z.string().uuid(),role:z.enum(['Mentor','Mentorado','Equipe','Parceiro']),status:z.enum(['Convidado','Em análise','Aprovado','Em treinamento','Ativo','Pausado','Inativo','Desligado']),responsible:text,source:text.min(3),authorized:z.literal(true)});
+export const roleSchema=z.object({personId:z.string().uuid(),role:z.enum(['Mentor','Mentorado','Equipe','Parceiro','Vendedor']),status:z.enum(['Convidado','Em análise','Aprovado','Em treinamento','Ativo','Pausado','Inativo','Desligado']),responsible:text,source:text.min(3),authorized:z.literal(true)});
