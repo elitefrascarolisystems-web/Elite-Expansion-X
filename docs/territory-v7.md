@@ -1,3 +1,5 @@
+> Histórico da preparação recuperada. A entrega atual e as regras de localização foram atualizadas em `mapa-entrega-2026-10-09.md`.
+
 # Elite Territory Map — atualização de temas e pessoas
 
 Entrega parcial sobre versão 6. Não representa conclusão de todos os critérios do projeto.

@@ -361,3 +361,11 @@ button:disabled { cursor: not-allowed; }
 .territory-pin-status{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);font-size:10px;line-height:14px;padding:0 3px;border-radius:4px;background:#111;color:#fff;border:1px solid #eee}
 .territory-fallback-notice{position:absolute;z-index:2;bottom:30px;left:12px;background:#fff;color:#222;padding:8px;border-radius:6px;font-size:13px;max-width:70%}
 .territory-dialog[data-theme=light]{background:#fff;color:#17202b}.territory-dialog[data-theme=light] .text-zinc-300,.territory-dialog[data-theme=light] .text-zinc-400{color:#4b5563}.territory-dialog[data-theme=light] .territory-field input,.territory-dialog[data-theme=light] .territory-field select,.territory-dialog[data-theme=light] .territory-select{background:#fff;color:#17202b;border-color:#9ca3af}
+
+.territory-perspective{position:absolute;z-index:2;left:12px;bottom:75px}
+.territory-shell .territory-toolbar,.territory-shell .territory-list,.territory-shell .territory-list button.record,.territory-shell .territory-detail{border-color:var(--territory-border)}
+.territory-shell[data-theme=dark] .territory-canvas-wrap{background:#111827}
+.territory-shell[data-theme=light] .text-amber-200,.territory-dialog[data-theme=light] .text-amber-200{color:#854d0e}
+.territory-dialog[data-theme=light] button[data-slot=button]:not([class*="bg-[#"]){color:#17202b;background:#fff;border-color:#9ca3af}
+.territory-shell input[type=checkbox]{min-height:20px;width:20px;accent-color:var(--territory-accent)}
+.territory-dialog :focus-visible{outline:3px solid #a17b17;outline-offset:3px}

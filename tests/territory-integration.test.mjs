@@ -25,8 +25,8 @@ test('full lifecycle: shared identity, CRM, referral, follow-up and map refresh'
  const child=await m.mutateTerritory(m.access,'person',{...person('Pessoa indicada'),referrerId:id});assert.ok(child.id);
  await m.mutateTerritory(m.access,'activity',{cityId:1,personId:id,name:'Retomar conversa',category:'Follow-up',status:'Programado',responsible:'Responsável teste',dueDate:'2026-10-10'});
  map=await m.getTerritory(m.access,new URLSearchParams('q=Pessoa teste'));assert.equal(map.records[0].nextAction,'Retomar conversa');
- r=await api.POST(request('location',{key:`person:${id}`,latitude:-19.76543,longitude:-44.31678,region:'Centro',precision:'Região aproximada',source:'Conferência no mapa',validated:true,authorized:true,visibility:'Equipe'}));assert.equal(r.status,200);
- map=await m.getTerritory(m.access,new URLSearchParams('q=Pessoa teste'));assert.equal(map.records[0].location.latitude,-19.77);assert.equal(map.records[0].location.longitude,-44.32);
+ r=await api.POST(request('location',{key:`person:${id}`,latitude:-19.76543,longitude:-44.31678,region:'Centro',precision:'Região aproximada',source:'Conferência no mapa',validated:true,authorized:true,visibility:'Equipe'}));assert.equal(r.status,400);
+ map=await m.getTerritory(m.access,new URLSearchParams('q=Pessoa teste'));assert.equal(map.records[0].location.latitude,-19.7628);assert.equal(map.records[0].location.longitude,-44.3131);
  assert.ok(sqlite.prepare('SELECT COUNT(*) AS n FROM audit_logs').get().n>=5);
 });
 test('direct API denies anonymous requests and cross-origin writes',async()=>{
@@ -41,10 +41,10 @@ test('coordinator and leader are scoped in reads, counts and direct writes',asyn
 });
 test('admin-only coordinates never reach leaders, searches or geographic filters',async()=>{
  const m=await modules();const {id}=await m.mutateTerritory(m.access,'person',person());
- await m.mutateTerritory(m.access,'location',{key:`person:${id}`,latitude:-20.123456,longitude:-45.876543,region:'Região restrita',precision:'Região aproximada',source:'Conferido',validated:true,authorized:true,visibility:'Admin'});
- const leader={...m.access,role:'Líder',cityId:1};let map=await m.getTerritory(leader,new URLSearchParams('category=person'));assert.equal(map.records[0].location.precision,'Cidade');assert.ok(!JSON.stringify(map).includes('-45.88'));
- assert.equal((await m.getTerritory(leader,new URLSearchParams('q=Região restrita'))).total,0);
- await assert.rejects(m.mutateTerritory(leader,'location',{key:`person:${id}`,latitude:1,longitude:1,region:'',precision:'Cidade',source:'Teste',validated:true,authorized:true,visibility:'Equipe'}),/restrita/);
+ // Simulate a legacy stored personal point. Neither admins nor leaders may receive it.
+ sqlite.prepare("INSERT INTO territory_locations(entity_key,city_id,latitude,longitude,region,precision,source,validated,visibility,authorized_by,authorized_at,updated_at) VALUES(?,1,-20.123456,-45.876543,'Região restrita','Região aproximada','Conferido',1,'Admin','test','2026-10-09','2026-10-09')").run(`person:${id}`);
+ const leader={...m.access,role:'Líder',cityId:1};for(const access of [leader,m.access]){const map=await m.getTerritory(access,new URLSearchParams('category=person'));assert.equal(map.records[0].location.precision,'Cidade');assert.equal(map.records[0].location.latitude,-19.7628);assert.ok(!JSON.stringify(map).includes('-45.876543'));assert.equal((await m.getTerritory(access,new URLSearchParams('q=Região restrita'))).total,0);}
+ await assert.rejects(m.mutateTerritory(leader,'location',{key:`person:${id}`,latitude:1,longitude:1,region:'',precision:'Cidade',source:'Teste',validated:true,authorized:true,visibility:'Equipe'}),/centro da cidade/);
 });
 test('ambassador receives only own person; commercial receives assigned contacts only',async()=>{
  const m=await modules();const {id}=await m.mutateTerritory(m.access,'person',person());await m.executeAction('create_ambassador',m.parseActionPayload('create_ambassador',ambassadorData(id)),m.access);await m.executeAction('create_lead',m.parseActionPayload('create_lead',{...leadData(id),assignedToEmail:'sales@example.invalid'}),m.access);
@@ -65,7 +65,7 @@ test('duplicate CRM linkage and referral cycles are rejected without extra peopl
  const child=await m.mutateTerritory(m.access,'person',{...person('Segundo'),referrerId:p.id});await assert.rejects(m.mutateTerritory(m.access,'person',{...person(),id:p.id,referrerId:child.id}),/ciclo/);assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM territory_people').get().n,2);
 });
 test('geocoding outage preserves an actionable response, no key exposure',async()=>{
- await modules();const api=await vite.ssrLoadModule('/app/api/territory/geocode/route.ts');const r=await api.POST(new Request('https://test.invalid/api/territory/geocode',{method:'POST',headers:{origin:'https://test.invalid'},body:JSON.stringify({query:'Centro',cityId:1,kind:'person'})}));assert.equal(r.status,503);assert.match((await r.json()).error,/pendente/);
+ await modules();const api=await vite.ssrLoadModule('/app/api/territory/geocode/route.ts');const r=await api.POST(new Request('https://test.invalid/api/territory/geocode',{method:'POST',headers:{origin:'https://test.invalid'},body:JSON.stringify({query:'Centro',cityId:1,kind:'partner'})}));assert.equal(r.status,503);assert.match((await r.json()).error,/pendente/);
 });
 test('new schema preserves original rows and foreign keys; isolated migration rollback',async()=>{
  const m=await modules();assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM cities').get().n,4);assert.deepEqual(sqlite.prepare('PRAGMA foreign_key_check').all(),[]);
@@ -146,4 +146,21 @@ test('v7 referrals and person lookup reach later pages; operational filters and 
  r=await m.getTerritory(m.access,new URLSearchParams('key=person:'+child.id));assert.ok(r.records[0].lastActivity);
  const stmt=sqlite.prepare('INSERT INTO territory_people(id,city_id,name,created_by,created_at,updated_at) VALUES(?,1,?,?,?,?)');for(let i=0;i<220;i++)stmt.run(crypto.randomUUID(),'AAA '+i,m.access.email,'2026-10-08','2026-10-08');
  r=await m.getTerritory(m.access,new URLSearchParams('category=person&q=Mentorado indicado'));assert.equal(r.total,1);assert.equal(r.records[0].id,child.id);
+});
+
+test('municipal reference is shared by people in list and map; legacy personal points cannot leak',async()=>{
+ const m=await modules();await m.mutateTerritory(m.access,'person',person());
+ await m.mutateTerritory(m.access,'location',{key:'city:1',latitude:-19.76,longitude:-44.31,region:'Sede municipal',precision:'Cidade',source:'Referência municipal conferida',validated:true,authorized:true,visibility:'Equipe'});
+ const r=await m.getTerritory(m.access,new URLSearchParams('category=person'));assert.equal(r.records[0].location.latitude,-19.76);assert.equal(r.points[0].latitude,-19.76);assert.equal(r.points[0].count,1);
+ const api=await vite.ssrLoadModule('/app/api/territory/geocode/route.ts');const response=await api.POST(new Request('https://test.invalid/api/territory/geocode',{method:'POST',headers:{origin:'https://test.invalid'},body:JSON.stringify({query:'Dados pessoais',cityId:1,kind:'person'})}));assert.equal(response.status,400);
+});
+test('layer union avoids duplicates, Mentor is not Mentorado, empty layers and role source work',async()=>{
+ const m=await modules();const p=await m.mutateTerritory(m.access,'person',person('Ambas funções'));const q=await m.mutateTerritory(m.access,'person',person('Só mentorado'));
+ for(const [id,role] of [[p.id,'Mentor'],[p.id,'Mentorado'],[q.id,'Mentorado']])await m.mutateTerritory(m.access,'role',{personId:id,role,status:'Ativo',responsible:'Equipe',source:'Formulário autorizado',authorized:true});
+ assert.equal((await m.getTerritory(m.access,new URLSearchParams('category=Mentor'))).people,1);
+ const r=await m.getTerritory(m.access,new URLSearchParams('layers=Mentor|Mentorado&source=Formulário&state=MG'));assert.equal(r.people,2);assert.equal(r.records.length,2);assert.equal(r.points[0].people,2);
+ assert.equal((await m.getTerritory(m.access,new URLSearchParams('layers='))).total,0);
+ assert.equal((await m.getTerritory({...m.access,active:false},new URLSearchParams())).total,0);
+ await assert.rejects(m.getTerritory(m.access,new URLSearchParams('layers=invalid')),/Camada inválida/);
+ assert.equal((await m.getTerritory({...m.access,role:'Líder',cityId:2},new URLSearchParams('layers=Mentor|Mentorado'))).total,0);
 });

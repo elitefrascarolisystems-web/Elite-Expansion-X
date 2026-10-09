@@ -106,7 +106,7 @@ test("renders the territorial map without personal contact data", async () => {
   };
   const html = renderToStaticMarkup(React.createElement(TerritorialMap, { view: { cities: [city], ambassadors: [ambassador] } }));
 
-  assert.match(html, /Elite Territory Map/);
+  assert.match(html, /Mapa territorial/);
   assert.match(html, /Esmeraldas/);
   assert.doesNotMatch(html, /Pessoa teste/); // records load through scoped API, not dashboard contacts
   assert.doesNotMatch(html, /privado@example\.com/);

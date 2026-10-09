@@ -27,9 +27,7 @@ export const activitySchema = z.object({
 });
 export function displayedCoordinates(kind: string, latitude: number | null, longitude: number | null) {
   if (latitude === null || longitude === null) return {latitude:null,longitude:null};
-  // Store only a ~1 km grid for people; raw personal coordinates never persist.
-  return kind === 'person'
-    ? { latitude: Math.round(latitude * 100) / 100, longitude: Math.round(longitude * 100) / 100 }
-    : {latitude,longitude};
+  // Personal coordinates are never accepted; reads resolve the city reference server-side.
+  return kind === 'person' ? {latitude:null,longitude:null} : {latitude,longitude};
 }
 export const roleSchema=z.object({personId:z.string().uuid(),role:z.enum(['Mentor','Mentorado','Equipe','Parceiro']),status:z.enum(['Convidado','Em análise','Aprovado','Em treinamento','Ativo','Pausado','Inativo','Desligado']),responsible:text,source:text.min(3),authorized:z.literal(true)});

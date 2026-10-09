@@ -15,14 +15,14 @@ test("builds a callable Worker with the persistent database binding", async () =
   assert.equal(manifest.r2, null);
 });
 
-test("ships the territorial map and official expansion identity", async () => {
+test("ships the territorial map and existing expansion identity", async () => {
   const clientFiles = await readFile(new URL("../app/expansion-dashboard.tsx", import.meta.url), "utf8");
   const mapSource = await readFile(new URL("../app/territorial-map.tsx", import.meta.url), "utf8");
   const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
 
   assert.match(clientFiles, /Mapa territorial/);
   assert.match(clientFiles, /elite-expansao-logo\.png/);
-  assert.match(mapSource, /Pessoas aparecem por cidade ou região aproximada/);
+  assert.match(mapSource, /Localização representativa da cidade/);
   assert.match(mapSource, /Não informe residência/);
   assert.match(layout, /elite-expansao-icon\.png/);
 });
