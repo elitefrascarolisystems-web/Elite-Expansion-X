@@ -21,8 +21,8 @@ test("ships the territorial map and existing expansion identity", async () => {
   const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
 
   assert.match(clientFiles, /Mapa territorial/);
-  assert.match(clientFiles, /elite-expansao-logo\.png/);
+  assert.match(clientFiles, /elite-academy-official\.png/);
   assert.match(mapSource, /Localização representativa da cidade/);
   assert.match(mapSource, /Não informe residência/);
-  assert.match(layout, /elite-expansao-icon\.png/);
+  assert.match(layout, /elite-academy-official\.png/);
 });

@@ -369,3 +369,8 @@ button:disabled { cursor: not-allowed; }
 .territory-dialog[data-theme=light] button[data-slot=button]:not([class*="bg-[#"]){color:#17202b;background:#fff;border-color:#9ca3af}
 .territory-shell input[type=checkbox]{min-height:20px;width:20px;accent-color:var(--territory-accent)}
 .territory-dialog :focus-visible{outline:3px solid #a17b17;outline-offset:3px}
+
+/* Official supplied artwork: preserve its original safe area, colors and aspect ratio. */
+.elite-brand-logo{display:block;width:80px;height:80px;flex-shrink:0;object-fit:contain;background:#000;border-radius:12px}
+.elite-brand-logo-access{width:176px;height:176px}
+@media(min-width:640px){.elite-brand-logo{width:96px;height:96px}.elite-brand-logo-access{width:192px;height:192px}}
