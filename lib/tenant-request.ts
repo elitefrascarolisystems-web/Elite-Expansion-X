@@ -1,11 +1,40 @@
-/** Every mounted page is pinned by its URL, never a cross-tab cookie. */
-export function tenantFetch(input:string,init:RequestInit={}){
- const org=typeof window==='undefined'?null:new URL(window.location.href).searchParams.get('org');
- const headers=new Headers(init.headers);if(org)headers.set('X-Elite-Organization',org);
- return fetch(input,{...init,headers,cache:'no-store'});
+/**
+ * Contexto de organização por aba.
+ *
+ * Cada página fica fixa na organização da sua própria URL (?org=N). O cliente
+ * repete esse valor no header X-Elite-Organization em toda chamada de API, e o
+ * servidor valida o vínculo do usuário com essa organização a cada requisição.
+ * Não usamos cookie: um cookie é compartilhado entre abas, então trocar de
+ * organização numa aba mudaria silenciosamente o destino das escritas das outras.
+ */
+export const ORGANIZATION_HEADER = 'X-Elite-Organization';
+
+/** Converte o valor recebido em id de organização. Ausente, vazio ou malformado: undefined. */
+export function parseOrganizationId(raw: string | null | undefined): number | undefined {
+ if (!raw || !/^[1-9][0-9]*$/.test(raw)) return undefined;
+ const id = Number(raw);
+ return Number.isSafeInteger(id) ? id : undefined;
 }
-export function organizationFromRequest(request:Request):number{
- const raw=request.headers.get('X-Elite-Organization')??new URL(request.url).searchParams.get('org');
- if(!raw||! /^[1-9][0-9]*$/.test(raw)||!Number.isSafeInteger(Number(raw)))return -1;
- return Number(raw);
+
+/** Organização da aba atual, lida da URL do navegador. */
+export function currentOrganizationId(): number | undefined {
+ if (typeof window === 'undefined') return undefined;
+ return parseOrganizationId(new URL(window.location.href).searchParams.get('org'));
+}
+
+export function tenantFetch(input: string, init: RequestInit = {}) {
+ const org = currentOrganizationId();
+ const headers = new Headers(init.headers);
+ if (org !== undefined) headers.set(ORGANIZATION_HEADER, String(org));
+ return fetch(input, { ...init, headers, cache: 'no-store' });
+}
+
+/**
+ * Organização pedida pela requisição (header, ou ?org= na URL da API).
+ * Sem contexto válido devolve -1, que não corresponde a nenhum vínculo:
+ * o acesso é negado em vez de cair numa organização escolhida por padrão.
+ */
+export function organizationFromRequest(request: Request): number {
+ const raw = request.headers.get(ORGANIZATION_HEADER) ?? new URL(request.url).searchParams.get('org');
+ return parseOrganizationId(raw) ?? -1;
 }

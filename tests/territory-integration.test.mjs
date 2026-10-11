@@ -10,7 +10,8 @@ let sqlite;
 function adapter(db){return {prepare(sql){let args=[];const stmt={bind(...values){args=values.map(v=>typeof v==='boolean'?Number(v):v);return stmt;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {success:true,meta:{last_row_id:Number(r.lastInsertRowid),changes:Number(r.changes)}};}};return stmt;},async batch(statements){db.exec('BEGIN');try{const result=[];for(const s of statements)result.push(await s.run());db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}};}
 beforeEach(()=>{sqlite?.close();sqlite=new DatabaseSync(':memory:');sqlite.exec('PRAGMA foreign_keys=ON');for(const f of readdirSync(root+'drizzle').filter(f=>f.endsWith('.sql')).sort())sqlite.exec(readFileSync(root+'drizzle/'+f,'utf8'));globalThis.__eliteTestD1=adapter(sqlite);globalThis.__eliteTestUser={email:'teamfrascaroli@gmail.com',displayName:'Administrador de teste'};});
 after(async()=>{sqlite.close();await vite.close();delete globalThis.__eliteTestD1;delete globalThis.__eliteTestUser;});
-const request=(action,data)=>new Request('https://test.invalid/api/territory',{method:'POST',headers:{origin:'https://test.invalid','Content-Type':'application/json'},body:JSON.stringify({action,data})});
+const ORG=(id=1)=>({'X-Elite-Organization':String(id)});
+const request=(action,data)=>new Request('https://test.invalid/api/territory',{method:'POST',headers:{origin:'https://test.invalid','Content-Type':'application/json',...ORG()},body:JSON.stringify({action,data})});
 async function modules(){const a=await vite.ssrLoadModule('/db/access.ts');const access=await a.getUserAccess('teamfrascaroli@gmail.com','Teste');return {access,...await vite.ssrLoadModule('/db/territory.ts'),...await vite.ssrLoadModule('/db/mutations.ts'),...await vite.ssrLoadModule('/lib/expansion-validation.ts')};}
 const person=(name='Pessoa teste',cityId=1)=>({cityId,name,authorized:true,leader:false,referrerId:null});
 const leadData=(personId,cityId=1)=>({personId,cityId,name:'Nome informado',email:'contato@example.invalid',whatsapp:'',status:'Lead válido',channel:'Orgânico',consentAccepted:true,consentSource:'Formulário de teste',consentPurpose:'Atendimento de teste'});
@@ -65,7 +66,7 @@ test('duplicate CRM linkage and referral cycles are rejected without extra peopl
  const child=await m.mutateTerritory(m.access,'person',{...person('Segundo'),referrerId:p.id});await assert.rejects(m.mutateTerritory(m.access,'person',{...person(),id:p.id,referrerId:child.id}),/ciclo/);assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM territory_people').get().n,2);
 });
 test('geocoding outage preserves an actionable response, no key exposure',async()=>{
- await modules();const api=await vite.ssrLoadModule('/app/api/territory/geocode/route.ts');const r=await api.POST(new Request('https://test.invalid/api/territory/geocode',{method:'POST',headers:{origin:'https://test.invalid'},body:JSON.stringify({query:'Centro',cityId:1,kind:'partner'})}));assert.equal(r.status,503);assert.match((await r.json()).error,/pendente/);
+ await modules();const api=await vite.ssrLoadModule('/app/api/territory/geocode/route.ts');const r=await api.POST(new Request('https://test.invalid/api/territory/geocode',{method:'POST',headers:{origin:'https://test.invalid',...ORG()},body:JSON.stringify({query:'Centro',cityId:1,kind:'partner'})}));assert.equal(r.status,503);assert.match((await r.json()).error,/pendente/);
 });
 test('new schema preserves original rows and foreign keys; isolated migration rollback',async()=>{
  const m=await modules();assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM cities').get().n,4);assert.deepEqual(sqlite.prepare('PRAGMA foreign_key_check').all(),[]);
@@ -152,7 +153,7 @@ test('municipal reference is shared by people in list and map; legacy personal p
  const m=await modules();await m.mutateTerritory(m.access,'person',person());
  await m.mutateTerritory(m.access,'location',{key:'city:1',latitude:-19.76,longitude:-44.31,region:'Sede municipal',precision:'Cidade',source:'Referência municipal conferida',validated:true,authorized:true,visibility:'Equipe'});
  const r=await m.getTerritory(m.access,new URLSearchParams('category=person'));assert.equal(r.records[0].location.latitude,-19.76);assert.equal(r.points[0].latitude,-19.76);assert.equal(r.points[0].count,1);
- const api=await vite.ssrLoadModule('/app/api/territory/geocode/route.ts');const response=await api.POST(new Request('https://test.invalid/api/territory/geocode',{method:'POST',headers:{origin:'https://test.invalid'},body:JSON.stringify({query:'Dados pessoais',cityId:1,kind:'person'})}));assert.equal(response.status,400);
+ const api=await vite.ssrLoadModule('/app/api/territory/geocode/route.ts');const response=await api.POST(new Request('https://test.invalid/api/territory/geocode',{method:'POST',headers:{origin:'https://test.invalid',...ORG()},body:JSON.stringify({query:'Dados pessoais',cityId:1,kind:'person'})}));assert.equal(response.status,400);
 });
 test('layer union avoids duplicates, Mentor is not Mentorado, empty layers and role source work',async()=>{
  const m=await modules();const p=await m.mutateTerritory(m.access,'person',person('Ambas funções'));const q=await m.mutateTerritory(m.access,'person',person('Só mentorado'));
@@ -186,24 +187,24 @@ test('organizations isolate dashboard, settings, map counts and writes including
  assert.equal((await listOrganizations('sem-acesso@example.invalid')).length,0);assert.equal(await getUserAccess('sem-acesso@example.invalid','Teste',org),null);
 });
 
-test('organization selection validates membership and rejects forged cookies in direct API',async()=>{
+test('organization selection validates membership and rejects forged organization context in direct API',async()=>{
  const m=await modules();const {createOrganization}=await vite.ssrLoadModule('/db/organizations.ts');const org=await createOrganization(m.access,{name:'Organização de teste',requestId:crypto.randomUUID()});
  sqlite.prepare("INSERT INTO app_users(email,name,role,active,organization_id) VALUES('isolado@example.invalid','Teste','Administrador',1,?)").run(org);
  globalThis.__eliteTestUser={email:'isolado@example.invalid',displayName:'Teste'};
  const api=await vite.ssrLoadModule('/app/api/organizations/route.ts');
  const req=(id)=>new Request('https://test.invalid/api/organizations',{method:'POST',headers:{origin:'https://test.invalid','Content-Type':'application/json'},body:JSON.stringify({action:'switch',organizationId:id})});
  assert.equal((await api.POST(req(1))).status,403);
- const allowed=await api.POST(req(org));assert.equal(allowed.status,200);assert.match(allowed.headers.get('set-cookie'),/HttpOnly; SameSite=Strict; Secure/);
- const map=await vite.ssrLoadModule('/app/api/territory/route.ts');assert.equal((await map.GET(new Request('https://test.invalid/api/territory',{headers:{cookie:'elite-org=1'}}))).status,403);
- assert.equal((await map.GET(new Request('https://test.invalid/api/territory',{headers:{cookie:'elite-org='+org}}))).status,200);
- const list=await api.GET(new Request('https://test.invalid/api/organizations',{headers:{cookie:'elite-org='+org}}));const body=await list.json();assert.equal(body.organizations.length,1);assert.equal(body.organizations[0].id,org);
+ const allowed=await api.POST(req(org));assert.equal(allowed.status,200);assert.equal(allowed.headers.get('set-cookie'),null);assert.equal((await allowed.json()).organizationId,org);
+ const map=await vite.ssrLoadModule('/app/api/territory/route.ts');assert.equal((await map.GET(new Request('https://test.invalid/api/territory',{headers:ORG(1)}))).status,403);
+ assert.equal((await map.GET(new Request('https://test.invalid/api/territory',{headers:ORG(org)}))).status,200);
+ const list=await api.GET(new Request('https://test.invalid/api/organizations',{headers:ORG(org)}));const body=await list.json();assert.equal(body.organizations.length,1);assert.equal(body.organizations[0].id,org);
 });
 
 test('dashboard fails safely on malformed organization and storage outage',async()=>{
  await modules();const api=await vite.ssrLoadModule('/app/api/dashboard/route.ts');
- const invalid=await api.GET(new Request('https://test.invalid/api/dashboard',{headers:{cookie:'elite-org=not-a-number'}}));assert.equal(invalid.status,503);assert.ok(!(await invalid.text()).includes('SELECT'));
+ const invalid=await api.GET(new Request('https://test.invalid/api/dashboard',{headers:{'X-Elite-Organization':'not-a-number'}}));assert.equal(invalid.status,403);assert.ok(!(await invalid.text()).includes('SELECT'));
  globalThis.__eliteTestD1={prepare(){throw new Error('D1_ERROR SELECT secret_table private@example.invalid');}};
- const r=await api.POST(new Request('https://test.invalid/api/dashboard',{method:'POST',headers:{origin:'https://test.invalid'},body:JSON.stringify({action:'create_city',data:{}})}));assert.equal(r.status,503);const body=await r.json();assert.ok(body.error);assert.ok(!body.data);assert.ok(!JSON.stringify(body).includes('secret_table'));assert.ok(!JSON.stringify(body).includes('private@example.invalid'));
+ const r=await api.POST(new Request('https://test.invalid/api/dashboard',{method:'POST',headers:{origin:'https://test.invalid',...ORG()},body:JSON.stringify({action:'create_city',data:{}})}));assert.equal(r.status,503);const body=await r.json();assert.ok(body.error);assert.ok(!body.data);assert.ok(!JSON.stringify(body).includes('secret_table'));assert.ok(!JSON.stringify(body).includes('private@example.invalid'));
 });
 
 test('commercial lifecycle: business, opportunity, history, goals, payment and privacy',async()=>{
@@ -253,11 +254,11 @@ test('commercial reassignment immediately removes old seller access and failed u
 });
 
 test('map providers remain disabled without configuration and Street View rejects personal points',async()=>{
- const m=await modules();const config=await vite.ssrLoadModule('/app/api/map-config/route.ts');const r=await config.GET(new Request('https://test.invalid/api/map-config'));const c=await r.json();assert.equal(c.satellite,null);assert.equal(c.hybrid,null);assert.equal(c.streetView,false);
- const street=await vite.ssrLoadModule('/app/api/territory/street-view/route.ts');const personal=await street.POST(new Request('https://test.invalid/api/territory/street-view',{method:'POST',headers:{origin:'https://test.invalid'},body:JSON.stringify({key:'person:'+crypto.randomUUID()})}));assert.equal(personal.status,400);
+ const m=await modules();const config=await vite.ssrLoadModule('/app/api/map-config/route.ts');const r=await config.GET(new Request('https://test.invalid/api/map-config',{headers:ORG()}));const c=await r.json();assert.equal(c.satellite,null);assert.equal(c.hybrid,null);assert.equal(c.streetView,false);
+ const street=await vite.ssrLoadModule('/app/api/territory/street-view/route.ts');const personal=await street.POST(new Request('https://test.invalid/api/territory/street-view',{method:'POST',headers:{origin:'https://test.invalid',...ORG()},body:JSON.stringify({key:'person:'+crypto.randomUUID()})}));assert.equal(personal.status,400);
  const {saveCommercial}=await vite.ssrLoadModule('/db/commercial.ts');const id=crypto.randomUUID();await saveCommercial(m.access,'business',{id,cityId:1,name:'Empresa pública',segment:'Comércio',source:'Cadastro autorizado',ownerEmail:m.access.email,status:'Identificada',publicBusiness:true});
  await m.mutateTerritory(m.access,'location',{key:'business:'+id,latitude:-19.7628,longitude:-44.3131,region:'Centro',precision:'Local comercial',source:'Validação de teste',validated:true,authorized:true,visibility:'Equipe'});
- const absent=await street.POST(new Request('https://test.invalid/api/territory/street-view',{method:'POST',headers:{origin:'https://test.invalid'},body:JSON.stringify({key:'business:'+id})}));assert.equal(absent.status,503);assert.match((await absent.json()).error,/pendente/);
+ const absent=await street.POST(new Request('https://test.invalid/api/territory/street-view',{method:'POST',headers:{origin:'https://test.invalid',...ORG()},body:JSON.stringify({key:'business:'+id})}));assert.equal(absent.status,503);assert.match((await absent.json()).error,/pendente/);
  const {buildingLayer,applyBuildings}=await vite.ssrLoadModule('/lib/building-layer.ts');let added;const layers=[{id:'existing',type:'fill-extrusion'},{id:'labels',type:'symbol'}];const visible={};const fake={getStyle:()=>({layers}),getSource:()=>false,addSource:()=>{},getLayer:id=>id===added?.id?added:null,addLayer:layer=>{added=layer;},setLayoutProperty:(id,property,value)=>{visible[id]=value;}};applyBuildings(fake,true);assert.equal(added.type,'fill-extrusion');assert.deepEqual(buildingLayer.paint['fill-extrusion-height'],['coalesce',['get','render_height'],0]);assert.equal(visible['elite-buildings-3d'],'visible');applyBuildings(fake,false);assert.equal(visible['elite-buildings-3d'],'none');
 });
 
@@ -266,5 +267,22 @@ test('city decisions, draft plans and exports are scoped and audited',async()=>{
  const d={id:crypto.randomUUID(),cityId:1,decision:'Sem dados suficientes',reason:'Ainda não há um período completo.',nextAction:'Concluir primeiro período',reviewDate:'2026-10-30'};await saveCommercial(m.access,'decision',d);await saveCommercial(m.access,'decision',d);assert.equal(sqlite.prepare('SELECT count(*) n FROM city_decisions').get().n,1);
  await saveCommercial(m.access,'plan',{name:'Plano em avaliação',userLimit:10,cityLimit:4});const result=await getCommercial(m.access,new URLSearchParams('city=1'));assert.equal(result.decisions.length,1);assert.equal(result.plan.user_limit,10);
  await assert.rejects(saveCommercial({...m.access,role:'Comercial'},'decision',d),/gestão/);await assert.rejects(saveCommercial({...m.access,role:'Líder',cityId:1},'plan',{name:'Tentativa',userLimit:1,cityLimit:1}),/administrador/);
- const api=await vite.ssrLoadModule('/app/api/commercial/route.ts');const csv=await api.GET(new Request('https://test.invalid/api/commercial?format=csv&mode=businesses'));assert.equal(csv.status,200);assert.match(csv.headers.get('content-type'),/text\/csv/);assert.equal(sqlite.prepare("SELECT count(*) n FROM audit_logs WHERE action='export_commercial'").get().n,1);
+ const api=await vite.ssrLoadModule('/app/api/commercial/route.ts');const csv=await api.GET(new Request('https://test.invalid/api/commercial?format=csv&mode=businesses',{headers:ORG()}));assert.equal(csv.status,200);assert.match(csv.headers.get('content-type'),/text\/csv/);assert.equal(sqlite.prepare("SELECT count(*) n FROM audit_logs WHERE action='export_commercial'").get().n,1);
+});
+
+test('tenant APIs deny requests without organization context and accept the tab URL context',async()=>{
+ await modules();
+ const routes={dashboard:'/app/api/dashboard/route.ts',territory:'/app/api/territory/route.ts',commercial:'/app/api/commercial/route.ts','map-config':'/app/api/map-config/route.ts'};
+ for(const [path,module] of Object.entries(routes)){
+  const api=await vite.ssrLoadModule(module);
+  // Sem header nem ?org=: nenhuma organização é escolhida por padrão.
+  const none=await api.GET(new Request(`https://test.invalid/api/${path}`));assert.equal(none.status,403,`${path} sem contexto`);
+  const body=await none.text();assert.ok(!body.includes('Esmeraldas'),`${path} não pode vazar dados sem contexto`);
+  // Header de uma organização da qual a pessoa participa: liberado.
+  assert.equal((await api.GET(new Request(`https://test.invalid/api/${path}`,{headers:ORG(1)}))).status,200,`${path} com header`);
+  // ?org= na própria URL da API também identifica a aba.
+  assert.equal((await api.GET(new Request(`https://test.invalid/api/${path}?org=1`))).status,200,`${path} com ?org=`);
+  // Organização inexistente ou sem vínculo: negado.
+  assert.equal((await api.GET(new Request(`https://test.invalid/api/${path}`,{headers:ORG(999)}))).status,403,`${path} org sem vínculo`);
+ }
 });
