@@ -126,7 +126,8 @@ test('v7 roles are separate from access, multi-role people remain unique, role s
  const all=await m.getTerritory(m.access,new URLSearchParams('category=person'));assert.equal(all.people,1);assert.equal(all.records.length,1);assert.ok(all.records[0].roles.includes('Mentorado'));assert.equal(all.records[0].roleDetails.length,2);assert.equal(all.records[0].lastActivity,'');
  assert.equal((await m.getTerritory(m.access,new URLSearchParams('category=Mentor&status=Ativo'))).total,0);
  assert.equal((await m.getTerritory(m.access,new URLSearchParams('category=Mentorado&status=Ativo'))).total,1);
- assert.equal(sqlite.prepare('SELECT count(*) AS n FROM app_users').get().n,1);
+ // Papéis operacionais não criam acesso: só existem os logins dos donos da plataforma.
+ assert.equal(sqlite.prepare("SELECT count(*) AS n FROM app_users WHERE email NOT IN ('teamfrascaroli@gmail.com','elitefrascarolisystems@gmail.com')").get().n,0);
  await assert.rejects(m.mutateTerritory({...m.access,role:'Líder',cityId:2},'role',{personId:p.id,role:'Mentor',status:'Ativo',responsible:'',source:'Teste',authorized:true}),/fora do seu acesso/);
 });
 test('v7 all-filter map totals exceed one list page and viewport respects privacy',async()=>{
