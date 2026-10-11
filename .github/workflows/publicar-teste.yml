@@ -1,0 +1,109 @@
+name: Publicar ambiente de teste
+
+# Publica o branch multiempresa num Worker e banco D1 SÓ de teste, separados
+# da produção. Precisa, nas configurações do repositório (Settings → Secrets
+# and variables → Actions):
+#   Secrets:   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+#   Variables: ACCESS_TEAM_DOMAIN, ACCESS_AUD (login; sem eles ninguém entra)
+on:
+  push:
+    branches: [multiempresa]
+  workflow_dispatch:
+
+concurrency:
+  group: publicar-teste
+  cancel-in-progress: false
+
+env:
+  WORKER_NAME: elite-expansion-x-teste
+  D1_DATABASE_NAME: elite-expansion-x-teste
+
+jobs:
+  publicar:
+    name: Banco, migrações e publicação (teste)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Conferir conta Cloudflare
+        id: conta
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::notice title=Publicação pulada::Conta Cloudflare ainda não ligada (faltam CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID)."
+            echo "pronta=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "pronta=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v5
+        if: steps.conta.outputs.pronta == 'true'
+
+      - uses: actions/setup-node@v5
+        if: steps.conta.outputs.pronta == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        if: steps.conta.outputs.pronta == 'true'
+        run: npm ci --no-audit --no-fund
+
+      - name: Banco de teste (cria se não existir)
+        if: steps.conta.outputs.pronta == 'true'
+        id: banco
+        run: |
+          set -euo pipefail
+          find_id() { npx wrangler d1 list --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const db=JSON.parse(s).find(d=>d.name===process.argv[1]);process.stdout.write(db?db.uuid:"")})' "$D1_DATABASE_NAME"; }
+          id="$(find_id)"
+          if [ -z "$id" ]; then
+            npx wrangler d1 create "$D1_DATABASE_NAME"
+            id="$(find_id)"
+          fi
+          [ -n "$id" ] || { echo "::error::Não foi possível criar ou encontrar o banco $D1_DATABASE_NAME."; exit 1; }
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Banco de teste::$D1_DATABASE_NAME pronto."
+
+      - name: Aplicar migrações no banco de teste
+        if: steps.conta.outputs.pronta == 'true'
+        env:
+          D1_DATABASE_ID: ${{ steps.banco.outputs.id }}
+        run: |
+          set -euo pipefail
+          cat > wrangler.migracoes.json <<JSON
+          {"name":"$WORKER_NAME","compatibility_date":"2026-05-15",
+           "d1_databases":[{"binding":"DB","database_name":"$D1_DATABASE_NAME","database_id":"$D1_DATABASE_ID","migrations_dir":"drizzle"}]}
+          JSON
+          npx wrangler d1 migrations apply DB --remote -c wrangler.migracoes.json
+          rm wrangler.migracoes.json
+
+      - name: Compilar para o ambiente de teste
+        if: steps.conta.outputs.pronta == 'true'
+        env:
+          D1_DATABASE_ID: ${{ steps.banco.outputs.id }}
+          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
+          ACCESS_AUD: ${{ vars.ACCESS_AUD }}
+        run: |
+          if [ -z "$ACCESS_TEAM_DOMAIN" ] || [ -z "$ACCESS_AUD" ]; then
+            echo "::warning title=Login ainda não configurado::Sem ACCESS_TEAM_DOMAIN e ACCESS_AUD o sistema publica, mas ninguém consegue entrar."
+          fi
+          npm run build
+
+      - name: Publicar
+        if: steps.conta.outputs.pronta == 'true'
+        id: publicar
+        run: |
+          set -euo pipefail
+          npx wrangler deploy 2>&1 | tee publicar.txt
+          url="$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' publicar.txt | head -1 || true)"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Endereço do ambiente de teste::${url:-veja o painel da Cloudflare}"
+
+      - name: Conferir se responde
+        if: steps.conta.outputs.pronta == 'true' && steps.publicar.outputs.url != ''
+        run: |
+          sleep 5
+          code="$(curl -s -o /dev/null -w '%{http_code}' "${{ steps.publicar.outputs.url }}/")"
+          echo "::notice title=Resposta do ambiente de teste::HTTP $code (302 ou 401 = login do Cloudflare Access ativo; 200 = página de acesso protegido)"
+          case "$code" in 200|302|401|403) ;; *) echo "::error::Resposta inesperada: HTTP $code"; exit 1;; esac
