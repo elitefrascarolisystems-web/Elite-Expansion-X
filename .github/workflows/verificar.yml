@@ -1,0 +1,56 @@
+name: Verificar
+
+# Roda a cada envio e em todo pull request: instala do zero,
+# confere tipos, compila e executa toda a suíte de testes.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: verificar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: TypeScript, build e testes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências (lockfile)
+        run: npm ci --no-audit --no-fund
+
+      - name: Conferir tipos (TypeScript)
+        run: npx tsc --noEmit
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Testes
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test --test-concurrency=1 --test-reporter=spec \
+            tests/expansion-domain.test.mjs \
+            tests/rendered-html.test.mjs \
+            tests/territory-integration.test.mjs \
+            tests/ui-components.test.mjs 2>&1 | tee resultado-testes.txt
+
+      - name: Resumo dos testes
+        if: always()
+        shell: bash
+        run: |
+          [ -f resultado-testes.txt ] || exit 0
+          total=$(grep -oP '^ℹ tests \K[0-9]+' resultado-testes.txt || echo '?')
+          ok=$(grep -oP '^ℹ pass \K[0-9]+' resultado-testes.txt || echo '?')
+          falhas=$(grep -oP '^ℹ fail \K[0-9]+' resultado-testes.txt || echo '?')
+          echo "::notice title=Testes::${ok} de ${total} passaram, ${falhas} falharam"
+          { grep '^✖' resultado-testes.txt || true; } | sort -u | head -20 | while read -r l; do echo "::error title=Falhou::${l}"; done
+          { echo "### Testes: ${ok}/${total} passaram, ${falhas} falharam"; echo; { grep '^✖' resultado-testes.txt || true; } | sort -u | sed 's/^/- /'; } >> "$GITHUB_STEP_SUMMARY"
