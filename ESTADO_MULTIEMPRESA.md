@@ -12,22 +12,31 @@ Branch `multiempresa`, sobre a v9 (`main`). Extraído do ChatGPT Sites em 11/10/
   organização padrão da pessoa.
 - O cookie `elite-org` foi removido (antes, trocar de organização numa aba mudava
   o destino das escritas das outras).
-- Testes: 47/47 no GitHub Actions (os 46 originais adaptados + 1 novo que
-  garante que nenhuma API entrega dados sem contexto).
+- **Assessoria Elite** (decisões do dono da plataforma em 11/10/2026: ver e
+  editar; visível ao cliente; assessores escolhidos por ele; o cliente não
+  desliga). Assessor = registrado em `platform_advisors` E membro ativo da
+  Elite. Entra em organização cliente como Administrador, só com `?org=`
+  explícito. Concessão e retirada só pelo dono da plataforma, registradas em
+  `platform_audit`. O cliente vê a assessoria no painel e as ações dela
+  aparecem marcadas no histórico.
+- Criar organização exige o responsável do cliente, que vira dono e
+  administrador. O dono da plataforma não entra mais como membro.
+- Testes: 48/48 no GitHub Actions.
 
 ## Ainda pendente
 - **Teste real em navegador** do redirecionamento e da troca de organização:
   só foram verificados por testes automatizados e build.
 - `db/tenant-admin.ts` (convites com SHA-256, aceite, membros, transferência,
   perfil) **não tem rota nem tela**.
-- `db/organizations.ts` ainda adiciona o proprietário da plataforma como
-  administrador de toda organização nova. Substituir antes de criar
-  organizações de clientes.
 - `requireFeature` (limites de plano) não está aplicado em todos os caminhos.
 - Revisar: múltiplas cidades por coordenação, concorrência em convites e
   transferência, acesso por identidade estável (hoje é por e-mail) e todas as
   relações cruzadas entre organizações.
-- Migração 0011 (organization_profiles, invites, entitlements, platform_audit)
-  ainda não foi aplicada em nenhum banco real.
+- Migrações 0011 (perfis, convites, limites, platform_audit) e 0012
+  (platform_advisors) ainda não foram aplicadas em nenhum banco real.
+- O responsável do cliente é cadastrado direto pelo e-mail (sem convite com
+  aceite). Quando a tela de convites existir, avaliar migrar para ela.
+- O contrato com o cliente precisa prever o acesso da Assessoria Elite aos
+  dados (LGPD).
 
 Sem cobrança, convites reais ou liberação de audiência nesta etapa.
