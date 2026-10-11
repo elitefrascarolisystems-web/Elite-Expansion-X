@@ -1,0 +1,42 @@
+name: Verificar
+
+# Roda a cada envio e em todo pull request: instala do zero,
+# confere tipos, compila e executa toda a suíte de testes.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: verificar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: TypeScript, build e testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências (lockfile)
+        run: npm ci --no-audit --no-fund
+
+      - name: Conferir tipos (TypeScript)
+        run: npx tsc --noEmit
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Testes
+        run: >
+          node --test --test-concurrency=1
+          tests/expansion-domain.test.mjs
+          tests/rendered-html.test.mjs
+          tests/territory-integration.test.mjs
+          tests/ui-components.test.mjs
