@@ -168,8 +168,8 @@ test('layer union avoids duplicates, Mentor is not Mentorado, empty layers and r
 
 test('organizations isolate dashboard, settings, map counts and writes including globals',async()=>{
  const m=await modules();const {createOrganization,listOrganizations}=await vite.ssrLoadModule('/db/organizations.ts');const {getUserAccess}=await vite.ssrLoadModule('/db/access.ts');const {getDashboardData}=await vite.ssrLoadModule('/db/queries.ts');
- const payload={name:'Empresa isolada de teste',requestId:crypto.randomUUID()};const org=await createOrganization(m.access,payload);assert.equal(await createOrganization(m.access,payload),org);
- const a=await getUserAccess(m.access.email,'Teste',org);assert.equal(a.organizationId,org);assert.equal(a.isPlatformOwner,false);
+ const payload={name:'Empresa isolada de teste',ownerEmail:'cliente@example.invalid',ownerName:'Cliente teste',requestId:crypto.randomUUID()};const org=await createOrganization(m.access,payload);assert.equal(await createOrganization(m.access,payload),org);
+ const a=await getUserAccess(m.access.email,'Teste',org);assert.equal(a.organizationId,org);assert.equal(a.isPlatformOwner,false);assert.equal(a.isAdvisory,true);
  assert.equal((await m.getTerritory(a,new URLSearchParams())).total,0);assert.equal((await getDashboardData(a)).cities.length,0);
  const run=(action,data,access=a)=>m.executeAction(action,m.parseActionPayload(action,data),access);
  await run('create_city',{name:'Esmeraldas',state:'MG',phase:'Piloto',leaderName:'',targetCacCents:0,ambassadorGoal:1,salesGoal:1,status:'Ativa',budgetCents:0,trackingMode:'Detalhado'});
@@ -177,7 +177,7 @@ test('organizations isolate dashboard, settings, map counts and writes including
  const p=await m.mutateTerritory(a,'person',person('Pessoa exclusiva',cityId));
  await run('create_content',{title:'Material exclusivo',type:'Mensagem',channel:'WhatsApp',version:'1',status:'Aprovado',url:'',instructions:'Somente esta empresa'});
  await run('create_task',{title:'Tarefa exclusiva',category:'Missão'});
- const data=await getDashboardData(a);assert.equal(data.cities.length,1);assert.equal(data.people[0].id,p.id);assert.equal(data.contents.length,1);assert.equal(data.tasks.length,1);assert.ok(data.users.every(u=>u.email===m.access.email));
+ const data=await getDashboardData(a);assert.equal(data.cities.length,1);assert.equal(data.people[0].id,p.id);assert.equal(data.contents.length,1);assert.equal(data.tasks.length,1);assert.deepEqual(data.users.map(u=>u.email),['cliente@example.invalid']);
  const original=await getDashboardData(m.access);assert.equal(original.cities.length,4);assert.equal(original.contents.length,0);assert.equal(original.tasks.length,0);assert.equal(original.people.length,0);assert.ok(!JSON.stringify(original).includes('Pessoa exclusiva'));
  assert.equal((await m.getTerritory(m.access,new URLSearchParams('city='+cityId))).total,0);
  await assert.rejects(m.mutateTerritory(m.access,'person',{...person('Ataque',cityId),id:p.id}),/Cidade não encontrada/);
@@ -188,8 +188,7 @@ test('organizations isolate dashboard, settings, map counts and writes including
 });
 
 test('organization selection validates membership and rejects forged organization context in direct API',async()=>{
- const m=await modules();const {createOrganization}=await vite.ssrLoadModule('/db/organizations.ts');const org=await createOrganization(m.access,{name:'Organização de teste',requestId:crypto.randomUUID()});
- sqlite.prepare("INSERT INTO app_users(email,name,role,active,organization_id) VALUES('isolado@example.invalid','Teste','Administrador',1,?)").run(org);
+ const m=await modules();const {createOrganization}=await vite.ssrLoadModule('/db/organizations.ts');const org=await createOrganization(m.access,{name:'Organização de teste',ownerEmail:'isolado@example.invalid',ownerName:'Teste',requestId:crypto.randomUUID()});
  globalThis.__eliteTestUser={email:'isolado@example.invalid',displayName:'Teste'};
  const api=await vite.ssrLoadModule('/app/api/organizations/route.ts');
  const req=(id)=>new Request('https://test.invalid/api/organizations',{method:'POST',headers:{origin:'https://test.invalid','Content-Type':'application/json'},body:JSON.stringify({action:'switch',organizationId:id})});
@@ -229,7 +228,7 @@ test('commercial lifecycle: business, opportunity, history, goals, payment and p
 test('commercial API isolates organization, city and seller; denies unauthorized goals',async()=>{
  const m=await modules();const {saveCommercial,getCommercial}=await vite.ssrLoadModule('/db/commercial.ts');const {createOrganization}=await vite.ssrLoadModule('/db/organizations.ts');const {getUserAccess}=await vite.ssrLoadModule('/db/access.ts');
  const b={id:crypto.randomUUID(),cityId:1,name:'Empresa restrita',segment:'Imobiliária',source:'Cadastro manual',ownerEmail:m.access.email,status:'Identificada',publicBusiness:true};await saveCommercial(m.access,'business',b);
- const org=await createOrganization(m.access,{name:'Outra organização',requestId:crypto.randomUUID()}),other=await getUserAccess(m.access.email,'Teste',org);
+ const org=await createOrganization(m.access,{name:'Outra organização',ownerEmail:'outra@example.invalid',ownerName:'Outra',requestId:crypto.randomUUID()}),other=await getUserAccess(m.access.email,'Teste',org);
  assert.equal((await getCommercial(other,new URLSearchParams())).businesses.length,0);await assert.rejects(saveCommercial(other,'business',{...b,version:1}),/fora do seu acesso/);
  const leader={...m.access,role:'Líder',cityId:2};assert.equal((await getCommercial(leader,new URLSearchParams())).businesses.length,0);await assert.rejects(saveCommercial(leader,'business',{...b,version:1}),/fora do seu acesso/);
  const seller={...m.access,role:'Comercial',email:'other@example.invalid'};assert.equal((await getCommercial(seller,new URLSearchParams())).businesses.length,0);await assert.rejects(saveCommercial(seller,'goal',{cityId:1,ownerEmail:seller.email,day:'2026-10-09',cold:1,hot:1,contacts:1}),/Somente/);
@@ -285,4 +284,52 @@ test('tenant APIs deny requests without organization context and accept the tab 
   // Organização inexistente ou sem vínculo: negado.
   assert.equal((await api.GET(new Request(`https://test.invalid/api/${path}`,{headers:ORG(999)}))).status,403,`${path} org sem vínculo`);
  }
+});
+
+test('Assessoria Elite: chosen Elite members see and edit client organizations, visibly and audited',async()=>{
+ const m=await modules();
+ const {createOrganization,listOrganizations}=await vite.ssrLoadModule('/db/organizations.ts');
+ const {getUserAccess}=await vite.ssrLoadModule('/db/access.ts');const {getDashboardData}=await vite.ssrLoadModule('/db/queries.ts');
+ const orgs=await vite.ssrLoadModule('/app/api/organizations/route.ts'),territory=await vite.ssrLoadModule('/app/api/territory/route.ts');
+ const post=(action,data,org=1)=>new Request('https://test.invalid/api/organizations',{method:'POST',headers:{origin:'https://test.invalid','Content-Type':'application/json',...ORG(org)},body:JSON.stringify({action,data})});
+ const owner=m.access.email;
+ // Criar: o cliente vira dono e administrador; o dono da plataforma NÃO entra como membro.
+ const org=await createOrganization(m.access,{name:'Cliente assessorado',ownerEmail:'Dono@Cliente.invalid',ownerName:'Dono do cliente',requestId:crypto.randomUUID()});
+ assert.equal(sqlite.prepare('SELECT count(*) n FROM app_users WHERE organization_id=? AND lower(email)=?').get(org,owner).n,0);
+ const client=await getUserAccess('dono@cliente.invalid','Dono',org);assert.equal(client.role,'Administrador');assert.equal(client.isOrganizationOwner,true);assert.ok(!client.isAdvisory);
+ // Dono da plataforma: entra pela assessoria, só com a organização pedida explicitamente.
+ const advised=await getUserAccess(owner,'Teste',org);assert.equal(advised.isAdvisory,true);assert.equal(advised.role,'Administrador');assert.equal(advised.canManageGlobal,true);
+ assert.equal((await getUserAccess(owner,'Teste')).organizationId,1,'sem ?org= continua na própria organização');
+ assert.equal((await territory.GET(new Request('https://test.invalid/api/territory',{headers:ORG(org)}))).status,200);
+ assert.ok((await listOrganizations(owner)).some(o=>o.id===org&&o.role==='Assessoria Elite'));
+ assert.ok(!(await listOrganizations('dono@cliente.invalid')).some(o=>o.id===1),'cliente não enxerga a Elite');
+ // Membro do time Elite sem assessoria: sem acesso. Com assessoria concedida: acessa.
+ sqlite.prepare("INSERT INTO app_users(email,name,role,active,organization_id) VALUES('mentor@elite.invalid','Mentor Elite','Comercial',1,1)").run();
+ assert.equal(await getUserAccess('mentor@elite.invalid','Mentor',org),null);
+ let r=await orgs.POST(post('advisor',{email:'Mentor@Elite.invalid',active:true}));assert.equal(r.status,200);assert.ok((await r.json()).advisors.some(a=>a.email==='mentor@elite.invalid'&&a.active));
+ assert.equal((await getUserAccess('mentor@elite.invalid','Mentor',org)).isAdvisory,true);
+ // Só membros da Elite podem ser assessores; o cliente não concede nem se dá assessoria.
+ r=await orgs.POST(post('advisor',{email:'dono@cliente.invalid',active:true}));assert.equal(r.status,400);assert.match((await r.json()).error,/time Elite/);
+ globalThis.__eliteTestUser={email:'dono@cliente.invalid',displayName:'Dono'};
+ assert.equal((await orgs.POST(post('advisor',{email:'dono@cliente.invalid',active:true},org))).status,403);
+ // Visível ao cliente: quem administra vê a assessoria; ações da assessoria aparecem marcadas.
+ const run=(action,data,access)=>m.executeAction(action,m.parseActionPayload(action,data),access);
+ await run('create_city',{name:'Cidade do cliente',state:'MG',phase:'Piloto',leaderName:'',targetCacCents:0,ambassadorGoal:1,salesGoal:1,status:'Ativa',budgetCents:0,trackingMode:'Detalhado'},advised);
+ await run('create_task',{title:'Tarefa do cliente',category:'Missão'},client);
+ const seen=await getDashboardData(client);
+ assert.deepEqual(seen.advisors.map(a=>a.email).sort(),['mentor@elite.invalid',owner].sort());
+ const byAdvisor=seen.auditLogs.filter(l=>l.actorEmail===owner);assert.ok(byAdvisor.length>=2,'criação e cidade');assert.ok(byAdvisor.every(l=>l.advisory===true));
+ assert.ok(seen.auditLogs.filter(l=>l.actorEmail==='dono@cliente.invalid').every(l=>l.advisory===false));
+ // Retirar a assessoria ou sair do time Elite encerra o acesso na hora.
+ globalThis.__eliteTestUser={email:owner,displayName:'Teste'};
+ r=await orgs.POST(post('advisor',{email:'mentor@elite.invalid',active:false}));assert.equal(r.status,200);
+ assert.equal(await getUserAccess('mentor@elite.invalid','Mentor',org),null);
+ await orgs.POST(post('advisor',{email:'mentor@elite.invalid',active:true}));assert.ok(await getUserAccess('mentor@elite.invalid','Mentor',org));
+ sqlite.prepare("UPDATE app_users SET active=0 WHERE organization_id=1 AND email='mentor@elite.invalid'").run();
+ assert.equal(await getUserAccess('mentor@elite.invalid','Mentor',org),null,'fora do time Elite, sem assessoria');
+ // O dono não remove a própria assessoria; tudo fica no registro da plataforma.
+ r=await orgs.POST(post('advisor',{email:owner,active:false}));assert.equal(r.status,400);
+ assert.ok(sqlite.prepare("SELECT count(*) n FROM platform_audit WHERE action IN ('advisor_granted','advisor_revoked')").get().n>=3);
+ // A Elite em si não é acessível por assessoria: só por vínculo próprio.
+ assert.equal(await getUserAccess('dono@cliente.invalid','Dono',1),null);
 });

@@ -335,3 +335,7 @@ export const organizationEntitlements=sqliteTable('organization_entitlements',{
 export const platformAudit=sqliteTable('platform_audit',{
  id:integer('id').primaryKey({autoIncrement:true}),organizationId:integer('organization_id').notNull(),actorEmail:text('actor_email').notNull(),action:text('action').notNull(),reason:text('reason').notNull(),createdAt:text('created_at').notNull(),
 });
+/** Time Elite com acesso de assessoria às organizações clientes (ver e editar, sempre auditado). */
+export const platformAdvisors=sqliteTable('platform_advisors',{
+ id:integer('id').primaryKey({autoIncrement:true}),email:text('email').notNull(),name:text('name').notNull().default(''),active:integer('active').notNull().default(1),grantedBy:text('granted_by').notNull(),grantedAt:text('granted_at').notNull(),revokedBy:text('revoked_by'),revokedAt:text('revoked_at'),
+},(table)=>[uniqueIndex('platform_advisors_email_unique').on(table.email)]);

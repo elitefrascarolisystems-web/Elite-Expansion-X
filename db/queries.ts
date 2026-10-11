@@ -16,7 +16,7 @@ import type {
   UserProfileRecord,
   UserRole,
 } from "@/lib/expansion-types";
-import { getSettings } from "@/db/access";
+import { getSettings, listActiveAdvisors } from "@/db/access";
 import { asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runtime";
 
 type Scope = { where: string; values: Array<string | number> };
@@ -189,7 +189,10 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
       ORDER BY CASE u.role WHEN 'Administrador' THEN 1 WHEN 'Coordenação' THEN 2 ELSE 3 END, u.name
     `, [access.organizationId]) : Promise.resolve([]),
     access.role === "Administrador" ? rows(`
-      SELECT id, actor_email, action, entity_type, entity_id, summary, created_at
+      SELECT id, actor_email, action, entity_type, entity_id, summary, created_at,
+        -- Feito pela Assessoria Elite: autor é (ou foi) assessor e não é membro desta organização.
+        (EXISTS(SELECT 1 FROM platform_advisors adv WHERE lower(adv.email)=lower(audit_logs.actor_email))
+         AND NOT EXISTS(SELECT 1 FROM app_users m WHERE m.organization_id=audit_logs.organization_id AND lower(m.email)=lower(audit_logs.actor_email))) AS advisory
       FROM audit_logs WHERE organization_id=? ORDER BY id DESC LIMIT 100
     `, [access.organizationId]) : Promise.resolve([]),
   ]);
@@ -317,8 +320,11 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
   const auditLogs: AuditRecord[] = auditRows.map((row) => ({
     id: asNumber(row.id), actorEmail: String(row.actor_email), action: String(row.action),
     entityType: String(row.entity_type), entityId: asNullableNumber(row.entity_id),
-    summary: String(row.summary ?? ""), createdAt: String(row.created_at),
+    summary: String(row.summary ?? ""), createdAt: String(row.created_at), advisory: Number(row.advisory) === 1,
   }));
+
+  // Transparência: quem administra a organização vê quem da Assessoria Elite tem acesso.
+  const advisors = access.role === "Administrador" && access.organizationId !== 1 ? await listActiveAdvisors() : [];
 
   const people = ["Administrador", "Coordenação", "Líder"].includes(access.role) ? await rows(`SELECT id, city_id, name FROM territory_people WHERE (${tableScope.where}) AND (leader=1 OR EXISTS(SELECT 1 FROM ambassadors a WHERE a.person_id=territory_people.id) OR NOT EXISTS(SELECT 1 FROM leads l WHERE l.person_id=territory_people.id AND l.consent_revoked_at IS NOT NULL)) ORDER BY name LIMIT 200`, tableScope.values) : [];
   return {
@@ -337,6 +343,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     contents,
     tasks,
     users,
+    advisors,
     auditLogs,
     lastUpdated: brazilTimestamp(),
   };

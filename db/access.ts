@@ -35,6 +35,8 @@ export async function ensureSystemData(currentEmail: string, displayName: string
         (email, name, role, active, created_by, created_at)
       VALUES (?, 'Felipe Frascaroli', 'Administrador', 1, ?, ?)
     `).bind(OWNER_EMAIL, OWNER_EMAIL, timestamp),
+    // O dono da plataforma é sempre assessor; os demais são escolhidos por ele.
+    db.prepare("INSERT OR IGNORE INTO platform_advisors(email,name,active,granted_by,granted_at) VALUES(?,'Felipe Frascaroli',1,?,?)").bind(OWNER_EMAIL, OWNER_EMAIL, timestamp),
   ]);
   if (currentEmail.toLowerCase() === OWNER_EMAIL) {
     await db.prepare("UPDATE app_users SET name = ? WHERE organization_id=1 AND email = ? AND (name = '' OR name IS NULL)")
@@ -51,7 +53,11 @@ export async function getUserAccess(email: string, displayName: string, organiza
     FROM app_users u JOIN organizations o ON o.id=u.organization_id AND o.active=1 WHERE lower(u.email)=lower(?) AND u.active=1 AND (? IS NULL OR u.organization_id=?) ORDER BY u.organization_id LIMIT 1
   `).bind(email,organizationId??null,organizationId??null).all();
   const row = result.results[0];
-  if (!row || !Boolean(row.active)) return null;
+  if (!row || !Boolean(row.active)) {
+    // Sem vínculo próprio: a Assessoria Elite entra só quando a organização é
+    // pedida explicitamente (?org=), nunca como organização padrão.
+    return organizationId !== undefined && organizationId > 0 ? advisoryAccess(email, displayName, organizationId) : null;
+  }
   const role = String(row.role) as UserRole;
   return {
     isOrganizationOwner:String(row.owner_email).toLowerCase()===email.toLowerCase(),organizationId:asNumber(row.organization_id),organizationName:String(row.organization_name),isPlatformOwner:email.toLowerCase()===OWNER_EMAIL && asNumber(row.organization_id)===1 && role==="Administrador",
@@ -66,6 +72,55 @@ export async function getUserAccess(email: string, displayName: string, organiza
     canManageCity: ["Administrador", "Coordenação", "Líder"].includes(role),
     canManagePipeline: ["Administrador", "Coordenação", "Líder", "Comercial"].includes(role),
     canManageContent: ["Administrador", "Coordenação", "Líder"].includes(role),
+  };
+}
+
+/**
+ * Assessor ativo = registrado em platform_advisors E ainda membro ativo da
+ * organização principal (time Elite). Sair do time encerra a assessoria.
+ */
+const ACTIVE_ADVISOR_SQL = `
+  SELECT adv.email, COALESCE(NULLIF(adv.name,''), u.name, adv.email) AS name, u.id AS user_id
+  FROM platform_advisors adv
+  JOIN app_users u ON u.organization_id=1 AND lower(u.email)=lower(adv.email) AND u.active=1
+  JOIN organizations elite ON elite.id=1 AND elite.active=1
+  WHERE adv.active=1`;
+
+export async function isPlatformAdvisor(email: string): Promise<boolean> {
+  const r = await database().prepare(`${ACTIVE_ADVISOR_SQL} AND lower(adv.email)=lower(?) LIMIT 1`).bind(email).all();
+  return r.results.length > 0;
+}
+
+export async function listActiveAdvisors(): Promise<{ email: string; name: string }[]> {
+  const r = await database().prepare(`${ACTIVE_ADVISOR_SQL} ORDER BY name LIMIT 100`).all();
+  return r.results.map((row) => ({ email: String(row.email), name: String(row.name) }));
+}
+
+/** Acesso de assessoria: ver e editar como administrador, sempre identificado como Assessoria Elite. */
+async function advisoryAccess(email: string, displayName: string, organizationId: number): Promise<AccessView | null> {
+  if (organizationId === 1) return null; // A organização principal só por vínculo próprio.
+  const db = database();
+  const advisor = (await db.prepare(`${ACTIVE_ADVISOR_SQL} AND lower(adv.email)=lower(?) LIMIT 1`).bind(email).all()).results[0];
+  if (!advisor) return null;
+  const org = (await db.prepare("SELECT id,name FROM organizations WHERE id=? AND active=1").bind(organizationId).all()).results[0];
+  if (!org) return null;
+  return {
+    isAdvisory: true,
+    isOrganizationOwner: false,
+    isPlatformOwner: false,
+    organizationId: asNumber(org.id),
+    organizationName: String(org.name),
+    id: asNumber(advisor.user_id),
+    email,
+    name: String(advisor.name || displayName || email),
+    role: "Administrador",
+    cityId: null,
+    ambassadorId: null,
+    active: true,
+    canManageGlobal: true,
+    canManageCity: true,
+    canManagePipeline: true,
+    canManageContent: true,
   };
 }
 

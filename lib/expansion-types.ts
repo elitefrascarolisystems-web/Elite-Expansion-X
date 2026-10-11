@@ -3,6 +3,8 @@ export type UserRole = (typeof USER_ROLES)[number];
 
 export type AccessView = {
   isOrganizationOwner?: boolean;
+  /** Acesso pela Assessoria Elite (time da plataforma), não por vínculo próprio na organização. */
+  isAdvisory?: boolean;
   organizationId: number;
   organizationName: string;
   isPlatformOwner: boolean;
@@ -232,6 +234,8 @@ export type AuditRecord = {
   entityId: number | null;
   summary: string;
   createdAt: string;
+  /** Ação feita pela Assessoria Elite (time da plataforma). */
+  advisory?: boolean;
 };
 
 export type DashboardData = {
@@ -250,6 +254,8 @@ export type DashboardData = {
   contents: ContentRecord[];
   tasks: TaskRecord[];
   users: UserProfileRecord[];
+  /** Time da Assessoria Elite com acesso a esta organização (visível a quem administra). */
+  advisors: { email: string; name: string }[];
   auditLogs: AuditRecord[];
   lastUpdated: string;
 };
