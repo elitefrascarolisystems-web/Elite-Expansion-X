@@ -1,4 +1,4 @@
-import {getChatGPTUser} from '@/app/chatgpt-auth';
+import {getCurrentUser} from '@/app/auth';
 import {getUserAccess} from '@/db/access';
 import {createOrganization,listAdvisors,listOrganizations,OrganizationError,setAdvisor} from '@/db/organizations';
 import {organizationFromRequest} from '@/lib/tenant-request';
@@ -7,7 +7,7 @@ export const dynamic='force-dynamic';
 const headers={'Cache-Control':'no-store'};
 
 export async function GET(request:Request){
- try{const u=await getChatGPTUser();if(!u)return Response.json({error:'Entre para acessar.'},{status:401,headers});
+ try{const u=await getCurrentUser();if(!u)return Response.json({error:'Entre para acessar.'},{status:401,headers});
  const a=await getUserAccess(u.email,u.displayName,organizationFromRequest(request));
  if(!a)return Response.json({error:'Organização fora do seu acesso.'},{status:403,headers});
  return Response.json({
@@ -19,7 +19,7 @@ export async function GET(request:Request){
 
 export async function POST(request:Request){
  if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Origem não permitida.'},{status:403,headers});
- try{const u=await getChatGPTUser();if(!u)return Response.json({error:'Entre para acessar.'},{status:401,headers});
+ try{const u=await getCurrentUser();if(!u)return Response.json({error:'Entre para acessar.'},{status:401,headers});
  const body=await request.json();
  if(body.action==='switch'){
   if(!Number.isSafeInteger(body.organizationId)||body.organizationId<1)return Response.json({error:'Organização inválida.'},{status:400,headers});

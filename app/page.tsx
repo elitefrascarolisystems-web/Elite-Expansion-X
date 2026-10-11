@@ -1,6 +1,6 @@
 import {redirect} from 'next/navigation';
 import {parseOrganizationId} from '@/lib/tenant-request';
-import { chatGPTSignOutPath, requireChatGPTUser } from "@/app/chatgpt-auth";
+import { getCurrentUser, isAuthConfigured, signOutPath } from "@/app/auth";
 import { ExpansionDashboard } from "@/app/expansion-dashboard";
 import { getUserAccess } from "@/db/access";
 import { getDashboardData } from "@/db/queries";
@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 type HomeProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function Home({ searchParams }: HomeProps) {
-  const user = await requireChatGPTUser("/");
+  const user = await getCurrentUser();
+  if (!user) return <AccessGate configured={isAuthConfigured()} />;
   // Cada aba fica fixa na organização da sua URL (?org=). Sem ela, abrimos a
   // organização padrão do usuário e gravamos isso na URL, nunca em cookie.
   const requested = (await searchParams)?.org;
@@ -33,7 +34,7 @@ export default async function Home({ searchParams }: HomeProps) {
           <p className="section-kicker">Acesso protegido</p>
           <h1 className="text-2xl font-semibold text-white">Seu perfil ainda não foi liberado</h1>
           <p className="mt-4 text-sm leading-6 text-zinc-400">Você entrou com {user.email}, mas este e-mail não possui uma função cadastrada na Elite Expansion X. Peça ao administrador para preparar seu perfil.</p>
-          <a href={chatGPTSignOutPath("/")} className="mt-6 inline-flex rounded-xl bg-[#c9a227] px-5 py-3 text-sm font-semibold text-black">Sair e usar outro e-mail</a>
+          <a href={signOutPath()} className="mt-6 inline-flex rounded-xl bg-[#c9a227] px-5 py-3 text-sm font-semibold text-black">Sair e usar outro e-mail</a>
         </section>
       </main>
     );
@@ -45,7 +46,24 @@ export default async function Home({ searchParams }: HomeProps) {
     <ExpansionDashboard
       initialData={data}
       userName={access.name}
-      signOutPath={chatGPTSignOutPath("/")}
+      signOutPath={signOutPath()}
     />
+  );
+}
+
+/** Sem identidade validada: o Cloudflare Access deveria ter pedido o login antes de chegar aqui. */
+function AccessGate({ configured }: { configured: boolean }) {
+  return (
+    <main className="elite-grid grid min-h-screen place-items-center bg-[#080807] px-5 text-zinc-100">
+      <section className="elite-card max-w-xl p-8 text-center sm:p-10">
+        <Image src="/elite-academy-official.png" alt="Elite Frascaroli Academy — logo oficial" width={1080} height={1080} className="elite-brand-logo elite-brand-logo-access mx-auto mb-5" />
+        <p className="section-kicker">Acesso protegido</p>
+        <h1 className="text-2xl font-semibold text-white">{configured ? "Não foi possível confirmar seu login" : "Login ainda não configurado"}</h1>
+        <p className="mt-4 text-sm leading-6 text-zinc-400">{configured
+          ? "Entre novamente pelo login da Elite. Se o problema continuar, fale com o administrador da plataforma."
+          : "Este ambiente ainda não está ligado ao Cloudflare Access. Por segurança, ninguém entra até essa configuração ser concluída."}</p>
+        {configured && <a href={signOutPath()} className="mt-6 inline-flex rounded-xl bg-[#c9a227] px-5 py-3 text-sm font-semibold text-black">Entrar novamente</a>}
+      </section>
+    </main>
   );
 }

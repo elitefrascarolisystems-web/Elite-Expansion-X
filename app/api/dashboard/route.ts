@@ -1,5 +1,5 @@
 import {organizationFromRequest} from '@/lib/tenant-request';
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import {getCurrentUser} from '@/app/auth';
 import { getUserAccess } from "@/db/access";
 import { ActionError, executeAction } from "@/db/mutations";
 import { getDashboardData } from "@/db/queries";
@@ -17,7 +17,7 @@ function sameOrigin(request: Request) {
 
 export async function GET(request:Request) {
  try {
-  const user = await getChatGPTUser();
+  const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Acesso não autorizado." }, { status: 401, headers: responseHeaders });
   const access = await getUserAccess(user.email, user.displayName,organizationFromRequest(request));
   if (!access) return Response.json({ error: "Seu perfil ainda não foi liberado dentro da plataforma." }, { status: 403, headers: responseHeaders });
@@ -28,7 +28,7 @@ export async function GET(request:Request) {
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return Response.json({ error: "Origem da solicitação não permitida." }, { status: 403, headers: responseHeaders });
   try {
-  const user = await getChatGPTUser();
+  const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Acesso não autorizado." }, { status: 401, headers: responseHeaders });
   const access = await getUserAccess(user.email, user.displayName,organizationFromRequest(request));
   if (!access) return Response.json({ error: "Seu perfil ainda não foi liberado dentro da plataforma." }, { status: 403, headers: responseHeaders });

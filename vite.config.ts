@@ -11,15 +11,30 @@ const { d1, r2 } = hostingConfig;
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 
+/**
+ * Configuração do Worker. Na publicação (GitHub Actions), as variáveis de
+ * ambiente apontam para o Worker e o banco D1 reais; sem elas, valores locais
+ * de desenvolvimento e teste. Nada aqui é segredo.
+ */
+const deployVars = Object.fromEntries(
+  ["ACCESS_TEAM_DOMAIN", "ACCESS_AUD", "MAPS_EXTERNAL_ENABLED", "PUBLIC_MAPTILER_KEY", "PUBLIC_MAPTILER_SATELLITE_ID", "PUBLIC_MAPTILER_HYBRID_ID", "PUBLIC_GOOGLE_EMBED_KEY"]
+    .filter((name) => process.env[name])
+    .map((name) => [name, process.env[name] as string]),
+);
+
 const localBindingConfig = {
+  name: process.env.WORKER_NAME || "elite-expansion-x",
   main: "./worker/index.ts",
+  compatibility_date: "2026-05-15",
   compatibility_flags: ["nodejs_compat"],
+  ...(Object.keys(deployVars).length ? { vars: deployVars } : {}),
   d1_databases: d1
     ? [
         {
           binding: d1,
-          database_name: "site-creator-d1",
-          database_id: SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
+          database_name: process.env.D1_DATABASE_NAME || "site-creator-d1",
+          database_id: process.env.D1_DATABASE_ID || SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
+          migrations_dir: "drizzle",
         },
       ]
     : [],

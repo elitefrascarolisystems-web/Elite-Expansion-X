@@ -5,7 +5,7 @@ import {readFileSync,readdirSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {createServer} from 'vite';
 const root=fileURLToPath(new URL('..',import.meta.url));
-const vite=await createServer({appType:'custom',configFile:false,root,resolve:{alias:[{find:'cloudflare:workers',replacement:root+'tests/fixtures/cloudflare.mjs'},{find:'@/app/chatgpt-auth',replacement:root+'tests/fixtures/auth.mjs'},{find:'@',replacement:root}]},server:{middlewareMode:true,hmr:false}});
+const vite=await createServer({appType:'custom',configFile:false,root,resolve:{alias:[{find:'cloudflare:workers',replacement:root+'tests/fixtures/cloudflare.mjs'},{find:'@/app/auth',replacement:root+'tests/fixtures/auth.mjs'},{find:'@',replacement:root}]},server:{middlewareMode:true,hmr:false}});
 let sqlite;
 function adapter(db){return {prepare(sql){let args=[];const stmt={bind(...values){args=values.map(v=>typeof v==='boolean'?Number(v):v);return stmt;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {success:true,meta:{last_row_id:Number(r.lastInsertRowid),changes:Number(r.changes)}};}};return stmt;},async batch(statements){db.exec('BEGIN');try{const result=[];for(const s of statements)result.push(await s.run());db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}};}
 beforeEach(()=>{sqlite?.close();sqlite=new DatabaseSync(':memory:');sqlite.exec('PRAGMA foreign_keys=ON');for(const f of readdirSync(root+'drizzle').filter(f=>f.endsWith('.sql')).sort())sqlite.exec(readFileSync(root+'drizzle/'+f,'utf8'));globalThis.__eliteTestD1=adapter(sqlite);globalThis.__eliteTestUser={email:'teamfrascaroli@gmail.com',displayName:'Administrador de teste'};});
@@ -332,4 +332,32 @@ test('Assessoria Elite: chosen Elite members see and edit client organizations, 
  assert.ok(sqlite.prepare("SELECT count(*) n FROM platform_audit WHERE action IN ('advisor_granted','advisor_revoked')").get().n>=3);
  // A Elite em si não é acessível por assessoria: só por vínculo próprio.
  assert.equal(await getUserAccess('dono@cliente.invalid','Dono',1),null);
+});
+
+test('Cloudflare Access login: only correctly signed, current tokens for this app and team are accepted',async()=>{
+ const {verifyAccessJwt,normalizeTeamDomain,accessKeyLookup}=await vite.ssrLoadModule('/lib/access-jwt.ts');
+ const team='elite-teste.cloudflareaccess.com',aud='aud-da-aplicacao',config={teamDomain:team,aud};
+ const alg={name:'RSASSA-PKCS1-v1_5',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'};
+ const real=await crypto.subtle.generateKey(alg,true,['sign','verify']),attacker=await crypto.subtle.generateKey(alg,true,['sign','verify']);
+ const b64=v=>Buffer.from(v).toString('base64url');
+ const now=Math.floor(Date.now()/1000);
+ const sign=async(payload,{key=real.privateKey,kid='k1',alg='RS256'}={})=>{const h=b64(JSON.stringify({alg,kid,typ:'JWT'})),p=b64(JSON.stringify(payload));const s=await crypto.subtle.sign('RSASSA-PKCS1-v1_5',key,new TextEncoder().encode(h+'.'+p));return h+'.'+p+'.'+b64(new Uint8Array(s));};
+ const good={iss:'https://'+team,aud:[aud],email:'Pessoa@Elite.invalid',exp:now+600,iat:now};
+ const getKey=async kid=>kid==='k1'?real.publicKey:null;
+ assert.equal(await verifyAccessJwt(await sign(good),config,getKey),'pessoa@elite.invalid');
+ // Assinado por outra chave, alterado depois de assinado, ou sem assinatura: recusado.
+ assert.equal(await verifyAccessJwt(await sign(good,{key:attacker.privateKey}),config,getKey),null);
+ const t=await sign(good),[h,,s]=t.split('.');assert.equal(await verifyAccessJwt(h+'.'+b64(JSON.stringify({...good,email:'outro@elite.invalid'}))+'.'+s,config,getKey),null);
+ assert.equal(await verifyAccessJwt(b64(JSON.stringify({alg:'none',kid:'k1'}))+'.'+b64(JSON.stringify(good))+'.x',config,getKey),null);
+ // Outro time, outra aplicação, expirado, ainda não válido, sem e-mail, chave desconhecida: recusado.
+ for(const bad of [{...good,iss:'https://outro.cloudflareaccess.com'},{...good,aud:['outra-aplicacao']},{...good,exp:now-3600},{...good,nbf:now+3600},{...good,email:undefined}])assert.equal(await verifyAccessJwt(await sign(bad),config,getKey),null,JSON.stringify(bad));
+ assert.equal(await verifyAccessJwt(await sign(good,{kid:'desconhecida'}),config,getKey),null);
+ for(const v of [null,'','a.b','a.b.c.d'])assert.equal(await verifyAccessJwt(v,config,getKey),null);
+ assert.equal(normalizeTeamDomain('https://Elite-Teste.cloudflareaccess.com/'),team);assert.equal(normalizeTeamDomain('nao é domínio'),null);
+ // Chaves buscadas no endpoint público do time, uma vez, com cache.
+ let calls=0;const jwk={...(await crypto.subtle.exportKey('jwk',real.publicKey)),kid:'k1'};
+ const lookup=accessKeyLookup(team,async url=>{calls++;assert.equal(url,`https://${team}/cdn-cgi/access/certs`);return new Response(JSON.stringify({keys:[jwk]}));});
+ assert.equal(await verifyAccessJwt(await sign(good),config,lookup),'pessoa@elite.invalid');
+ assert.equal(await verifyAccessJwt(await sign(good),config,lookup),'pessoa@elite.invalid');
+ assert.equal(await verifyAccessJwt(await sign(good,{kid:'desconhecida'}),config,lookup),null);assert.equal(calls,1,'sem buscas repetidas');
 });
