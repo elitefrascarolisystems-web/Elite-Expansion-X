@@ -1,4 +1,5 @@
 'use client';
+import {tenantFetch} from '@/lib/tenant-request';
 import {useRef,useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {parseBusinessFile} from '@/lib/commercial-import';
@@ -7,7 +8,7 @@ type Outcome={line:number;ok:boolean;status:string};
 const fields=[['name','Nome'],['segment','Segmento'],['district','Bairro'],['address','Endereço comercial'],['source','Fonte'],['externalId','Identificador externo']] as const;
 export function BusinessImport({data,onSaved}:{data:DashboardData;onSaved:()=>Promise<void>}){
  const [grid,setGrid]=useState<string[][]>([]),[mapping,setMapping]=useState<Record<string,string>>({}),[city,setCity]=useState(''),[checked,setChecked]=useState(false),[rows,setRows]=useState<unknown[]>([]),[outcomes,setOutcomes]=useState<Outcome[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[previewed,setPreviewed]=useState(false),[committed,setCommitted]=useState(false);const lock=useRef(false);
- async function request(action:string,values:unknown[]){const r=await fetch('/api/commercial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,data:{rows:values,confirmed:checked}})});const b=await r.json();if(!r.ok||!b.ok)throw new Error(b.error||'Falha ao importar.');return b.result.rows as Outcome[];}
+ async function request(action:string,values:unknown[]){const r=await tenantFetch('/api/commercial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,data:{rows:values,confirmed:checked}})});const b=await r.json();if(!r.ok||!b.ok)throw new Error(b.error||'Falha ao importar.');return b.result.rows as Outcome[];}
  function invalidate(){setPreviewed(false);setCommitted(false);setRows([]);setOutcomes([]);}
  async function preview(){if(lock.current)return;lock.current=true;setBusy(true);setError('');try{const values=grid.slice(1).map(r=>({...Object.fromEntries(fields.map(([k])=>[k,mapping[k]!==undefined&&mapping[k]!==''?r[Number(mapping[k])]||'':''])),id:crypto.randomUUID(),cityId:Number(city),ownerEmail:data.access.email,status:'Identificada',publicBusiness:checked,verified:false}));const result=await request('import_preview',values);setRows(values);setOutcomes(result);setPreviewed(true);}catch(e){setError(e instanceof Error?e.message:'Falha na prévia.');}finally{lock.current=false;setBusy(false);}}
  async function commit(){if(lock.current)return;lock.current=true;setBusy(true);setError('');try{const indices=rows.map((_,i)=>i).filter(i=>outcomes[i]?.ok);const committedRows=await request('import_commit',indices.map(i=>rows[i]));const next=[...outcomes];indices.forEach((index,i)=>{next[index]={...committedRows[i],line:index+2};});setOutcomes(next);setCommitted(true);await onSaved();}catch(e){setError(e instanceof Error?e.message:'Falha na importação.');}finally{lock.current=false;setBusy(false);}}

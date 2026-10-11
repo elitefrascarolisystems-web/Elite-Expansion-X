@@ -322,3 +322,16 @@ export const cityDecisions = sqliteTable('city_decisions', {
 export const organizationPlans = sqliteTable('organization_plans', {
  organizationId:integer('organization_id').primaryKey(),name:text('name'),userLimit:integer('user_limit'),cityLimit:integer('city_limit'),updatedBy:text('updated_by').notNull(),updatedAt:text('updated_at').notNull(),
 });
+
+export const organizationProfiles=sqliteTable('organization_profiles',{
+ organizationId:integer('organization_id').primaryKey().references(()=>organizations.id),objective:text('objective').notNull().default(''),onboarding:text('onboarding').notNull().default('{}'),logo:text('logo'),updatedAt:text('updated_at').notNull(),
+});
+export const organizationInvites=sqliteTable('organization_invites',{
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull().references(()=>organizations.id),email:text('email').notNull(),name:text('name').notNull(),role:text('role').notNull(),cityId:integer('city_id').references(()=>cities.id),ambassadorId:integer('ambassador_id').references(()=>ambassadors.id),tokenHash:text('token_hash').notNull().unique(),expiresAt:text('expires_at').notNull(),revokedAt:text('revoked_at'),acceptedAt:text('accepted_at'),createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),
+});
+export const organizationEntitlements=sqliteTable('organization_entitlements',{
+ organizationId:integer('organization_id').primaryKey().references(()=>organizations.id),userLimit:integer('user_limit'),cityLimit:integer('city_limit'),storageBytes:integer('storage_bytes'),imports:integer('imports').notNull().default(1),exports:integer('exports').notNull().default(1),maps:integer('maps').notNull().default(1),externalMaps:integer('external_maps').notNull().default(0),reports:integer('reports').notNull().default(1),updatedAt:text('updated_at').notNull(),
+});
+export const platformAudit=sqliteTable('platform_audit',{
+ id:integer('id').primaryKey({autoIncrement:true}),organizationId:integer('organization_id').notNull(),actorEmail:text('actor_email').notNull(),action:text('action').notNull(),reason:text('reason').notNull(),createdAt:text('created_at').notNull(),
+});

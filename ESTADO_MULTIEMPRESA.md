@@ -1,0 +1,6 @@
+# Não concluído / não publicar
+Alterações locais iniciadas para multiempresa. A migração 0011 cria organization_profiles, organization_invites, organization_entitlements e platform_audit, mais triggers de limites e proteção do proprietário.
+db/tenant-admin.ts contém rascunho de operações de organização, convites com SHA-256, aceite, membros, transferência e perfil. Não há rota e UI completas ligando esse módulo.
+lib/tenant-request.ts passa contexto de organização pela URL/header; chamadas de clientes e APIs foram alteradas. Porém app/page.tsx e organization-switcher.tsx ainda usam o fluxo antigo por cookie: sem integrar a página/seleção, as APIs podem negar o contexto. Os testes antigos também não enviam o novo header. Não confundir com regressão publicada.
+Revisar suporte a múltiplas cidades por coordenação, concorrência nos convites/transferência, acesso por identidade estável, limites e todas as relações cruzadas. requireFeature não foi integrado a todos os caminhos. A criação antiga em db/organizations.ts continua adicionando o proprietário da plataforma como administrador: substituição ainda pendente.
+Não há cobrança, envio de convites reais ou liberação de audiência nesta etapa.

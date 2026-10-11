@@ -47,14 +47,14 @@ export async function getUserAccess(email: string, displayName: string, organiza
   await ensureSystemData(email, displayName);
   const db = database();
   const result = await db.prepare(`
-    SELECT u.id,u.email,u.name,u.role,u.city_id,u.ambassador_id,u.active,u.organization_id,o.name AS organization_name
+    SELECT u.id,u.email,u.name,u.role,u.city_id,u.ambassador_id,u.active,u.organization_id,o.name AS organization_name,o.owner_email
     FROM app_users u JOIN organizations o ON o.id=u.organization_id AND o.active=1 WHERE lower(u.email)=lower(?) AND u.active=1 AND (? IS NULL OR u.organization_id=?) ORDER BY u.organization_id LIMIT 1
   `).bind(email,organizationId??null,organizationId??null).all();
   const row = result.results[0];
   if (!row || !Boolean(row.active)) return null;
   const role = String(row.role) as UserRole;
   return {
-    organizationId:asNumber(row.organization_id),organizationName:String(row.organization_name),isPlatformOwner:email.toLowerCase()===OWNER_EMAIL && asNumber(row.organization_id)===1 && role==="Administrador",
+    isOrganizationOwner:String(row.owner_email).toLowerCase()===email.toLowerCase(),organizationId:asNumber(row.organization_id),organizationName:String(row.organization_name),isPlatformOwner:email.toLowerCase()===OWNER_EMAIL && asNumber(row.organization_id)===1 && role==="Administrador",
     id: asNumber(row.id),
     email: String(row.email),
     name: String(row.name || displayName || email),

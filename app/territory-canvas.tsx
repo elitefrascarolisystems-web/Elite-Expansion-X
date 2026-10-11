@@ -1,4 +1,5 @@
 'use client';
+import {tenantFetch} from '@/lib/tenant-request';
 import { useEffect, useRef, useState } from 'react';
 import type { Map as MapInstance, Marker } from 'maplibre-gl';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -12,7 +13,7 @@ export function TerritoryCanvas({records,onSelect,onPick,focus,fitToken=0,theme=
  const props=useRef({records,onSelect,onPick,theme,roleFilter,focus,onViewport});
  useEffect(()=>{props.current={records,onSelect,onPick,theme,roleFilter,focus,onViewport};},[records,onSelect,onPick,theme,roleFilter,focus,onViewport]);
  const [mapConfig,setMapConfig]=useState<{satellite:string|null;hybrid:string|null}|null>(null),[base,setBase]=useState<'streets'|'satellite'|'hybrid'>('streets');
- useEffect(()=>{const c=new AbortController();fetch('/api/map-config',{signal:c.signal}).then(r=>r.ok?r.json():null).then(v=>{if(v)setMapConfig(v);}).catch(()=>{});return()=>c.abort();},[]);
+ useEffect(()=>{const c=new AbortController();tenantFetch('/api/map-config',{signal:c.signal}).then(r=>r.ok?r.json():null).then(v=>{if(v)setMapConfig(v);}).catch(()=>{});return()=>c.abort();},[]);
  const buildingMode=useRef(false);const [coverage,setCoverage]=useState('');
  const [fallback,setFallback]=useState(false),[perspective,setPerspective]=useState(false);
  const [error,setError]=useState(''),[loaded,setLoaded]=useState(false),[retry,setRetry]=useState(0);

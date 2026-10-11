@@ -1,4 +1,4 @@
-import {organizationIdFromCookie} from '@/lib/organization-selection';
+import {organizationFromRequest} from '@/lib/tenant-request';
 import { getChatGPTUser } from "@/app/chatgpt-auth";
 import { getUserAccess } from "@/db/access";
 import { ActionError, executeAction } from "@/db/mutations";
@@ -12,14 +12,14 @@ const responseHeaders = { "Cache-Control": "no-store" };
 
 function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  return !origin || origin === new URL(request.url).origin;
+  return origin === new URL(request.url).origin;
 }
 
 export async function GET(request:Request) {
  try {
   const user = await getChatGPTUser();
   if (!user) return Response.json({ error: "Acesso não autorizado." }, { status: 401, headers: responseHeaders });
-  const access = await getUserAccess(user.email, user.displayName,organizationIdFromCookie(request.headers.get('cookie')));
+  const access = await getUserAccess(user.email, user.displayName,organizationFromRequest(request));
   if (!access) return Response.json({ error: "Seu perfil ainda não foi liberado dentro da plataforma." }, { status: 403, headers: responseHeaders });
   return Response.json({ data: await getDashboardData(access) }, { headers: responseHeaders });
  } catch { return Response.json({error:"Não foi possível carregar os dados. Tente novamente."},{status:503,headers:responseHeaders}); }
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   try {
   const user = await getChatGPTUser();
   if (!user) return Response.json({ error: "Acesso não autorizado." }, { status: 401, headers: responseHeaders });
-  const access = await getUserAccess(user.email, user.displayName,organizationIdFromCookie(request.headers.get('cookie')));
+  const access = await getUserAccess(user.email, user.displayName,organizationFromRequest(request));
   if (!access) return Response.json({ error: "Seu perfil ainda não foi liberado dentro da plataforma." }, { status: 403, headers: responseHeaders });
 
     const payload = (await request.json()) as { action?: unknown; data?: unknown };

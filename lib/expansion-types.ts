@@ -2,6 +2,7 @@ export const USER_ROLES = ["Administrador", "Coordenação", "Líder", "Embaixad
 export type UserRole = (typeof USER_ROLES)[number];
 
 export type AccessView = {
+  isOrganizationOwner?: boolean;
   organizationId: number;
   organizationName: string;
   isPlatformOwner: boolean;
