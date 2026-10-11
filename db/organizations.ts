@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { database, brazilTimestamp } from '@/db/runtime';
-import { isPlatformAdvisor } from '@/db/access';
+import { isPlatformAdvisor, isPlatformOwnerEmail } from '@/db/access';
 import type { AccessView } from '@/lib/expansion-types';
 
 export const ADVISORY_ROLE_LABEL = 'Assessoria Elite';
@@ -45,14 +45,14 @@ export async function listAdvisors(access:AccessView){
  const r=await database().prepare(`SELECT adv.email,adv.name,adv.active,adv.granted_at,adv.revoked_at,
   EXISTS(SELECT 1 FROM app_users u WHERE u.organization_id=1 AND lower(u.email)=lower(adv.email) AND u.active=1) AS elite_member
   FROM platform_advisors adv ORDER BY adv.active DESC, adv.name`).all();
- return r.results.map(row=>({email:String(row.email),name:String(row.name),active:Number(row.active)===1,eliteMember:Number(row.elite_member)===1,grantedAt:String(row.granted_at),revokedAt:row.revoked_at==null?null:String(row.revoked_at)}));
+ return r.results.map(row=>({email:String(row.email),name:String(row.name),active:Number(row.active)===1,eliteMember:Number(row.elite_member)===1,platformOwner:isPlatformOwnerEmail(String(row.email)),grantedAt:String(row.granted_at),revokedAt:row.revoked_at==null?null:String(row.revoked_at)}));
 }
 
 export async function setAdvisor(access:AccessView,input:unknown){
  if(!access.isPlatformOwner)throw new OrganizationError('Sem permissão.',403);
  const v=z.object({email,active:z.boolean()}).parse(input);
  const db=database(),now=brazilTimestamp(),actor=access.email.toLowerCase();
- if(v.email===actor&&!v.active)throw new OrganizationError('O dono da plataforma não pode remover a própria assessoria.');
+ if(isPlatformOwnerEmail(v.email)&&!v.active)throw new OrganizationError('A assessoria dos donos da plataforma não pode ser retirada.');
  if(v.active){
   const member=(await db.prepare("SELECT name FROM app_users WHERE organization_id=1 AND lower(email)=? AND active=1").bind(v.email).all()).results[0];
   if(!member)throw new OrganizationError('Só membros ativos do time Elite podem ser assessores. Cadastre a pessoa na Elite Frascaroli Academy primeiro.');

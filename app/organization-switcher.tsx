@@ -6,7 +6,7 @@ import type {AccessView} from '@/lib/expansion-types';
 import {tenantFetch} from '@/lib/tenant-request';
 
 type OrganizationItem={id:number;name:string;role:string};
-type Advisor={email:string;name:string;active:boolean;eliteMember:boolean;grantedAt:string;revokedAt:string|null};
+type Advisor={email:string;name:string;active:boolean;eliteMember:boolean;platformOwner:boolean;grantedAt:string;revokedAt:string|null};
 
 /** Abre a organização escolhida nesta aba. Outras abas continuam onde estão. */
 function openOrganization(id:number){const url=new URL(window.location.href);url.searchParams.set('org',String(id));window.location.assign(url.toString());}
@@ -85,7 +85,7 @@ export function OrganizationSwitcher({access}:{access:AccessView}){
     <ul className="grid gap-2">
      {(advisors??[]).map(a=><li key={a.email} className="flex items-center justify-between gap-3 rounded border border-white/10 p-3">
       <div><p className="font-medium">{a.name||a.email}</p><p className="text-xs text-zinc-500">{a.email}{!a.active?' · acesso retirado':!a.eliteMember?' · fora do time Elite (sem acesso)':''}</p></div>
-      {a.email===access.email.toLowerCase()
+      {a.platformOwner
        ?<span className="text-xs text-zinc-500">Dono da plataforma</span>
        :<Button size="sm" variant="outline" disabled={busy} className="border-white/10 bg-white/5 text-white"
          onClick={async()=>{const result=await act({action:'advisor',data:{email:a.email,active:!a.active}});if(result)setAdvisors(result.advisors);}}>{a.active?'Retirar':'Reativar'}</Button>}

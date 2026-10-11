@@ -317,7 +317,7 @@ test('Assessoria Elite: chosen Elite members see and edit client organizations, 
  await run('create_city',{name:'Cidade do cliente',state:'MG',phase:'Piloto',leaderName:'',targetCacCents:0,ambassadorGoal:1,salesGoal:1,status:'Ativa',budgetCents:0,trackingMode:'Detalhado'},advised);
  await run('create_task',{title:'Tarefa do cliente',category:'Missão'},client);
  const seen=await getDashboardData(client);
- assert.deepEqual(seen.advisors.map(a=>a.email).sort(),['mentor@elite.invalid',owner].sort());
+ assert.deepEqual(seen.advisors.map(a=>a.email).sort(),['elitefrascarolisystems@gmail.com','mentor@elite.invalid',owner].sort());
  const byAdvisor=seen.auditLogs.filter(l=>l.actorEmail===owner);assert.ok(byAdvisor.length>=2,'criação e cidade');assert.ok(byAdvisor.every(l=>l.advisory===true));
  assert.ok(seen.auditLogs.filter(l=>l.actorEmail==='dono@cliente.invalid').every(l=>l.advisory===false));
  // Retirar a assessoria ou sair do time Elite encerra o acesso na hora.
@@ -329,6 +329,13 @@ test('Assessoria Elite: chosen Elite members see and edit client organizations, 
  assert.equal(await getUserAccess('mentor@elite.invalid','Mentor',org),null,'fora do time Elite, sem assessoria');
  // O dono não remove a própria assessoria; tudo fica no registro da plataforma.
  r=await orgs.POST(post('advisor',{email:owner,active:false}));assert.equal(r.status,400);
+ // Segundo dono da plataforma: mesmos poderes (Elite, criar clientes, assessoria) e também não pode ser retirado.
+ const second=await getUserAccess('ElitefrascaroliSystems@gmail.com','Equipe',1);assert.equal(second.isPlatformOwner,true);assert.equal(second.role,'Administrador');
+ assert.equal((await getUserAccess('elitefrascarolisystems@gmail.com','Equipe',org)).isAdvisory,true);
+ assert.equal((await getUserAccess('elitefrascarolisystems@gmail.com','Equipe')).organizationId,1);
+ r=await orgs.POST(post('advisor',{email:'elitefrascarolisystems@gmail.com',active:false}));assert.equal(r.status,400);
+ const listed=(await (await orgs.GET(new Request('https://test.invalid/api/organizations',{headers:ORG(1)}))).json()).advisors;
+ assert.ok(listed.filter(a=>a.platformOwner).map(a=>a.email).sort().join()===['elitefrascarolisystems@gmail.com',owner].sort().join());
  assert.ok(sqlite.prepare("SELECT count(*) n FROM platform_audit WHERE action IN ('advisor_granted','advisor_revoked')").get().n>=3);
  // A Elite em si não é acessível por assessoria: só por vínculo próprio.
  assert.equal(await getUserAccess('dono@cliente.invalid','Dono',1),null);

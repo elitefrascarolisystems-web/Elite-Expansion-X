@@ -3,6 +3,21 @@ import { asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runt
 
 const OWNER_EMAIL = "teamfrascaroli@gmail.com";
 
+/**
+ * Donos da plataforma: administradores da Elite com poderes de plataforma
+ * (criar organizações clientes, gerenciar a Assessoria Elite). Sempre
+ * cadastrados na Elite e sempre assessores. O primeiro é o dono registrado.
+ */
+export const PLATFORM_OWNERS: readonly { email: string; name: string }[] = [
+  { email: OWNER_EMAIL, name: "Felipe Frascaroli" },
+  { email: "elitefrascarolisystems@gmail.com", name: "Elite Frascaroli Systems" },
+];
+
+export function isPlatformOwnerEmail(email: string): boolean {
+  const normalized = email.trim().toLowerCase();
+  return PLATFORM_OWNERS.some((owner) => owner.email === normalized);
+}
+
 async function ensureInitialCities(createdBy: string) {
   const db = database();
   const count = await db.prepare("SELECT COUNT(*) AS total FROM cities WHERE organization_id=1").all();
@@ -30,13 +45,16 @@ export async function ensureSystemData(currentEmail: string, displayName: string
         (id, owner_email, referral_base_url, attribution_model, updated_by, updated_at)
       VALUES (1, ?, '', 'Origem principal declarada', ?, ?)
     `).bind(OWNER_EMAIL, OWNER_EMAIL, timestamp),
-    db.prepare(`
-      INSERT OR IGNORE INTO app_users
-        (email, name, role, active, created_by, created_at)
-      VALUES (?, 'Felipe Frascaroli', 'Administrador', 1, ?, ?)
-    `).bind(OWNER_EMAIL, OWNER_EMAIL, timestamp),
-    // O dono da plataforma é sempre assessor; os demais são escolhidos por ele.
-    db.prepare("INSERT OR IGNORE INTO platform_advisors(email,name,active,granted_by,granted_at) VALUES(?,'Felipe Frascaroli',1,?,?)").bind(OWNER_EMAIL, OWNER_EMAIL, timestamp),
+    // Donos da plataforma: sempre administradores da Elite e sempre assessores.
+    // Os demais assessores são escolhidos por eles.
+    ...PLATFORM_OWNERS.flatMap((owner) => [
+      db.prepare(`
+        INSERT OR IGNORE INTO app_users
+          (organization_id, email, name, role, active, created_by, created_at)
+        VALUES (1, ?, ?, 'Administrador', 1, ?, ?)
+      `).bind(owner.email, owner.name, OWNER_EMAIL, timestamp),
+      db.prepare("INSERT OR IGNORE INTO platform_advisors(email,name,active,granted_by,granted_at) VALUES(?,?,1,?,?)").bind(owner.email, owner.name, OWNER_EMAIL, timestamp),
+    ]),
   ]);
   if (currentEmail.toLowerCase() === OWNER_EMAIL) {
     await db.prepare("UPDATE app_users SET name = ? WHERE organization_id=1 AND email = ? AND (name = '' OR name IS NULL)")
@@ -60,7 +78,7 @@ export async function getUserAccess(email: string, displayName: string, organiza
   }
   const role = String(row.role) as UserRole;
   return {
-    isOrganizationOwner:String(row.owner_email).toLowerCase()===email.toLowerCase(),organizationId:asNumber(row.organization_id),organizationName:String(row.organization_name),isPlatformOwner:email.toLowerCase()===OWNER_EMAIL && asNumber(row.organization_id)===1 && role==="Administrador",
+    isOrganizationOwner:String(row.owner_email).toLowerCase()===email.toLowerCase(),organizationId:asNumber(row.organization_id),organizationName:String(row.organization_name),isPlatformOwner:isPlatformOwnerEmail(email) && asNumber(row.organization_id)===1 && role==="Administrador",
     id: asNumber(row.id),
     email: String(row.email),
     name: String(row.name || displayName || email),
