@@ -1,5 +1,6 @@
+import {headers} from 'next/headers';
 import {redirect} from 'next/navigation';
-import {parseOrganizationId} from '@/lib/tenant-request';
+import {ORGANIZATION_HEADER, parseOrganizationId} from '@/lib/tenant-request';
 import { getCurrentUser, isAuthConfigured, signOutPath } from "@/app/auth";
 import { ExpansionDashboard } from "@/app/expansion-dashboard";
 import { getUserAccess } from "@/db/access";
@@ -8,16 +9,13 @@ import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
-type HomeProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
-
-export default async function Home({ searchParams }: HomeProps) {
+export default async function Home() {
   const user = await getCurrentUser();
   if (!user) return <AccessGate configured={isAuthConfigured()} />;
   // Cada aba fica fixa na organização da sua URL (?org=). Sem ela, abrimos a
   // organização padrão do usuário e gravamos isso na URL, nunca em cookie.
-  const requested = (await searchParams)?.org;
-  const orgParam = Array.isArray(requested) ? requested[0] : requested;
-  const organizationId = parseOrganizationId(orgParam ?? null);
+  // O worker/index.ts copia o ?org= da URL para este header (ver lá o motivo).
+  const organizationId = parseOrganizationId((await headers()).get(ORGANIZATION_HEADER));
   const access = organizationId === undefined ? null : await getUserAccess(user.email, user.displayName, organizationId);
   if (!access) {
     // Sem ?org= válido, ou link de uma organização fora do acesso desta pessoa:

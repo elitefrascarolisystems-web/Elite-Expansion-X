@@ -1,6 +1,7 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import { ORGANIZATION_HEADER } from "../lib/tenant-request";
 
 interface Env {
   ASSETS: Fetcher;
@@ -46,6 +47,18 @@ const worker = {
           return result.response();
         },
       }, allowedWidths);
+    }
+
+    // Páginas: o vinext 0.0.50 entrega searchParams vazio na pré-renderização
+    // (probePage), e a página redirecionaria sem parar. Repassamos o ?org= da
+    // URL no mesmo header que as APIs já usam; a URL sempre vence o que o
+    // navegador mandar. O vínculo com a organização é conferido na página.
+    if (!url.pathname.startsWith("/api/")) {
+      const pageHeaders = new Headers(request.headers);
+      const org = url.searchParams.get("org");
+      if (org === null) pageHeaders.delete(ORGANIZATION_HEADER);
+      else pageHeaders.set(ORGANIZATION_HEADER, org);
+      request = new Request(request, { headers: pageHeaders });
     }
 
     return handler.fetch(request, env, ctx);
