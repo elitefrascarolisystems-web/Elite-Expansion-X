@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { env } from "cloudflare:workers";
 import { headers } from "next/headers";
 import { accessKeyLookup, normalizeTeamDomain, verifyAccessJwt, type KeyLookup } from "@/lib/access-jwt";
@@ -30,7 +31,15 @@ export function isAuthConfigured(): boolean {
   return accessConfig() !== null;
 }
 
+/**
+ * Só em `npm run dev` (máquina local): entra direto como o dono da plataforma,
+ * sem Cloudflare Access. `import.meta.env.DEV` é falso em `npm run build`, então
+ * este atalho é removido da versão publicada e nunca vale na web.
+ */
+const DEV_LOGIN_EMAIL = "elitefrascarolisystems@gmail.com";
+
 export async function getCurrentUser(): Promise<CurrentUser | null> {
+  if (import.meta.env.DEV) return { displayName: DEV_LOGIN_EMAIL, email: DEV_LOGIN_EMAIL, fullName: null };
   const config = accessConfig();
   if (!config) return null;
   if (lookup?.team !== config.teamDomain) lookup = { team: config.teamDomain, get: accessKeyLookup(config.teamDomain) };
