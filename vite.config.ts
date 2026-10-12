@@ -28,6 +28,8 @@ const localBindingConfig = {
   compatibility_date: "2026-05-15",
   compatibility_flags: ["nodejs_compat"],
   ...(Object.keys(deployVars).length ? { vars: deployVars } : {}),
+  // O worker/index.ts lê os arquivos estáticos (logo, imagens) por env.ASSETS.
+  assets: { binding: "ASSETS" },
   d1_databases: d1
     ? [
         {
