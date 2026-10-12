@@ -19,7 +19,8 @@ function localScope(a:AccessView, alias = 'r') {
   return {sql:'1=0',values:[]};
 }
 function scope(a:AccessView,alias='r') {const local=localScope(a,alias);return {sql:`(${local.sql}) AND ${alias}.city_id IN (SELECT id FROM cities WHERE organization_id=?)`,values:[...local.values,a.organizationId]};}
-const recordsSql = `WITH records AS (
+// O D1 aceita no máximo 5 SELECTs num mesmo UNION; por isso dois blocos de 3.
+const recordsSql = `WITH records_base AS (
  SELECT 'city:'||id AS entity_key, CAST(id AS TEXT) AS id, 'city' AS kind, id AS city_id, name, status,
  leader_name AS responsible, updated_at, '' AS next_action, '' AS due_date,
  NULL AS ambassador_id, NULL AS lead_id, NULL AS referrer_id, 'Cidade' AS roles FROM cities
@@ -36,12 +37,13 @@ const recordsSql = `WITH records AS (
  OR p.leader=1 OR EXISTS(SELECT 1 FROM ambassadors WHERE person_id=p.id) OR EXISTS(SELECT 1 FROM territory_roles WHERE person_id=p.id AND status NOT IN ('Desligado','Inativo'))
  UNION ALL
  SELECT 'partner:'||id, CAST(id AS TEXT), 'partner',city_id,name,status,contact_name,created_at,next_action,'',NULL,NULL,NULL,'Parceiro' FROM partners WHERE NOT EXISTS(SELECT 1 FROM businesses b WHERE b.partner_id=partners.id)
- UNION ALL
+), records_rest AS (
  SELECT 'business:'||b.id,b.id,'business',b.city_id,b.name,CASE WHEN EXISTS(SELECT 1 FROM opportunities o JOIN sales s ON s.lead_id=o.lead_id WHERE o.business_id=b.id AND s.status='Pagamento confirmado' AND s.paid_at IS NOT NULL) THEN 'Cliente' WHEN EXISTS(SELECT 1 FROM opportunities o JOIN leads l ON l.id=o.lead_id WHERE o.business_id=b.id AND l.consent_revoked_at IS NULL AND l.status<>'Cancelado') THEN 'Contato autorizado' WHEN b.status IN ('Cliente','Contato autorizado') THEN 'Selecionada' ELSE b.status END,'',b.updated_at,b.next_action,'',NULL,NULL,NULL,'Empresa'||CASE WHEN b.partner_id IS NOT NULL THEN ',Parceiro' ELSE '' END FROM businesses b
  UNION ALL
  SELECT 'event:'||id,CAST(id AS TEXT),'event',city_id,name,status,owner_name,created_at,'',event_date,NULL,NULL,NULL,'Evento' FROM events
  UNION ALL
  SELECT 'action:'||id,id,'action',city_id,name,status,responsible,updated_at,'',due_date,NULL,NULL,NULL,category FROM territory_actions
+), records AS (SELECT * FROM records_base UNION ALL SELECT * FROM records_rest
 ) `;
 
 function coordinateSql(axis:'latitude'|'longitude') {
