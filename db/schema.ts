@@ -339,3 +339,19 @@ export const platformAudit=sqliteTable('platform_audit',{
 export const platformAdvisors=sqliteTable('platform_advisors',{
  id:integer('id').primaryKey({autoIncrement:true}),email:text('email').notNull(),name:text('name').notNull().default(''),active:integer('active').notNull().default(1),grantedBy:text('granted_by').notNull(),grantedAt:text('granted_at').notNull(),revokedBy:text('revoked_by'),revokedAt:text('revoked_at'),
 },(table)=>[uniqueIndex('platform_advisors_email_unique').on(table.email)]);
+/** Login por e-mail e senha. A senha nunca é guardada: só o PBKDF2 com sal próprio. */
+export const userCredentials=sqliteTable('user_credentials',{
+ email:text('email').primaryKey(),passwordHash:text('password_hash').notNull(),passwordSalt:text('password_salt').notNull(),iterations:integer('iterations').notNull(),updatedAt:text('updated_at').notNull(),
+});
+/** Sessões abertas. O navegador guarda o token; aqui fica só o SHA-256 dele. */
+export const userSessions=sqliteTable('user_sessions',{
+ tokenHash:text('token_hash').primaryKey(),email:text('email').notNull(),createdAt:text('created_at').notNull(),expiresAt:text('expires_at').notNull(),
+},(table)=>[index('user_sessions_email_idx').on(table.email)]);
+/** Links de uso único para criar ou trocar a senha (gerados por um administrador). */
+export const passwordLinks=sqliteTable('password_links',{
+ tokenHash:text('token_hash').primaryKey(),email:text('email').notNull(),createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),expiresAt:text('expires_at').notNull(),usedAt:text('used_at'),
+},(table)=>[index('password_links_email_idx').on(table.email)]);
+/** Tentativas de login erradas, por e-mail e por endereço de rede, para bloquear quem tenta adivinhar. */
+export const loginThrottle=sqliteTable('login_throttle',{
+ key:text('key').primaryKey(),failures:integer('failures').notNull(),windowStartedAt:text('window_started_at').notNull(),lockedUntil:text('locked_until'),
+});

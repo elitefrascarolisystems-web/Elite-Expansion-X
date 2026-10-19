@@ -92,6 +92,13 @@
       "when": 1791751643423,
       "tag": "0012_platform_advisors",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1792419840632,
+      "tag": "0013_password_login",
+      "breakpoints": true
     }
   ]
 }

@@ -1,58 +1,36 @@
 /// <reference types="vite/client" />
-import { env } from "cloudflare:workers";
 import { headers } from "next/headers";
-import { accessKeyLookup, normalizeTeamDomain, verifyAccessJwt, type KeyLookup } from "@/lib/access-jwt";
+import { sessionEmail } from "@/db/auth";
+import { readSessionCookie } from "@/lib/session-cookie";
 
 /**
- * Identidade da pessoa conectada, validada pelo Cloudflare Access.
- *
- * Configuração (variáveis do Worker):
- * - ACCESS_TEAM_DOMAIN: domínio do time no Zero Trust, ex. "elite.cloudflareaccess.com"
- * - ACCESS_AUD: "Application Audience (AUD) Tag" da aplicação protegida
- *
- * Sem essa configuração, ninguém entra (falha fechada): nunca confiamos em
- * cabeçalhos de identidade sem conferir a assinatura.
+ * Identidade da pessoa conectada: a sessão aberta pelo login com e-mail e senha
+ * (ver db/auth.ts). Sem sessão válida, ninguém entra.
  */
 export type CurrentUser = { displayName: string; email: string; fullName: string | null };
 
-const ACCESS_JWT_HEADER = "cf-access-jwt-assertion";
-const SIGN_OUT_PATH = "/cdn-cgi/access/logout";
-
-let lookup: { team: string; get: KeyLookup } | null = null;
-
-function accessConfig() {
-  const vars = env as unknown as Record<string, string | undefined>;
-  const teamDomain = normalizeTeamDomain(vars.ACCESS_TEAM_DOMAIN);
-  const aud = vars.ACCESS_AUD?.trim();
-  return teamDomain && aud ? { teamDomain, aud } : null;
-}
-
-export function isAuthConfigured(): boolean {
-  return accessConfig() !== null;
-}
+export const SIGN_IN_PATH = "/entrar";
+const SIGN_OUT_PATH = "/api/auth/logout";
 
 /**
- * Só em `npm run dev` (máquina local): entra direto como o dono da plataforma,
- * sem Cloudflare Access. `import.meta.env.DEV` é falso em `npm run build`, então
- * este atalho é removido da versão publicada e nunca vale na web.
+ * Só em `npm run dev` (máquina local): entra direto como o dono da plataforma.
+ * `import.meta.env.DEV` é falso em `npm run build`, então este atalho é removido
+ * da versão publicada e nunca vale na web. Para testar o login de verdade em
+ * desenvolvimento: `VITE_LOGIN_REAL=1 npm run dev`.
  */
 const DEV_LOGIN_EMAIL = "elitefrascarolisystems@gmail.com";
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  if (import.meta.env.DEV) return { displayName: DEV_LOGIN_EMAIL, email: DEV_LOGIN_EMAIL, fullName: null };
-  const config = accessConfig();
-  if (!config) return null;
-  if (lookup?.team !== config.teamDomain) lookup = { team: config.teamDomain, get: accessKeyLookup(config.teamDomain) };
+  if (import.meta.env.DEV && import.meta.env.VITE_LOGIN_REAL !== "1") return { displayName: DEV_LOGIN_EMAIL, email: DEV_LOGIN_EMAIL, fullName: null };
   try {
-    const token = (await headers()).get(ACCESS_JWT_HEADER);
-    const email = await verifyAccessJwt(token, config, lookup.get);
+    const email = await sessionEmail(readSessionCookie((await headers()).get("cookie")));
     return email ? { displayName: email, email, fullName: null } : null;
   } catch {
-    return null; // chaves indisponíveis: nega o acesso em vez de arriscar
+    return null; // banco indisponível: nega o acesso em vez de arriscar
   }
 }
 
-/** Sai do Cloudflare Access (encerra a sessão em todos os sistemas protegidos pelo time). */
+/** Encerra a sessão e volta para a tela de entrada. */
 export function signOutPath(): string {
   return SIGN_OUT_PATH;
 }

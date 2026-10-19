@@ -4,8 +4,7 @@ name: Publicar ambiente de teste
 # da produção. Precisa, nas configurações do repositório (Settings → Secrets
 # and variables → Actions):
 #   Secrets:   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
-#   Variables (opcionais): ACCESS_TEAM_DOMAIN, ACCESS_AUD. Sem elas, vale o
-#   login do Cloudflare Access do Worker de teste, logo abaixo (não são segredos).
+# O login é por e-mail e senha, dentro da própria plataforma (db/auth.ts).
 on:
   push:
     branches: [multiempresa]
@@ -83,13 +82,7 @@ jobs:
         if: steps.conta.outputs.pronta == 'true'
         env:
           D1_DATABASE_ID: ${{ steps.banco.outputs.id }}
-          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN || 'mute-bird-464d.cloudflareaccess.com' }}
-          ACCESS_AUD: ${{ vars.ACCESS_AUD || '4ebe8dcb5e43a515a4de7a6480932e4e930291e64bde58b80a181a5007e3ea34' }}
-        run: |
-          if [ -z "$ACCESS_TEAM_DOMAIN" ] || [ -z "$ACCESS_AUD" ]; then
-            echo "::warning title=Login ainda não configurado::Sem ACCESS_TEAM_DOMAIN e ACCESS_AUD o sistema publica, mas ninguém consegue entrar."
-          fi
-          npm run build
+        run: npm run build
 
       - name: Publicar
         if: steps.conta.outputs.pronta == 'true'
@@ -106,5 +99,5 @@ jobs:
         run: |
           sleep 5
           code="$(curl -s -o /dev/null -w '%{http_code}' "${{ steps.publicar.outputs.url }}/")"
-          echo "::notice title=Resposta do ambiente de teste::HTTP $code (302 ou 401 = login do Cloudflare Access ativo; 200 = página de acesso protegido)"
-          case "$code" in 200|302|401|403) ;; *) echo "::error::Resposta inesperada: HTTP $code"; exit 1;; esac
+          echo "::notice title=Resposta do ambiente de teste::HTTP $code (307 = vai para a tela de entrada)"
+          case "$code" in 200|302|303|307) ;; *) echo "::error::Resposta inesperada: HTTP $code"; exit 1;; esac

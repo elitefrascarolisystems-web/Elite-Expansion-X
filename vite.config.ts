@@ -17,7 +17,7 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
  * de desenvolvimento e teste. Nada aqui é segredo.
  */
 const deployVars = Object.fromEntries(
-  ["ACCESS_TEAM_DOMAIN", "ACCESS_AUD", "MAPS_EXTERNAL_ENABLED", "PUBLIC_MAPTILER_KEY", "PUBLIC_MAPTILER_SATELLITE_ID", "PUBLIC_MAPTILER_HYBRID_ID", "PUBLIC_GOOGLE_EMBED_KEY"]
+  ["MAPS_EXTERNAL_ENABLED", "PUBLIC_MAPTILER_KEY", "PUBLIC_MAPTILER_SATELLITE_ID", "PUBLIC_MAPTILER_HYBRID_ID", "PUBLIC_GOOGLE_EMBED_KEY"]
     .filter((name) => process.env[name])
     .map((name) => [name, process.env[name] as string]),
 );

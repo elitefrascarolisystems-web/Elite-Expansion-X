@@ -181,7 +181,8 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     `, [access.organizationId,...taskWhere.values]),
     access.role === "Administrador" ? rows(`
       SELECT u.id, u.email, u.name, u.role, u.city_id, COALESCE(c.name, '') AS city_name,
-        u.ambassador_id, COALESCE(a.name, '') AS ambassador_name, u.active, u.created_at
+        u.ambassador_id, COALESCE(a.name, '') AS ambassador_name, u.active, u.created_at,
+        EXISTS(SELECT 1 FROM user_credentials cr WHERE cr.email = lower(u.email)) AS has_password
       FROM app_users u
       LEFT JOIN cities c ON c.id = u.city_id
       LEFT JOIN ambassadors a ON a.id = u.ambassador_id
@@ -314,7 +315,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     id: asNumber(row.id), email: String(row.email), name: String(row.name), role: String(row.role) as UserRole,
     cityId: asNullableNumber(row.city_id), cityName: String(row.city_name ?? ""),
     ambassadorId: asNullableNumber(row.ambassador_id), ambassadorName: String(row.ambassador_name ?? ""),
-    active: Boolean(row.active), createdAt: String(row.created_at),
+    active: Boolean(row.active), hasPassword: Number(row.has_password) === 1, createdAt: String(row.created_at),
   }));
 
   const auditLogs: AuditRecord[] = auditRows.map((row) => ({

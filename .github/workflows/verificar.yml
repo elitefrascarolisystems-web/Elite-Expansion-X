@@ -39,6 +39,7 @@ jobs:
           set -o pipefail
           node --test --test-concurrency=1 --test-reporter=spec \
             tests/expansion-domain.test.mjs \
+            tests/password-login.test.mjs \
             tests/rendered-html.test.mjs \
             tests/territory-integration.test.mjs \
             tests/ui-components.test.mjs 2>&1 | tee resultado-testes.txt

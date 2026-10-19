@@ -223,6 +223,8 @@ export type UserProfileRecord = {
   ambassadorId: number | null;
   ambassadorName: string;
   active: boolean;
+  /** Já criou a senha de acesso. */
+  hasPassword: boolean;
   createdAt: string;
 };
 
