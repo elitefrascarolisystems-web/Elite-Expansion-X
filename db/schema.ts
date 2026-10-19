@@ -301,6 +301,7 @@ export const businesses = sqliteTable('businesses', {
  partnerId:integer('partner_id').references(()=>partners.id),version:integer('version').notNull().default(1),createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
 },t=>[uniqueIndex('business_identity_unique').on(t.organizationId,t.cityId,t.identityKey),uniqueIndex('business_partner_unique').on(t.partnerId),uniqueIndex('business_external_unique').on(t.organizationId,t.source,t.externalId),index('business_org_city').on(t.organizationId,t.cityId)]);
 export const opportunities = sqliteTable('opportunities', {
+ followupJson:text('followup_json').notNull().default('{}'),
  id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),cityId:integer('city_id').notNull().references(()=>cities.id),
  leadId:integer('lead_id').notNull().references(()=>leads.id),businessId:text('business_id').references(()=>businesses.id),ownerEmail:text('owner_email').notNull(),
  temperature:text('temperature').notNull(),stage:text('stage').notNull(),nextAction:text('next_action').notNull(),dueDate:text('due_date').notNull(),lostReason:text('lost_reason').notNull().default(''),
@@ -322,3 +323,10 @@ export const cityDecisions = sqliteTable('city_decisions', {
 export const organizationPlans = sqliteTable('organization_plans', {
  organizationId:integer('organization_id').primaryKey(),name:text('name'),userLimit:integer('user_limit'),cityLimit:integer('city_limit'),updatedBy:text('updated_by').notNull(),updatedAt:text('updated_at').notNull(),
 });
+
+export const followupEvents = sqliteTable('followup_events', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),
+ opportunityId:text('opportunity_id').notNull().references(()=>opportunities.id),
+ actorEmail:text('actor_email').notNull(),requestJson:text('request_json').notNull(),
+ action:text('action').notNull(),note:text('note').notNull(),beforeJson:text('before_json').notNull(),afterJson:text('after_json').notNull(),createdAt:text('created_at').notNull(),
+},t=>[index('followup_history').on(t.organizationId,t.opportunityId,t.createdAt)]);

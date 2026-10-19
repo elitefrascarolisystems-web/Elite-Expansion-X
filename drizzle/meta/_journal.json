@@ -78,6 +78,13 @@
       "when": 1791558051031,
       "tag": "0010_overrated_smasher",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1792167375389,
+      "tag": "0011_lucky_thaddeus_ross",
+      "breakpoints": true
     }
   ]
 }
