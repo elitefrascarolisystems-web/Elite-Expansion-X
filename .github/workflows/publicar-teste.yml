@@ -21,6 +21,22 @@ on:
         required: false
         default: ""
         type: string
+      membro_email:
+        description: "Opcional: e-mail de alguém da equipe Elite para cadastrar e mandar link de acesso (usa link_token_hash)"
+        required: false
+        default: ""
+        type: string
+      membro_nome:
+        description: "Nome dessa pessoa"
+        required: false
+        default: ""
+        type: string
+      membro_funcao:
+        description: "Função dessa pessoa na Elite"
+        required: false
+        default: "Coordenação"
+        type: choice
+        options: [Coordenação, Administrador, Comercial]
 
 concurrency:
   group: publicar-teste
@@ -135,3 +151,37 @@ jobs:
             "DELETE FROM password_links WHERE email='$EMAIL' AND used_at IS NULL; INSERT INTO password_links(token_hash,email,created_by,created_at,expires_at) VALUES('$TOKEN_HASH','$EMAIL','github-actions','$now','$expires');"
           rm wrangler.link.json
           echo "::notice title=Link de acesso registrado::$EMAIL, válido até $expires (UTC)."
+
+      # Cadastra alguém da equipe Elite (organização principal) e grava o link para
+      # essa pessoa criar a senha. Usado enquanto nenhum dono entrou para fazer pela tela.
+      - name: Cadastrar membro da equipe Elite com link de acesso
+        if: steps.conta.outputs.pronta == 'true' && inputs.membro_email != ''
+        env:
+          D1_DATABASE_ID: ${{ steps.banco.outputs.id }}
+          EMAIL_INFORMADO: ${{ inputs.membro_email }}
+          NOME: ${{ inputs.membro_nome }}
+          FUNCAO: ${{ inputs.membro_funcao }}
+          TOKEN_HASH: ${{ inputs.link_token_hash }}
+          OUTRO_LINK: ${{ inputs.link_email }}
+          ATOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          [ -z "$OUTRO_LINK" ] || { echo "::error::Use link_email OU membro_email, não os dois (o token é um só)."; exit 1; }
+          EMAIL="$(printf '%s' "$EMAIL_INFORMADO" | tr '[:upper:]' '[:lower:]')"
+          [[ "$EMAIL" =~ ^[a-z0-9._+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$ ]] || { echo "::error::membro_email inválido."; exit 1; }
+          [[ "$NOME" =~ ^[[:alpha:]][[:alpha:]\ .-]{1,79}$ ]] && [[ "$NOME" != *\'* ]] || { echo "::error::membro_nome inválido (só letras, espaço, ponto e hífen)."; exit 1; }
+          [[ "$TOKEN_HASH" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::link_token_hash precisa ter 64 caracteres hexadecimais."; exit 1; }
+          cat > wrangler.link.json <<JSON
+          {"name":"$WORKER_NAME","compatibility_date":"2026-05-15",
+           "d1_databases":[{"binding":"DB","database_name":"$D1_DATABASE_NAME","database_id":"$D1_DATABASE_ID"}]}
+          JSON
+          now="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+          expires="$(date -u -d '+72 hours' +%Y-%m-%dT%H:%M:%S.000Z)"
+          npx wrangler d1 execute DB --remote -c wrangler.link.json --command \
+            "INSERT INTO app_users(organization_id,email,name,role,active,created_by,created_at) SELECT 1,'$EMAIL','$NOME','$FUNCAO',1,'github-actions','$now' WHERE NOT EXISTS(SELECT 1 FROM app_users WHERE organization_id=1 AND lower(email)='$EMAIL'); \
+             UPDATE app_users SET active=1 WHERE organization_id=1 AND lower(email)='$EMAIL'; \
+             DELETE FROM password_links WHERE email='$EMAIL' AND used_at IS NULL; \
+             INSERT INTO password_links(token_hash,email,created_by,created_at,expires_at) VALUES('$TOKEN_HASH','$EMAIL','github-actions','$now','$expires'); \
+             INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,summary,created_at) VALUES(1,'github-actions','create_user','app_user','Perfil de $EMAIL ($FUNCAO) e link de acesso criados pela publicação de teste (pedido de $ATOR).','$now');"
+          rm wrangler.link.json
+          echo "::notice title=Membro cadastrado::$EMAIL ($FUNCAO). Link de acesso válido até $expires (UTC)."
