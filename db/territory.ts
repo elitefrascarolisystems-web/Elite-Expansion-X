@@ -1,3 +1,4 @@
+import {rowDue,type Followup} from '@/lib/followup';
 import { database, brazilTimestamp } from '@/db/runtime';
 import { canAccessCity } from '@/lib/expansion-permissions';
 import { cityReference } from '@/lib/territorial-map';
@@ -91,6 +92,12 @@ export async function getTerritory(a:AccessView, params:URLSearchParams):Promise
     } : reference ? {latitude:reference.latitude,longitude:reference.longitude,region:'',precision:'Cidade' as const,source:reference.sourceLabel,validated:true,visibility:'Equipe' as const,updatedAt:''}:null;
     return {key:str(row.entity_key),id:str(row.id),kind:str(row.kind) as TerritoryRecord['kind'],cityId:Number(row.city_id),cityName:str(row.city_name),state:str(row.state),name:str(row.name),roles:str(row.roles).split(','),status:(['Mentor','Mentorado','Equipe','Parceiro','Vendedor'].includes(category??'')?JSON.parse(str(row.role_details)||'[]').find((v:{role:string;status:string})=>v.role===category)?.status:null)??str(row.status),responsible:a.role==='Embaixador'?'':str(row.responsible),lastActivity:str(row.activity_date),roleDetails:JSON.parse(str(row.role_details)||'[]'),nextAction:str(row.next_action),dueDate:str(row.due_date),location,ambassadorId:n(row.ambassador_id),leadId:a.role==='Embaixador'?null:n(row.lead_id),referrerName:['Administrador','Coordenação','Líder'].includes(a.role)?str(row.referrer_name):'',referrerId:a.role==='Embaixador'?null:row.referrer_id?str(row.referrer_id):null};
   });
+  // Both views read the same commercial next step; no duplicate territorial task is created.
+  const personIds=records.filter(r=>r.kind==='person').map(r=>r.id);
+  if(personIds.length&&a.role!=='Embaixador'){
+    const commercial=await dbRows(`SELECT o.*,l.person_id,s.status AS payment_status,s.paid_at FROM opportunities o JOIN leads l ON l.id=o.lead_id LEFT JOIN sales s ON s.lead_id=l.id WHERE o.organization_id=? AND l.consent_revoked_at IS NULL AND l.status<>'Cancelado' AND l.person_id IN (${personIds.map(()=>'?').join(',')}) AND (?<>'Comercial' OR (lower(o.owner_email)=lower(?) AND lower(l.assigned_to_email)=lower(?)))`,[a.organizationId,...personIds,a.role,a.email,a.email]);
+    for(const o of commercial){const record=records.find(r=>r.id===o.person_id&&r.kind==='person');if(!record)continue;const due=rowDue({followup:JSON.parse(str(o.followup_json)||'{}') as Followup,due_date:str(o.due_date),stage:str(o.stage),payment_status:o.payment_status?str(o.payment_status):null,paid_at:o.paid_at?str(o.paid_at):null});if(due&&(!record.dueDate||Date.parse(due)<Date.parse(record.dueDate+'T23:59:59-03:00'))){record.nextAction=str(o.next_action);record.dueDate=due;record.responsible=str(o.owner_email);}}
+  }
   return {roleCounts:{Mentor:Number(count[0]?.mentors??0),Mentorado:Number(count[0]?.members??0),Embaixador:Number(count[0]?.ambassadors??0),Líder:Number(count[0]?.leaders??0)},points:points.slice(0,1000).map(p=>({latitude:Number(p.latitude),longitude:Number(p.longitude),count:Number(p.count),people:Number(p.people),key:str(p.entity_key),kind:str(p.kind) as TerritoryRecord['kind'],roles:str(p.roles).split(','),status:str(p.status)})),pointsCapped:points.length>1000,inView:Number(inView[0]?.total??0),people:Number(count[0]?.people??0),pending:Number(count[0]?.pending??0),records,total:Number(count[0]?.total??0),hasMore:result.length>200,nextOffset:result.length>200?offset+200:null,updatedAt:brazilTimestamp(),canEdit:management(a)};
 }
 async function allowedCity(a:AccessView,cityId:number) {
