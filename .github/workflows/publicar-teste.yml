@@ -179,9 +179,10 @@ jobs:
           expires="$(date -u -d '+72 hours' +%Y-%m-%dT%H:%M:%S.000Z)"
           npx wrangler d1 execute DB --remote -c wrangler.link.json --command \
             "INSERT INTO app_users(organization_id,email,name,role,active,created_by,created_at) SELECT 1,'$EMAIL','$NOME','$FUNCAO',1,'github-actions','$now' WHERE NOT EXISTS(SELECT 1 FROM app_users WHERE organization_id=1 AND lower(email)='$EMAIL'); \
-             UPDATE app_users SET active=1 WHERE organization_id=1 AND lower(email)='$EMAIL'; \
+             UPDATE app_users SET active=1,role='$FUNCAO',name='$NOME' WHERE organization_id=1 AND lower(email)='$EMAIL'; \
+             DELETE FROM login_throttle WHERE key='email:$EMAIL'; \
              DELETE FROM password_links WHERE email='$EMAIL' AND used_at IS NULL; \
              INSERT INTO password_links(token_hash,email,created_by,created_at,expires_at) VALUES('$TOKEN_HASH','$EMAIL','github-actions','$now','$expires'); \
-             INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,summary,created_at) VALUES(1,'github-actions','create_user','app_user','Perfil de $EMAIL ($FUNCAO) e link de acesso criados pela publicação de teste (pedido de $ATOR).','$now');"
+             INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,summary,created_at) VALUES(1,'github-actions','create_user','app_user','Perfil de $EMAIL definido como $FUNCAO e link de acesso criado pela publicação de teste (pedido de $ATOR).','$now');"
           rm wrangler.link.json
           echo "::notice title=Membro cadastrado::$EMAIL ($FUNCAO). Link de acesso válido até $expires (UTC)."
