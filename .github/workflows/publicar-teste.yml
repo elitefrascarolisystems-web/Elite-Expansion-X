@@ -4,7 +4,8 @@ name: Publicar ambiente de teste
 # da produção. Precisa, nas configurações do repositório (Settings → Secrets
 # and variables → Actions):
 #   Secrets:   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
-#   Variables: ACCESS_TEAM_DOMAIN, ACCESS_AUD (login; sem eles ninguém entra)
+#   Variables (opcionais): ACCESS_TEAM_DOMAIN, ACCESS_AUD. Sem elas, vale o
+#   login do Cloudflare Access do Worker de teste, logo abaixo (não são segredos).
 on:
   push:
     branches: [multiempresa]
@@ -82,8 +83,8 @@ jobs:
         if: steps.conta.outputs.pronta == 'true'
         env:
           D1_DATABASE_ID: ${{ steps.banco.outputs.id }}
-          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
-          ACCESS_AUD: ${{ vars.ACCESS_AUD }}
+          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN || 'mute-bird-464d.cloudflareaccess.com' }}
+          ACCESS_AUD: ${{ vars.ACCESS_AUD || '4ebe8dcb5e43a515a4de7a6480932e4e930291e64bde58b80a181a5007e3ea34' }}
         run: |
           if [ -z "$ACCESS_TEAM_DOMAIN" ] || [ -z "$ACCESS_AUD" ]; then
             echo "::warning title=Login ainda não configurado::Sem ACCESS_TEAM_DOMAIN e ACCESS_AUD o sistema publica, mas ninguém consegue entrar."
