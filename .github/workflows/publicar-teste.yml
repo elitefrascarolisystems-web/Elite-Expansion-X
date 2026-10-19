@@ -9,6 +9,18 @@ on:
   push:
     branches: [multiempresa]
   workflow_dispatch:
+    inputs:
+      link_email:
+        description: "Opcional: dono da plataforma que recebe um link de primeiro acesso / nova senha"
+        required: false
+        default: ""
+        type: choice
+        options: ["", elitefrascarolisystems@gmail.com, teamfrascaroli@gmail.com]
+      link_token_hash:
+        description: "SHA-256 (64 hexadecimais) do token do link. O link em si nunca passa pelo GitHub."
+        required: false
+        default: ""
+        type: string
 
 concurrency:
   group: publicar-teste
@@ -101,3 +113,25 @@ jobs:
           code="$(curl -s -o /dev/null -w '%{http_code}' "${{ steps.publicar.outputs.url }}/")"
           echo "::notice title=Resposta do ambiente de teste::HTTP $code (307 = vai para a tela de entrada)"
           case "$code" in 200|302|303|307) ;; *) echo "::error::Resposta inesperada: HTTP $code"; exit 1;; esac
+
+      # Os donos da plataforma não têm administrador acima deles para gerar o
+      # link de acesso pela tela; este passo grava o link deles (72 horas, uso único).
+      - name: Link de acesso de um dono da plataforma
+        if: steps.conta.outputs.pronta == 'true' && inputs.link_email != ''
+        env:
+          D1_DATABASE_ID: ${{ steps.banco.outputs.id }}
+          EMAIL: ${{ inputs.link_email }}
+          TOKEN_HASH: ${{ inputs.link_token_hash }}
+        run: |
+          set -euo pipefail
+          [[ "$TOKEN_HASH" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::link_token_hash precisa ter 64 caracteres hexadecimais."; exit 1; }
+          cat > wrangler.link.json <<JSON
+          {"name":"$WORKER_NAME","compatibility_date":"2026-05-15",
+           "d1_databases":[{"binding":"DB","database_name":"$D1_DATABASE_NAME","database_id":"$D1_DATABASE_ID"}]}
+          JSON
+          now="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+          expires="$(date -u -d '+72 hours' +%Y-%m-%dT%H:%M:%S.000Z)"
+          npx wrangler d1 execute DB --remote -c wrangler.link.json --command \
+            "DELETE FROM password_links WHERE email='$EMAIL' AND used_at IS NULL; INSERT INTO password_links(token_hash,email,created_by,created_at,expires_at) VALUES('$TOKEN_HASH','$EMAIL','github-actions','$now','$expires');"
+          rm wrangler.link.json
+          echo "::notice title=Link de acesso registrado::$EMAIL, válido até $expires (UTC)."
