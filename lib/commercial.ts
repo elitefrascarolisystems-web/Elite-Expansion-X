@@ -1,3 +1,4 @@
+import "./zod-pt";
 import {z} from 'zod';
 export const STAGES=['Novo','Contato','Qualificado','Reunião','Proposta','Negociação','Ganho','Perdido'] as const;
 export const TEMPERATURES=['Frio','Morno','Quente'] as const;
@@ -8,7 +9,7 @@ export const businessSchema=z.object({id:z.string().uuid(),version:z.number().in
 export const opportunitySchema=z.object({id:z.string().uuid(),version:z.number().int().positive().optional(),leadId:z.number().int().positive(),businessId:z.string().uuid().nullable().default(null),ownerEmail:z.string().email(),temperature:z.enum(TEMPERATURES),stage:z.enum(STAGES),nextAction:str(500),dueDate:daySchema,lostReason:str(500).default('')}).refine(v=>v.stage!=='Perdido'||v.lostReason.length>=3,'Informe o motivo da perda.').refine(v=>['Ganho','Perdido'].includes(v.stage)||v.nextAction.length>=3,'Informe a próxima ação.');
 export const activityInput=z.object({id:z.string().uuid(),opportunityId:z.string().uuid(),kind:z.enum(ACTIVITY_KINDS),note:str(1000).min(3),day:daySchema});
 export const goalInput=z.object({cityId:z.number().int().positive(),ownerEmail:z.string().email(),day:daySchema,cold:z.number().int().min(0).max(10000),hot:z.number().int().min(0).max(10000),contacts:z.number().int().min(0).max(10000)});
-export const reportInput=z.object({cityId:z.number().int().positive(),day:daySchema,blockers:str(2000),nextPlan:str(2000).min(3)});
+export const reportInput=z.object({cityId:z.number().int().positive(),day:daySchema,blockers:str(2000).default(''),nextPlan:str(2000).min(3)});
 export function businessIdentity(name:string,address:string){return [name,address].map(v=>v.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')).join('|');}
 export function csvCell(value:unknown){const s=String(value??'');return '"'+(/^[\s]*[=+@\-\t\r]/.test(s)?"'"+s:s).replaceAll('"','""')+'"';}
 

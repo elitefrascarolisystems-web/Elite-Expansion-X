@@ -21,7 +21,11 @@ const SIGN_OUT_PATH = "/api/auth/logout";
 const DEV_LOGIN_EMAIL = "elitefrascarolisystems@gmail.com";
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  if (import.meta.env.DEV && import.meta.env.VITE_LOGIN_REAL !== "1") return { displayName: DEV_LOGIN_EMAIL, email: DEV_LOGIN_EMAIL, fullName: null };
+  if (import.meta.env.DEV && import.meta.env.VITE_LOGIN_REAL !== "1") {
+    // Para testar outra função no modo local: VITE_DEV_LOGIN_EMAIL=pessoa@exemplo npm run dev
+    const email = import.meta.env.VITE_DEV_LOGIN_EMAIL || DEV_LOGIN_EMAIL;
+    return { displayName: email, email, fullName: null };
+  }
   try {
     const email = await sessionEmail(readSessionCookie((await headers()).get("cookie")));
     return email ? { displayName: email, email, fullName: null } : null;

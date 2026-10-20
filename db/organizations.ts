@@ -1,3 +1,4 @@
+import "@/lib/zod-pt";
 import { z } from 'zod';
 import { database, brazilTimestamp } from '@/db/runtime';
 import { isPlatformAdvisor, isPlatformOwnerEmail } from '@/db/access';

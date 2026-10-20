@@ -1,3 +1,4 @@
+import "./zod-pt";
 import { z } from 'zod';
 const text = z.string().trim().max(200);
 const id = z.number().int().positive();

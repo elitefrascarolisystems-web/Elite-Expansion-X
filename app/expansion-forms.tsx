@@ -318,12 +318,21 @@ function SettingsForm({ data, saving, onSave }: { data: DashboardData; saving: b
   </FormShell>;
 }
 
+const CITY_REQUIRED = ["Coordenação", "Líder", "Embaixador"];
+const ROLE_HELP: Record<string, string> = {
+  Administrador: "Vê e altera tudo da organização, cadastra pessoas e gera links de acesso.",
+  Coordenação: "Coordena uma cidade: registra pessoas, embaixadores, leads, vendas, custos e tarefas dela.",
+  Líder: "Líder local de uma cidade: acompanha a equipe e os resultados dela.",
+  Embaixador: "Vê só o próprio portal: treinamento, link de indicação e tarefas.",
+  Comercial: "Vendedor: vê os próprios leads, oportunidades, agenda e metas.",
+};
+
 function UserForm({ data, saving, onSave }: { data: DashboardData; saving: boolean; onSave: Save }) {
   const [role, setRole] = useState("Embaixador"); const [cityId, setCityId] = useState("none"); const [ambassadorId, setAmbassadorId] = useState("none");
-  return <FormShell title="Preparar perfil interno" description="Isso define permissões dentro da aplicação. Nenhum convite será enviado e o acesso privado do site não será alterado." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("create_user", { email: f.get("email"), name: f.get("name"), role, cityId: cityId === "none" ? null : Number(cityId), ambassadorId: ambassadorId === "none" ? null : Number(ambassadorId) }); }}>
-    <Field label="Nome"><Input name="name" required className={inputClass} /></Field><Field label="E-mail"><Input name="email" type="email" required className={inputClass} /></Field><Field label="Função"><Select value={role} onValueChange={setRole}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Administrador", "Coordenação", "Líder", "Embaixador", "Comercial"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
-    <Field label="Cidade"><Select value={cityId} onValueChange={(value) => { setCityId(value); setAmbassadorId("none"); }}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sem limite de cidade</SelectItem>{data.cities.map((city) => <SelectItem key={city.id} value={String(city.id)}>{city.name}</SelectItem>)}</SelectContent></Select></Field>
-    <Field label="Embaixador"><Select value={ambassadorId} onValueChange={setAmbassadorId}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Não vinculado</SelectItem>{data.ambassadors.filter((item) => cityId !== "none" && item.cityId === Number(cityId)).map((item) => <SelectItem key={item.id} value={String(item.id)}>{item.name}</SelectItem>)}</SelectContent></Select></Field>
+  return <FormShell title="Preparar perfil" description="Define o que a pessoa pode ver e fazer. Depois de salvar, use Gerar link na tabela de perfis para ela criar a própria senha." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("create_user", { email: f.get("email"), name: f.get("name"), role, cityId: cityId === "none" || cityId === "" ? null : Number(cityId), ambassadorId: ambassadorId === "none" ? null : Number(ambassadorId) }); }}>
+    <Field label="Nome"><Input name="name" required className={inputClass} /></Field><Field label="E-mail"><Input name="email" type="email" required className={inputClass} /></Field><Field label="Função"><Select value={role} onValueChange={(value) => { setRole(value); if (CITY_REQUIRED.includes(value) && cityId === "none") setCityId(""); if (!CITY_REQUIRED.includes(value) && cityId === "") setCityId("none"); }}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Administrador", "Coordenação", "Líder", "Embaixador", "Comercial"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
+    <p className="text-xs leading-5 text-zinc-400 sm:col-span-2">{ROLE_HELP[role]}</p><Field label="Cidade"><Select value={cityId} onValueChange={(value) => { setCityId(value); setAmbassadorId("none"); }}><SelectTrigger className={selectClass}><SelectValue placeholder="Selecione a cidade" /></SelectTrigger><SelectContent>{!CITY_REQUIRED.includes(role) && <SelectItem value="none">Todas as cidades</SelectItem>}{data.cities.map((city) => <SelectItem key={city.id} value={String(city.id)}>{city.name}</SelectItem>)}</SelectContent></Select></Field>
+    {role === "Embaixador" && <Field label="Embaixador"><Select value={ambassadorId} onValueChange={setAmbassadorId}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Não vinculado</SelectItem>{data.ambassadors.filter((item) => cityId !== "none" && item.cityId === Number(cityId)).map((item) => <SelectItem key={item.id} value={String(item.id)}>{item.name}</SelectItem>)}</SelectContent></Select></Field>}
   </FormShell>;
 }
 

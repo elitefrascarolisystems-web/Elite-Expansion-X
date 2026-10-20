@@ -1,3 +1,4 @@
+import "@/lib/zod-pt";
 import {database,brazilTimestamp} from '@/db/runtime';
 import {scope,entity,CommercialError} from '@/db/commercial';
 import type {AccessView} from '@/lib/expansion-types';

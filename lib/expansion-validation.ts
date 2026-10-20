@@ -1,3 +1,4 @@
+import "./zod-pt";
 import { z } from "zod";
 import { ACTIONS, type ActionName } from "@/lib/expansion-permissions";
 import { USER_ROLES } from "@/lib/expansion-types";
@@ -142,6 +143,11 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     product: shortText,
     amountCents: nonNegative,
     status: z.enum(["Em negociação", "Venda confirmada", "Pagamento confirmado", "Cancelada", "Reembolsada"]),
+  }).superRefine((value, context) => {
+    // Venda confirmada ou paga sem valor contaria cliente pago sem receita.
+    if (["Venda confirmada", "Pagamento confirmado"].includes(value.status) && value.amountCents <= 0) {
+      context.addIssue({ code: "custom", path: ["amountCents"], message: "Informe o valor da venda." });
+    }
   }),
   create_cost: z.object({
     cityId: id,
