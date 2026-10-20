@@ -7,7 +7,7 @@ import {createServer} from 'vite';
 const root=fileURLToPath(new URL('..',import.meta.url));
 const vite=await createServer({appType:'custom',configFile:false,root,resolve:{alias:[{find:'cloudflare:workers',replacement:root+'tests/fixtures/cloudflare.mjs'},{find:'@/app/auth',replacement:root+'tests/fixtures/auth.mjs'},{find:'@',replacement:root}]},server:{middlewareMode:true,hmr:false}});
 let sqlite;
-function adapter(db){return {prepare(sql){let args=[];const stmt={bind(...values){args=values.map(v=>typeof v==='boolean'?Number(v):v);return stmt;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {success:true,meta:{last_row_id:Number(r.lastInsertRowid),changes:Number(r.changes)}};}};return stmt;},async batch(statements){db.exec('BEGIN');try{const result=[];for(const s of statements)result.push(await s.run());db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}};}
+function adapter(db){return {prepare(sql){let args=[];const stmt={bind(...values){if(values.length>100)throw new Error('D1_ERROR: too many SQL variables (limite de 100 do D1)');args=values.map(v=>typeof v==='boolean'?Number(v):v);return stmt;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {success:true,meta:{last_row_id:Number(r.lastInsertRowid),changes:Number(r.changes)}};}};return stmt;},async batch(statements){db.exec('BEGIN');try{const result=[];for(const s of statements)result.push(await s.run());db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}};}
 beforeEach(()=>{sqlite?.close();sqlite=new DatabaseSync(':memory:');sqlite.exec('PRAGMA foreign_keys=ON');for(const f of readdirSync(root+'drizzle').filter(f=>f.endsWith('.sql')).sort())sqlite.exec(readFileSync(root+'drizzle/'+f,'utf8'));globalThis.__eliteTestD1=adapter(sqlite);globalThis.__eliteTestUser={email:'teamfrascaroli@gmail.com',displayName:'Administrador de teste'};});
 after(async()=>{sqlite.close();await vite.close();delete globalThis.__eliteTestD1;delete globalThis.__eliteTestUser;});
 const request=(action,data)=>new Request('https://test.invalid/api/territory',{method:'POST',headers:{origin:'https://test.invalid','Content-Type':'application/json','X-Elite-Organization':'1'},body:JSON.stringify({action,data})});
@@ -57,6 +57,13 @@ test('expired FECHA is outside agenda and map without a browser or scheduler wri
  const r=(await read(m)).records[0];assert.equal(r.fechaStatus,'future');assert.equal(r.dueAt,null);
  assert.equal((await m.getTerritory(m.access,new URLSearchParams('key=person:'+m.personId))).records[0].nextAction,'');
  await assert.rejects(m.saveFollowup(m.access,cmd(m,'wait',2)),/rodada terminou/);
+ // A equipe comercial conta atrasos com a mesma regra da agenda: rodada vencida não é atraso.
+ sqlite.prepare("UPDATE opportunities SET due_date='2020-01-01' WHERE id=?").run(m.id);
+ const team=await m.getCommercial(m.access,new URLSearchParams('mode=team&day=2026-10-20'));
+ assert.equal(team.pipelineTotals.reduce((n,t)=>n+Number(t.overdue),0),0);
+ sqlite.prepare("UPDATE opportunities SET followup_json='{}' WHERE id=?").run(m.id);
+ const again=await m.getCommercial(m.access,new URLSearchParams('mode=team&day=2026-10-20'));
+ assert.equal(again.pipelineTotals.reduce((n,t)=>n+Number(t.overdue),0),1,'sem FECHA vencido, o atraso continua contando');
 });
 test('existing payment drives FECHA and post-sale; no duplicate sale or person',async()=>{
  const m=await setup();await assert.rejects(m.saveFollowup(m.access,cmd(m,'aftercare',1,{aftercare:'Boas-vindas'})),/pagamento confirmado/);

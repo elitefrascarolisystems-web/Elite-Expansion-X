@@ -1,3 +1,4 @@
+import "./zod-pt";
 import {z} from 'zod';
 export const FECHA_LABELS={pending:'Pagamento pendente',blocker:'Trava identificada',resolved:'Trava resolvida',link:'Link reenviado',future:'Retomada futura',paid:'Pago'};
 export const BLOCKERS=['Dinheiro','Limite / cartão','Dúvida','Medo / insegurança','Prioridade'] as const;
@@ -26,6 +27,15 @@ export function transition(previous:Followup,v:z.infer<typeof commandSchema>,pai
  need(v.dueAt&&Date.parse(v.dueAt)>now,'Informe uma data e um horário futuros.');need(v.nextAction.length>=3,'Defina a próxima ação.');
  if(f.fecha&&!paid){if(f.fecha.agreedAt)need(v.dueAt===f.fecha.agreedAt,'Use Marcar data combinada para alterar o compromisso.');else need(Date.parse(v.dueAt!)<=Date.parse(f.fecha.deadlineAt),'Agende dentro das 72 horas ou use Marcar data combinada.');}
  f.dueAt=v.dueAt;f.channel=v.channel;return f;
+}
+/**
+ * A mesma regra de rowDue, em SQL, para contadores agregados (ex.: atrasos da equipe):
+ * fica fora do retorno ativo quem já pagou sem pós-venda, quem concluiu o pós-venda e a
+ * rodada F.E.C.H.A. encerrada ou vencida sem data combinada. Recebe 1 parâmetro: agora (ISO).
+ */
+export function followupInactiveSql(o:string,s:string){
+ const f=(path:string)=>`json_extract(${o}.followup_json,'$.${path}')`;
+ return `COALESCE(((${s}.status='Pagamento confirmado' AND ${s}.paid_at IS NOT NULL AND ${f('aftercare')} IS NULL) OR COALESCE(${f('aftercare')},'')='Concluído' OR ${f('fecha.status')}='future' OR (${f('fecha.status')} IS NOT NULL AND ${f('fecha.status')}<>'paid' AND ${f('fecha.agreedAt')} IS NULL AND ${f('fecha.deadlineAt')}<=?)),0)`;
 }
 export function rowDue(row:{followup:Followup;due_date:string;stage:string;payment_status:string|null;paid_at:string|null},now=Date.now()){
  const paid=row.payment_status==='Pagamento confirmado'&&!!row.paid_at;
