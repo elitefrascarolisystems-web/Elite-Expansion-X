@@ -96,7 +96,7 @@ function CityFields({ city, saving, onSave, mode }: { city?: CityRecord; saving:
   return (
     <FormShell
       title={mode === "create" ? "Cadastrar cidade" : `Configurar ${city?.name}`}
-      description="Metas e limites ficam visíveis. O modo detalhado usa leads, pagamentos e custos individuais; o consolidado usa fechamentos por período."
+      description="Metas e limites ficam visíveis. O modo detalhado usa cada atendimento, pagamento e custo; o consolidado usa fechamentos por período."
       saving={saving}
       onSubmit={(event) => {
         event.preventDefault();
@@ -121,7 +121,7 @@ function CityFields({ city, saving, onSave, mode }: { city?: CityRecord; saving:
       <Field label="Líder local"><Input name="leaderName" defaultValue={city?.leaderName} placeholder="Nome do responsável" className={inputClass} /></Field>
       <Field label="Fase"><Select value={phase} onValueChange={setPhase}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Preparação", "Piloto", "Ativa", "Em espera"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
       <Field label="Situação"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Planejada", "Ativa", "Pausada"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
-      <Field label="Fonte dos indicadores" hint="Não misture lançamentos consolidados e detalhados no mesmo período."><Select value={trackingMode} onValueChange={setTrackingMode}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Detalhado">Detalhado — CRM</SelectItem><SelectItem value="Consolidado">Consolidado — fechamento</SelectItem></SelectContent></Select></Field>
+      <Field label="Fonte dos indicadores" hint="Não misture lançamentos consolidados e detalhados no mesmo período."><Select value={trackingMode} onValueChange={setTrackingMode}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Detalhado">Detalhado — atendimento a atendimento</SelectItem><SelectItem value="Consolidado">Consolidado — fechamento</SelectItem></SelectContent></Select></Field>
       <Field label="CAC máximo (R$)"><Input name="targetCac" type="number" min="0" step="0.01" defaultValue={(city?.targetCacCents ?? 0) / 100} className={inputClass} /></Field>
       <Field label="Orçamento da cidade (R$)"><Input name="budget" type="number" min="0" step="0.01" defaultValue={(city?.budgetCents ?? 0) / 100} className={inputClass} /></Field>
       <Field label="Meta de embaixadores"><Input name="ambassadorGoal" type="number" min="1" defaultValue={city?.ambassadorGoal ?? 10} className={inputClass} /></Field>
@@ -235,7 +235,7 @@ function LeadForm({ data, saving, onSave }: { data: DashboardData; saving: boole
 function LeadStatusForm({ data, leadId, saving, onSave }: { data: DashboardData; leadId?: number; saving: boolean; onSave: Save }) {
   const lead = data.leads.find((item) => item.id === leadId); const [status, setStatus] = useState(lead?.status ?? "Lead válido");
   const [consentRevoked, setConsentRevoked] = useState(Boolean(lead?.consentRevokedAt));
-  return <FormShell title={`Atualizar lead #${lead?.id ?? ""}`} description="A etapa comercial não confirma uma venda ou pagamento. Use o registro de venda para isso." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("update_lead", { leadId: lead?.id, status, assignedToEmail: f.get("assignedToEmail"), consentRevoked, consentRevocationReason: f.get("consentRevocationReason") }); }}>
+  return <FormShell title={`Etapa e autorização · ${lead?.name ?? ""}`} description="A etapa comercial não confirma uma venda ou pagamento. Use o registro de venda para isso." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("update_lead", { leadId: lead?.id, status, assignedToEmail: f.get("assignedToEmail"), consentRevoked, consentRevocationReason: f.get("consentRevocationReason") }); }}>
     <Field label="Etapa"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Lead informado", "Lead válido", "Oportunidade", "Cancelado"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
     <Field label="Responsável comercial"><Input name="assignedToEmail" type="email" defaultValue={lead?.assignedToEmail} className={inputClass} /></Field>
     <div className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-4"><Checkbox id="lead-consent-revoked" checked={consentRevoked} disabled={Boolean(lead?.consentRevokedAt)} onCheckedChange={(value) => setConsentRevoked(value === true)} /><label htmlFor="lead-consent-revoked" className="text-sm leading-6 text-zinc-300">O contato revogou a autorização. Essa ação cancela o atendimento e não pode ser desfeita neste registro.</label></div>
@@ -282,7 +282,7 @@ function PartnerForm({ data, saving, onSave }: { data: DashboardData; saving: bo
 
 function EventForm({ data, saving, onSave }: { data: DashboardData; saving: boolean; onSave: Save }) {
   const [cityId, setCityId] = useState(String(data.cities[0]?.id ?? "")); const [partnerId, setPartnerId] = useState("none"); const [status, setStatus] = useState("Planejado");
-  return <FormShell title="Cadastrar evento" description="O custo informado será lançado automaticamente na categoria Evento. Leads precisam ser cadastrados no CRM para entrarem nos indicadores detalhados." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("create_event", { cityId: Number(cityId), partnerId: partnerId === "none" ? null : Number(partnerId), name: f.get("name"), eventDate: f.get("date"), status, ownerName: f.get("ownerName"), costCents: cents(f.get("cost")), reach: Number(f.get("reach") || 0), leads: Number(f.get("leads") || 0), sales: Number(f.get("sales") || 0) }); }}>
+  return <FormShell title="Cadastrar evento" description="O custo informado será lançado automaticamente na categoria Evento. Para entrar nos indicadores detalhados, cada pessoa do evento precisa virar um atendimento em Vendas." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("create_event", { cityId: Number(cityId), partnerId: partnerId === "none" ? null : Number(partnerId), name: f.get("name"), eventDate: f.get("date"), status, ownerName: f.get("ownerName"), costCents: cents(f.get("cost")), reach: Number(f.get("reach") || 0), leads: Number(f.get("leads") || 0), sales: Number(f.get("sales") || 0) }); }}>
     <Field label="Cidade"><Select value={cityId} onValueChange={(value) => { setCityId(value); setPartnerId("none"); }}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{data.cities.map((city) => <SelectItem key={city.id} value={String(city.id)}>{city.name}</SelectItem>)}</SelectContent></Select></Field><Field label="Nome do evento"><Input name="name" required className={inputClass} /></Field><Field label="Data"><Input name="date" type="date" required defaultValue={dateNow} className={inputClass} /></Field>
     <Field label="Parceiro"><Select value={partnerId} onValueChange={setPartnerId}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sem parceiro</SelectItem>{data.partners.filter((item) => item.cityId === Number(cityId)).map((item) => <SelectItem key={item.id} value={String(item.id)}>{item.name}</SelectItem>)}</SelectContent></Select></Field>
     <Field label="Responsável"><Input name="ownerName" className={inputClass} /></Field><Field label="Situação"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Planejado", "Confirmado", "Realizado", "Cancelado"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
@@ -321,10 +321,10 @@ function SettingsForm({ data, saving, onSave }: { data: DashboardData; saving: b
 const CITY_REQUIRED = ["Coordenação", "Líder", "Embaixador"];
 const ROLE_HELP: Record<string, string> = {
   Administrador: "Vê e altera tudo da organização, cadastra a equipe e gera links de acesso.",
-  Coordenação: "Coordena uma cidade: registra pessoas, locais, embaixadores, leads, vendas, custos e tarefas dela.",
+  Coordenação: "Coordena uma cidade: registra pessoas, locais, embaixadores, atendimentos, vendas, custos e tarefas dela.",
   Líder: "Líder local de uma cidade: acompanha a equipe e os resultados dela.",
   Embaixador: "Vê só o próprio portal: treinamento, link de indicação e tarefas.",
-  Comercial: "Executivo(a) de vendas: mapeia pessoas e locais, cuida dos próprios leads, oportunidades, agenda e metas.",
+  Comercial: "Executivo(a) de vendas: mapeia pessoas e locais, cuida dos próprios atendimentos, agenda e metas.",
   Mentorado: "Mentorado(a): entra só no portal de mentoria (jornada, próximo encontro, materiais e indicações). Não vê nada da equipe.",
 };
 const TITLE_SUGGESTIONS = ["Executivo de Vendas", "Executiva de Vendas", "Assessor Executivo", "Assessora Executiva", "Coordenador Regional", "Mapeador", "Líder Local", "Mentorado Exclusivo", "Mentorada Exclusiva"];

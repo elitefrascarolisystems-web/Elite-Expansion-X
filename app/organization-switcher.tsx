@@ -29,7 +29,7 @@ export function OrganizationSwitcher({access}:{access:AccessView}){
    const result=await response.json();
    if(!response.ok||!result.ok)throw new Error(result.error||'Não foi possível trocar de organização.');
    openOrganization(result.organizationId);
-  }catch(e){setError(e instanceof Error?e.message:'Falha na solicitação.');}
+  }catch(e){setError(e instanceof Error?e.message:'Não foi possível concluir. Confira a conexão e tente de novo.');}
   finally{lock.current=false;setBusy(false);}
  }
 

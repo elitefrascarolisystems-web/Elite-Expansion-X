@@ -9,9 +9,9 @@ Tudo o que é preciso para colocar a equipe para mapear e vender na plataforma.
 
 ## 1. Antes de convidar (administrador, ~15 min)
 
-1. **Cidades da primeira onda** — *Território → Cidades* → *Nova cidade* (ou *+ Novo → Cidade*). Confira se as cidades certas estão cadastradas.
+1. **Cidades da primeira onda** — *Território → Cidades* → *Cadastrar cidade* (ou *+ Novo → Cadastrar cidade*). Confira se as cidades certas estão cadastradas.
 2. **Pontos de referência** — *+ Novo → Mapear local e pessoas*: cadastre os Escritórios Elite e os networks principais de cada cidade e marque no mapa. Eles são a base onde as pessoas serão ligadas.
-3. **Convide a equipe** — *+ Novo → Convidar pessoa* (ou *Gestão → Time e acessos* → *Convidar equipe*). Cole uma pessoa por linha:
+3. **Convide a equipe** — *+ Novo → Convidar equipe* (ou *Gestão → Time e acessos* → *Convidar equipe*). Cole uma pessoa por linha:
    `nome; e-mail; função; cidade; cargo; ciclo de mentoria`
    Ex.: `Flávia Silva; flavia@...; Executiva de Vendas; ; Executiva de Vendas; 2`
 4. **Envie os links** — cada pessoa recebe a mensagem pronta (botão *WhatsApp* ou *Copiar mensagem*). O link vale 72 horas e só funciona uma vez.
@@ -32,9 +32,9 @@ Tudo o que é preciso para colocar a equipe para mapear e vender na plataforma.
 | Função | Vê | Primeiro passo |
 |---|---|---|
 | **Administrador** | Tudo da organização | Seguir os *Primeiros passos* em *Hoje* e convidar a equipe |
-| **Coordenação** (1 cidade) | A própria cidade | Abre em *Território*: *+ Novo → Mapear* locais da cidade e as pessoas de cada um |
+| **Coordenação** (1 cidade) | A própria cidade | Abre em *Território*: *+ Novo → Mapear local e pessoas*: locais da cidade e as pessoas de cada um |
 | **Líder** (1 cidade) | A própria cidade | Conferir o mapa e mapear quem conhece |
-| **Comercial / Executivo de Vendas** | O que mapeou e os próprios atendimentos | Abre em *Vendas → Agenda*. *+ Novo → Mapear* → *Iniciar atendimento* → seguir o F.E.C.H.A. |
+| **Comercial / Executivo de Vendas** | O que mapeou e os próprios atendimentos | Abre em *Vendas → Agenda*. *Mapear local e pessoas* → *Iniciar atendimento* → seguir o F.E.C.H.A. |
 | **Embaixador** | Só o próprio portal | Aceitar as regras, concluir o treinamento, usar o link de indicação |
 
 ## 4. Rotina diária (mapeador e vendedor, 10 minutos para começar)
@@ -77,10 +77,10 @@ Testes automáticos: 78 passando. Não verificável neste ambiente (sem internet
 
 Mentorados têm um **portal só deles**: a jornada (etapas que marcam como concluídas), o próximo encontro, o contato da equipe, os materiais liberados e o botão **Indicar alguém**. Eles **não veem nada** da operação da equipe.
 
-1. **Convidar** — *+ Novo → Convidar pessoa*, com a função `Mentorado` (ex.: `Marina Souza; marina@...; Mentorada exclusiva; Esmeraldas; ; 2`). A mensagem do convite já fala do portal.
+1. **Convidar** — *+ Novo → Convidar equipe*, com a função `Mentorado` (ex.: `Marina Souza; marina@...; Mentorada exclusiva; Esmeraldas; ; 2`). A mensagem do convite já fala do portal.
 2. **Montar a jornada** — *Rede → Mentorados* → *Jornada*. Dá para começar com a sugestão e ajustar ao método Elite.
 3. **Ligar cada mentorado** — *Rede → Mentorados* → *Editar*: contato da equipe e próximo encontro.
-4. **Materiais** — *Rede → Materiais* (ou *+ Novo → Material*), com *Para quem: Mentorados ou Todos* e situação *Aprovado*.
+4. **Materiais** — *Rede → Materiais* (ou *+ Novo → Adicionar material*), com *Para quem: Mentorados ou Todos* e situação *Aprovado*.
 5. **Indicações** — o que o mentorado indica entra como lead com origem *Indicação*, direto na agenda do contato dele.
 
 ## 9. Empresas assinantes (a plataforma para outras empresas)
@@ -107,6 +107,8 @@ A plataforma da equipe é organizada em áreas, na barra lateral (computador) ou
 | **Resultados** | Visão geral · Metas e rotina · Mapeamento · Custos e canais | Gestão (Comercial: Metas e rotina) |
 | **Gestão** | Time e acessos · Regras e cálculos · Plano · Histórico · Assessoria Elite | Administrador |
 | **Plataforma** | Assinaturas · Assessores | Donos da plataforma |
+
+Em *Hoje* ficam também os atalhos do dia: *Mapear local e pessoas*, *Novo atendimento* e *Registrar venda e pagamento*. Os nomes dos botões são os mesmos das janelas que eles abrem, e o glossário fica em *Gestão → Regras e cálculos*.
 
 Cada função abre onde mais trabalha: Comercial em *Vendas → Agenda*, Coordenação em *Território*, os demais em *Hoje*. O endereço guarda a área e a seção (`?area=vendas&ver=agenda`), então dá para mandar o link direto de uma tela.
 

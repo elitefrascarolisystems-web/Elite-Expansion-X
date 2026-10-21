@@ -180,7 +180,7 @@ export async function mutateTerritory(a:AccessView,action:string,input:unknown) 
     const v=personSchema.parse(input);await allowedCity(a,v.cityId);const id=v.id??v.requestId??crypto.randomUUID();
     // Líder da cidade é decisão da gestão: quem só mapeia mantém o que já estava gravado.
     if(!management(a)){if(v.leader&&!(v.id&&(await dbRows('SELECT leader FROM territory_people WHERE id=?',[id]))[0]?.leader))throw new TerritoryError('Só a gestão define o líder da cidade.',403);v.leader=Boolean(v.id&&(await dbRows('SELECT leader FROM territory_people WHERE id=?',[id]))[0]?.leader);}
-    if(!v.id&&v.requestId){const existing=await dbRows('SELECT created_by,city_id FROM '+'territory_people'+' WHERE id=?',[id]);if(existing[0]){if(existing[0].created_by!==a.email||Number(existing[0].city_id)!==v.cityId)throw new TerritoryError('Identificador já utilizado.',409);return {id};}}
+    if(!v.id&&v.requestId){const existing=await dbRows('SELECT created_by,city_id FROM '+'territory_people'+' WHERE id=?',[id]);if(existing[0]){if(existing[0].created_by!==a.email||Number(existing[0].city_id)!==v.cityId)throw new TerritoryError('Este registro já foi criado por outra pessoa. Atualize a página para ver o cadastro atual.',409);return {id};}}
     if(v.id){const old=await entity(a,`person:${id}`);if(Number(old.city_id)!==v.cityId) throw new TerritoryError('A mudança de cidade exige revisão dos vínculos existentes.');}
     if(!v.id&&!v.confirmDuplicate){const same=await samePeople(v.cityId,v.name);if(same.length)throw duplicateError(a,same);}
     if(v.referrerId){const ref=await entity(a,`person:${v.referrerId}`);if(Number(ref.city_id)!==v.cityId) throw new TerritoryError('A indicação deve pertencer à cidade autorizada.');
@@ -196,7 +196,7 @@ export async function mutateTerritory(a:AccessView,action:string,input:unknown) 
   }
   if(action==='activity') {
     const v=activitySchema.parse(input);await allowedCity(a,v.cityId);const id=v.id??v.requestId??crypto.randomUUID();
-    if(!v.id&&v.requestId){const existing=await dbRows('SELECT created_by,city_id FROM '+'territory_actions'+' WHERE id=?',[id]);if(existing[0]){if(existing[0].created_by!==a.email||Number(existing[0].city_id)!==v.cityId)throw new TerritoryError('Identificador já utilizado.',409);return {id};}}
+    if(!v.id&&v.requestId){const existing=await dbRows('SELECT created_by,city_id FROM '+'territory_actions'+' WHERE id=?',[id]);if(existing[0]){if(existing[0].created_by!==a.email||Number(existing[0].city_id)!==v.cityId)throw new TerritoryError('Este registro já foi criado por outra pessoa. Atualize a página para ver o cadastro atual.',409);return {id};}}
     if(v.id){const old=await entity(a,`action:${id}`);if(Number(old.city_id)!==v.cityId) throw new TerritoryError('Mantenha a cidade original da ação.');}
     if(v.personId){const p=await entity(a,`person:${v.personId}`);if(Number(p.city_id)!==v.cityId) throw new TerritoryError('Pessoa fora da cidade selecionada.');}
     await db.batch([db.prepare(`INSERT INTO territory_actions(id,city_id,person_id,name,category,status,responsible,due_date,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,status=excluded.status,responsible=excluded.responsible,due_date=excluded.due_date,updated_at=excluded.updated_at`).bind(id,v.cityId,v.personId,v.name,v.category,v.status,v.responsible,v.dueDate,a.email,now,now),auditStatement(a,'save_activity',id)]);return {id};
@@ -205,5 +205,5 @@ export async function mutateTerritory(a:AccessView,action:string,input:unknown) 
     const v=input as {id?:unknown;status?:unknown};if(!['Planejado','Confirmado','Realizado','Cancelado'].includes(String(v.status))||!Number.isInteger(v.id)) throw new TerritoryError('Evento ou situação inválida.');
     await entity(a,`event:${v.id}`);await db.batch([db.prepare('UPDATE events SET status=? WHERE id=?').bind(v.status,v.id),auditStatement(a,'update_event',String(v.id))]);return;
   }
-  throw new TerritoryError('Ação não disponível.');
+  throw new TerritoryError('Esta ação não está disponível. Atualize a página e tente de novo.');
 }

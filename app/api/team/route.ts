@@ -39,12 +39,12 @@ function rowError(error: unknown) {
  * - welcome: a pessoa fechou a tela de boas-vindas (não aparece de novo).
  */
 export async function POST(request: Request) {
-  if (!sameOrigin(request)) return Response.json({ error: "Origem da solicitação não permitida." }, { status: 403, headers });
+  if (!sameOrigin(request)) return Response.json({ error: "Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo." }, { status: 403, headers });
   try {
     const user = await getCurrentUser();
-    if (!user) return Response.json({ error: "Entre para acessar." }, { status: 401, headers });
+    if (!user) return Response.json({ error: "Sua sessão terminou. Entre de novo para continuar." }, { status: 401, headers });
     const access = await getTeamAccess(user.email, user.displayName, organizationFromRequest(request));
-    if (!access) return Response.json({ error: "Acesso não autorizado." }, { status: 403, headers });
+    if (!access) return Response.json({ error: "Você não tem acesso a esta parte da plataforma. Fale com o administrador se precisar." }, { status: 403, headers });
     const body = await request.json().catch(() => null) as { action?: unknown } | null;
 
     if (body?.action === "welcome") {

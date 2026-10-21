@@ -12,14 +12,14 @@ const headers = { "Cache-Control": "no-store" };
 
 /** Jornada do mapa à venda: "start" inicia o atendimento de uma pessoa do mapa (lead + oportunidade). */
 export async function POST(request: Request) {
-  if (!sameOrigin(request)) return Response.json({ error: "Origem da solicitação não permitida." }, { status: 403, headers });
+  if (!sameOrigin(request)) return Response.json({ error: "Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo." }, { status: 403, headers });
   try {
     const user = await getCurrentUser();
-    if (!user) return Response.json({ error: "Entre para acessar." }, { status: 401, headers });
+    if (!user) return Response.json({ error: "Sua sessão terminou. Entre de novo para continuar." }, { status: 401, headers });
     const access = await getTeamAccess(user.email, user.displayName, organizationFromRequest(request));
-    if (!access) return Response.json({ error: "Acesso não autorizado." }, { status: 403, headers });
+    if (!access) return Response.json({ error: "Você não tem acesso a esta parte da plataforma. Fale com o administrador se precisar." }, { status: 403, headers });
     const body = await request.json().catch(() => null) as { action?: unknown; data?: unknown } | null;
-    if (body?.action !== "start") return Response.json({ error: "Ação não disponível." }, { status: 400, headers });
+    if (body?.action !== "start") return Response.json({ error: "Esta ação não está disponível. Atualize a página e tente de novo." }, { status: 400, headers });
     return Response.json({ ok: true, result: await startAttendance(access, body.data) }, { headers });
   } catch (error) {
     if (error instanceof ZodError) return Response.json({ error: error.issues[0]?.message ?? "Revise os campos." }, { status: 400, headers });

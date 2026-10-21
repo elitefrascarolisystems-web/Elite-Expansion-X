@@ -87,7 +87,7 @@ test('new schema preserves original rows and foreign keys; isolated migration ro
 
  test('repeated person submission is idempotent and cannot overwrite another actor',async()=>{
  const m=await modules(),requestId=crypto.randomUUID();await m.mutateTerritory(m.access,'person',{...person(),requestId});await m.mutateTerritory(m.access,'person',{...person(),requestId});assert.equal(sqlite.prepare('SELECT count(*) AS n FROM territory_people').get().n,1);
- await assert.rejects(m.mutateTerritory({...m.access,email:'other@example.invalid'},'person',{...person(),requestId}),/utilizado/);
+ await assert.rejects(m.mutateTerritory({...m.access,email:'other@example.invalid'},'person',{...person(),requestId}),/criado por outra pessoa/);
  });
  test('activation requires actual readiness in mutation, not just UI validation',async()=>{
  const m=await modules();await assert.rejects(m.executeAction('create_ambassador',m.parseActionPayload('create_ambassador',{...ambassadorData(undefined),status:'Ativo'}),m.access),/antes de ativar/);
@@ -229,7 +229,7 @@ test('commercial lifecycle: business, opportunity, history, goals, payment and p
  const o={id:crypto.randomUUID(),leadId:1,businessId:business.id,ownerEmail:m.access.email,temperature:'Quente',stage:'Novo',nextAction:'Reunião inicial',dueDate:'2026-10-10'};
  await saveCommercial(m.access,'opportunity',o);await saveCommercial(m.access,'opportunity',o);
  await saveCommercial(m.access,'opportunity',{...o,version:1,stage:'Ganho'});assert.equal(sqlite.prepare('SELECT count(*) n FROM sales').get().n,0);
- await assert.rejects(saveCommercial(m.access,'opportunity',{...o,version:1,stage:'Contato'}),/atualizado/);
+ await assert.rejects(saveCommercial(m.access,'opportunity',{...o,version:1,stage:'Contato'}),/alterou este registro/);
  await saveCommercial(m.access,'activity',{id:crypto.randomUUID(),opportunityId:o.id,kind:'Contato',note:'Conversa realizada em ambiente de teste',day:'2026-10-09'});
  await saveCommercial(m.access,'goal',{cityId:1,ownerEmail:m.access.email,day:'2026-10-09',cold:3,hot:2,contacts:5});
  await saveCommercial(m.access,'report',{cityId:1,day:'2026-10-09',blockers:'',nextPlan:'Retomar proposta'});
@@ -261,7 +261,7 @@ test('business import previews duplicates, commits per row and retries without d
 test('commercial reassignment immediately removes old seller access and failed updates create no history',async()=>{
  const m=await modules();const {saveCommercial,getCommercial}=await vite.ssrLoadModule('/db/commercial.ts');const p=await m.mutateTerritory(m.access,'person',person());await m.executeAction('create_lead',m.parseActionPayload('create_lead',leadData(p.id)),m.access);
  const o={id:crypto.randomUUID(),leadId:1,ownerEmail:m.access.email,temperature:'Frio',stage:'Novo',nextAction:'Conversar',dueDate:'2026-10-10'};await saveCommercial(m.access,'opportunity',o);const before=sqlite.prepare('SELECT count(*) n FROM commercial_activities').get().n;
- await assert.rejects(saveCommercial(m.access,'opportunity',{...o,version:999,stage:'Contato'}),/atualizado/);assert.equal(sqlite.prepare('SELECT count(*) n FROM commercial_activities').get().n,before);
+ await assert.rejects(saveCommercial(m.access,'opportunity',{...o,version:999,stage:'Contato'}),/alterou este registro/);assert.equal(sqlite.prepare('SELECT count(*) n FROM commercial_activities').get().n,before);
  sqlite.prepare("UPDATE leads SET assigned_to_email='new@example.invalid' WHERE id=1").run();const seller={...m.access,role:'Comercial'};assert.equal((await getCommercial(seller,new URLSearchParams())).opportunities.length,0);await assert.rejects(saveCommercial(seller,'activity',{id:crypto.randomUUID(),opportunityId:o.id,kind:'Contato',day:'2026-10-09',note:'Sem acesso'}),/fora do seu acesso/);
 });
 
@@ -494,7 +494,7 @@ test('do mapa à venda: iniciar atendimento cria lead e oportunidade ligados à 
  assert.equal(sqlite.prepare('SELECT count(*) n FROM territory_people WHERE name=?').get('Maria Mapeada').n,1,'não cria outra pessoa');
  // Falha no meio: lead salvo, oportunidade não; repetir completa sem duplicar o lead.
  const {id:other}=await m.mutateTerritory(m.access,'person',person('João Meio'));
- await assert.rejects(j.startAttendance(m.access,{...base,personId:other,whatsapp:'31999990002',ownerEmail:'ninguem@example.invalid'}),/Lead salvo, mas a oportunidade não/);
+ await assert.rejects(j.startAttendance(m.access,{...base,personId:other,whatsapp:'31999990002',ownerEmail:'ninguem@example.invalid'}),/O atendimento foi salvo, mas a oportunidade não/);
  const again=await j.startAttendance(m.access,{...base,personId:other,whatsapp:'31999990002'});
  assert.equal(sqlite.prepare('SELECT count(*) n FROM leads WHERE person_id=?').get(other).n,1);assert.ok(again.opportunityId);
  // Rota: mesma origem e mensagem de quem já está em atendimento.

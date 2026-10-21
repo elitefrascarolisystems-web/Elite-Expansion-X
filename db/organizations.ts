@@ -42,7 +42,7 @@ export async function createOrganization(access:AccessView,input:unknown){
 
 /** Gestão do time de assessoria: somente o dono da plataforma. */
 export async function listAdvisors(access:AccessView){
- if(!access.isPlatformOwner)throw new OrganizationError('Sem permissão.',403);
+ if(!access.isPlatformOwner)throw new OrganizationError('Somente os donos da plataforma podem fazer isso.',403);
  const r=await database().prepare(`SELECT adv.email,adv.name,adv.active,adv.granted_at,adv.revoked_at,
   EXISTS(SELECT 1 FROM app_users u WHERE u.organization_id=1 AND lower(u.email)=lower(adv.email) AND u.active=1) AS elite_member
   FROM platform_advisors adv ORDER BY adv.active DESC, adv.name`).all();
@@ -50,7 +50,7 @@ export async function listAdvisors(access:AccessView){
 }
 
 export async function setAdvisor(access:AccessView,input:unknown){
- if(!access.isPlatformOwner)throw new OrganizationError('Sem permissão.',403);
+ if(!access.isPlatformOwner)throw new OrganizationError('Somente os donos da plataforma podem fazer isso.',403);
  const v=z.object({email,active:z.boolean()}).parse(input);
  const db=database(),now=brazilTimestamp(),actor=access.email.toLowerCase();
  if(isPlatformOwnerEmail(v.email)&&!v.active)throw new OrganizationError('A assessoria dos donos da plataforma não pode ser retirada.');

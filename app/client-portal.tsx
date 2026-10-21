@@ -38,7 +38,7 @@ export function ClientPortal({ initialData, signOutPath }: { initialData: Portal
   async function toggle(stepId: number, value: boolean) {
     setBusyStep(stepId);
     try { await post("step", { stepId, done: value }); await reload(); if (value) toast.success("Etapa concluída. Continue assim!"); }
-    catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível salvar."); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível salvar. Confira a conexão e tente de novo."); }
     finally { setBusyStep(null); }
   }
   async function refer(event: React.FormEvent<HTMLFormElement>) {

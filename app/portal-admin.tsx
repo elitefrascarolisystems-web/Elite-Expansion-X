@@ -24,7 +24,7 @@ const meetingLabel = (value: string | null) => value ? new Intl.DateTimeFormat("
 async function post(action: string, data: unknown) {
   const response = await tenantFetch("/api/portal", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, data }) });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || "Não foi possível salvar.");
+  if (!response.ok) throw new Error(result.error || "Não foi possível salvar. Confira a conexão e tente de novo.");
   return result;
 }
 
@@ -40,7 +40,7 @@ function MemberDialog({ member, data, onClose, onSaved }: { member: Member | nul
     try {
       await post("set_member", { userId: member.userId, ownerEmail: f.get("ownerEmail") || "", nextMeetingAt: f.get("nextMeetingAt") || null, nextMeetingNote: f.get("nextMeetingNote") || "", personId: f.get("personId") || null });
       toast.success("Portal atualizado."); onSaved();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível salvar."); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível salvar. Confira a conexão e tente de novo."); }
     finally { setBusy(false); }
   }
   return <Dialog open={member !== null} onOpenChange={(v) => { if (!v && !busy) onClose(); }}><DialogContent className="max-h-[92dvh] overflow-y-auto border-white/10 bg-surface-raised text-white sm:max-w-xl">
@@ -64,7 +64,7 @@ function JourneyEditor({ audience, steps, onChange }: { audience: (typeof PORTAL
   async function run(action: string, payload: unknown, message?: string) {
     setBusy(true);
     try { await post(action, payload); await onChange(); if (message) toast.success(message); }
-    catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível salvar."); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível salvar. Confira a conexão e tente de novo."); }
     finally { setBusy(false); }
   }
   async function useSuggestion() {

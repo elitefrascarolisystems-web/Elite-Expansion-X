@@ -17,7 +17,7 @@ type Found = { name: string; latitude: number; longitude: number };
 async function post(url: string, body: unknown) {
   const response = await tenantFetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok || result.ok === false) throw Object.assign(new Error(result.error || "Não foi possível salvar."), { duplicate: Boolean(result.duplicate) });
+  if (!response.ok || result.ok === false) throw Object.assign(new Error(result.error || "Não foi possível salvar. Confira a conexão e tente de novo."), { duplicate: Boolean(result.duplicate) });
   return result;
 }
 

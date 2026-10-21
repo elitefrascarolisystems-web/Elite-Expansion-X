@@ -19,7 +19,7 @@ function sameOrigin(request: Request) {
 export async function GET(request:Request) {
  try {
   const user = await getCurrentUser();
-  if (!user) return Response.json({ error: "Acesso não autorizado." }, { status: 401, headers: responseHeaders });
+  if (!user) return Response.json({ error: "Você não tem acesso a esta parte da plataforma. Fale com o administrador se precisar." }, { status: 401, headers: responseHeaders });
   const access = await getTeamAccess(user.email, user.displayName,organizationFromRequest(request));
   if (!access) return Response.json({ error: "Seu perfil ainda não foi liberado dentro da plataforma." }, { status: 403, headers: responseHeaders });
   return Response.json({ data: await getDashboardData(access) }, { headers: responseHeaders });
@@ -27,10 +27,10 @@ export async function GET(request:Request) {
 }
 
 export async function POST(request: Request) {
-  if (!sameOrigin(request)) return Response.json({ error: "Origem da solicitação não permitida." }, { status: 403, headers: responseHeaders });
+  if (!sameOrigin(request)) return Response.json({ error: "Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo." }, { status: 403, headers: responseHeaders });
   try {
   const user = await getCurrentUser();
-  if (!user) return Response.json({ error: "Acesso não autorizado." }, { status: 401, headers: responseHeaders });
+  if (!user) return Response.json({ error: "Você não tem acesso a esta parte da plataforma. Fale com o administrador se precisar." }, { status: 401, headers: responseHeaders });
   const access = await getTeamAccess(user.email, user.displayName,organizationFromRequest(request));
   if (!access) return Response.json({ error: "Seu perfil ainda não foi liberado dentro da plataforma." }, { status: 403, headers: responseHeaders });
 
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const message = error instanceof ZodError ? error.issues[0]?.message ?? 'Revise os campos informados.'
       : planLimit ? planLimit
       : duplicate ? 'Já existe um registro com esse nome, código ou e-mail.'
-      : error instanceof ActionError ? raw : 'Não foi possível salvar. Atualize os dados antes de tentar novamente.';
+      : error instanceof ActionError ? raw : 'Não foi possível salvar agora. Atualize a página e tente de novo; se continuar, fale com o administrador.';
     const status = !known ? 503 : /permissão|fora do seu acesso|próprio embaixador|não possui acesso/.test(message) ? 403 : 400;
     return Response.json({ error: message }, { status, headers: responseHeaders });
   }

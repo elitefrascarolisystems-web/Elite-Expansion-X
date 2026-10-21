@@ -29,10 +29,10 @@ export function AdvisorsPanel() {
     try {
       const response = await tenantFetch("/api/organizations", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "advisor", data }) });
       const result = await response.json();
-      if (!response.ok || !result.ok) throw new Error(result.error || "Não foi possível salvar.");
+      if (!response.ok || !result.ok) throw new Error(result.error || "Não foi possível salvar. Confira a conexão e tente de novo.");
       setAdvisors(result.advisors);
       return true;
-    } catch (e) { setError(e instanceof Error ? e.message : "Falha na solicitação."); return false; }
+    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível concluir. Confira a conexão e tente de novo."); return false; }
     finally { lock.current = false; setBusy(false); }
   }
 

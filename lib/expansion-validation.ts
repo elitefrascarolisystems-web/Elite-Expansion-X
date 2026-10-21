@@ -124,7 +124,7 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     consentPurpose: shortText,
     assignedToEmail: emailOrEmpty.default(""),
   }).refine((value) => Boolean(value.email || value.whatsapp), {
-    message: "Informe o WhatsApp ou o e-mail do lead.",
+    message: "Informe o WhatsApp ou o e-mail da pessoa.",
     path: ["whatsapp"],
   }),
   update_lead: z.object({

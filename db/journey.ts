@@ -49,7 +49,7 @@ export async function startAttendance(access: AccessView, input: unknown) {
     });
     await executeAction("create_lead", data, access);
     lead = await first("SELECT id FROM leads WHERE person_id=? ORDER BY id DESC LIMIT 1", [v.personId]);
-    if (!lead) throw new JourneyError("Não foi possível criar o lead. Tente de novo.", 503);
+    if (!lead) throw new JourneyError("Não foi possível começar o atendimento. Tente de novo.", 503);
   }
   const leadId = Number(lead.id);
   // No CRM o vendedor só enxerga os locais pelos quais responde; se o local da pessoa é de outro
@@ -61,7 +61,7 @@ export async function startAttendance(access: AccessView, input: unknown) {
   } catch (error) {
     // O lead fica salvo; repetir a ação completa só a oportunidade.
     const message = error instanceof CommercialError || error instanceof ActionError ? error.message : "Não foi possível criar a oportunidade.";
-    throw new JourneyError(`Lead salvo, mas a oportunidade não: ${message} Corrija e tente de novo; o lead não será duplicado.`, 409);
+    throw new JourneyError(`O atendimento foi salvo, mas a oportunidade não: ${message} Corrija e tente de novo; o atendimento não será duplicado.`, 409);
   }
   return { leadId, opportunityId };
 }

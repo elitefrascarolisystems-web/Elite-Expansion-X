@@ -54,11 +54,11 @@ export function GettingStarted({ data, onGo }: { data: DashboardData; onGo: (tab
 const ROLE_WELCOME: Record<AccessView["role"], { what: string; steps: string[]; tab: string; start: string }> = {
   Administrador: {
     what: "Você organiza a operação inteira: cidades, equipe, mapa, vendas e custos.",
-    steps: ["Em Hoje, siga os Primeiros passos na ordem.", "Em Gestão → Time e acessos (ou + Novo → Convidar pessoa), convide a equipe e envie o link de cada pessoa.", "Em Resultados, acompanhe o que cada cidade e cada pessoa produziu."],
+    steps: ["Em Hoje, siga os Primeiros passos na ordem.", "Em Gestão → Time e acessos (ou + Novo → Convidar equipe), convide a equipe e envie o link de cada pessoa.", "Em Resultados, acompanhe o que cada cidade e cada pessoa produziu."],
     tab: "hoje", start: "Ver os Primeiros passos",
   },
   Coordenação: {
-    what: "Você coordena uma cidade: mapa, embaixadores, leads, vendas e tarefas dela.",
+    what: "Você coordena uma cidade: mapa, embaixadores, atendimentos, vendas e tarefas dela.",
     steps: ["Use “+ Novo → Mapear local e pessoas” para cadastrar os locais da cidade (escritórios, networks, empresas) e as pessoas de cada um.", "Quem autorizou contato: “Iniciar atendimento” e siga em Vendas com o Método F.E.C.H.A.", "Ative os embaixadores e acompanhe a cobertura da cidade em Resultados → Mapeamento."],
     tab: "mapear", start: "Mapear o primeiro local",
   },
@@ -68,7 +68,7 @@ const ROLE_WELCOME: Record<AccessView["role"], { what: string; steps: string[]; 
     tab: "hoje", start: "Começar",
   },
   Comercial: {
-    what: "Você mapeia pessoas e locais e cuida dos seus leads até a venda.",
+    what: "Você mapeia pessoas e locais e cuida dos seus atendimentos até a venda.",
     steps: ["Use “+ Novo → Mapear local e pessoas”: escolha a cidade e o local (empresa, escritório ou network, com tipo e setor).", "No mesmo passo a passo, cadastre as pessoas do local com o vínculo (sócio, colaborador, mentorado...).", "Em Vendas, siga cada atendimento com o roteiro do Método F.E.C.H.A."],
     tab: "mapear", start: "Mapear o primeiro local",
   },

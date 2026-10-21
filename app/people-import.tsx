@@ -41,7 +41,7 @@ export function PeopleImport({ data, onSaved }: { data: DashboardData; onSaved: 
   async function send(commit: boolean, list: Row[]) {
     const response = await tenantFetch("/api/territory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "import_people", data: { rows: list, commit } }) });
     const body = await response.json();
-    if (!response.ok || !body.ok) throw new Error(body.error || "Falha na importação.");
+    if (!response.ok || !body.ok) throw new Error(body.error || "Não foi possível importar. Confira a planilha e a conexão e tente de novo.");
     return body.result.rows as Outcome[];
   }
   async function preview() {
@@ -65,7 +65,7 @@ export function PeopleImport({ data, onSaved }: { data: DashboardData; onSaved: 
       indices.forEach((index, i) => { next[index] = { ...saved[i], line: index + 2 }; });
       setOutcomes(next); setStage("done");
       await onSaved();
-    } catch (e) { setError(e instanceof Error ? e.message : "Falha na importação."); }
+    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível importar. Confira a planilha e a conexão e tente de novo."); }
     finally { lock.current = false; setBusy(false); }
   }
   function restart() { setGrid([]); setRows([]); setOutcomes([]); setStage("file"); setAuthorized(false); setError(""); }

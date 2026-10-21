@@ -7,8 +7,8 @@ import {getTerritory} from '@/db/territory';
 import {featureBlocked} from '@/db/plan';
 export const dynamic='force-dynamic';const headers={'Cache-Control':'no-store'};
 export async function POST(r:Request){try{
- if(r.headers.get('origin')!==new URL(r.url).origin)return Response.json({error:'Origem não permitida.'},{status:403,headers});
- const u=await getCurrentUser();if(!u)return Response.json({error:'Entre para acessar.'},{status:401,headers});const a=await getTeamAccess(u.email,u.displayName,organizationFromRequest(r));if(!a||a.role==='Embaixador')return Response.json({error:'Acesso não autorizado.'},{status:403,headers});
+ if(r.headers.get('origin')!==new URL(r.url).origin)return Response.json({error:'Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo.'},{status:403,headers});
+ const u=await getCurrentUser();if(!u)return Response.json({error:'Sua sessão terminou. Entre de novo para continuar.'},{status:401,headers});const a=await getTeamAccess(u.email,u.displayName,organizationFromRequest(r));if(!a||a.role==='Embaixador')return Response.json({error:'Você não tem acesso a esta parte da plataforma. Fale com o administrador se precisar.'},{status:403,headers});
  const body=await r.json();if(typeof body.key!=='string'||!/^((business):[a-f0-9-]{36}|(partner|event):[1-9][0-9]*)$/.test(body.key))return Response.json({error:'Street View é limitado a locais comerciais ou eventos públicos autorizados.'},{status:400,headers});
  const data=await getTerritory(a,new URLSearchParams({key:body.key}));const point=data.records.find(p=>p.key===body.key);const l=point?.location;if(!point||!l?.validated||l.precision!=='Local comercial'||l.latitude==null||l.longitude==null)return Response.json({error:'Valide o ponto comercial antes de consultar Street View.'},{status:403,headers});
  if(await featureBlocked(a.organizationId,'externalMaps'))return Response.json({error:'Street View não está incluído no plano da sua empresa.'},{status:403,headers});

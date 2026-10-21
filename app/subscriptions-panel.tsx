@@ -36,7 +36,7 @@ const ACTIONS: Record<string, string> = { create: "Criada", subscription: "Plano
 async function post(action: string, data: unknown) {
   const response = await tenantFetch("/api/subscriptions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, data }) });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || "Não foi possível salvar.");
+  if (!response.ok) throw new Error(body.error || "Não foi possível salvar. Confira a conexão e tente de novo.");
   return body as { result: { organizationId: number }; data: SubscriptionsData };
 }
 
@@ -167,7 +167,7 @@ function PlanDialog({ target, onClose, onSaved }: { target: SubscriberRow | "new
         ? await post("create", { ...plan, requestId, name: f.get("name"), ownerName: f.get("ownerName"), ownerEmail: f.get("ownerEmail") })
         : await post("save", { ...plan, organizationId: row!.id });
       onSaved(result.data, isNew);
-    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível salvar."); }
+    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível salvar. Confira a conexão e tente de novo."); }
     finally { setBusy(false); }
   }
 
@@ -208,7 +208,7 @@ function StatusDialog({ target, onClose, onSaved }: { target: SubscriberRow | nu
       const result = await post("status", { organizationId: target.id, active: !suspend, reason: new FormData(event.currentTarget).get("reason") });
       toast.success(suspend ? `${target.name} suspensa. A equipe dela vê o aviso de assinatura suspensa.` : `${target.name} reativada. O acesso voltou para toda a equipe.`);
       onSaved(result.data);
-    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível salvar."); }
+    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível salvar. Confira a conexão e tente de novo."); }
     finally { setBusy(false); }
   }
 

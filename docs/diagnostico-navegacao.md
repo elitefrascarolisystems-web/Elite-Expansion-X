@@ -240,3 +240,11 @@ Registrar venda ganhou um clique pelo "+ Novo"; em *Vendas → Pagamentos* o bot
 - **Telas vazias:** mostram o próximo passo e o botão dele, quando a pessoa pode fazer.
 - **Movimento:** a área entra subindo de leve. Para quem pede menos movimento no aparelho, nada se mexe.
 - **Acessibilidade:** o texto auxiliar passou a ter contraste AA (antes ~4:1, agora acima de 5:1); o contorno de foco é dourado e visível no teclado.
+
+## 9. Etapa 3 — clareza dos textos (concluída)
+
+- **Mesmos nomes no botão e na janela:** + Novo e os botões das telas usam o nome da janela que abrem (*Cadastrar cidade*, *Registrar venda e pagamento*, *Criar tarefa*, *Adicionar material*, *Convidar equipe*, *Novo atendimento · contato novo*…). Na tabela de Pagamentos, *Etapa* virou *Etapa e autorização*, o mesmo título da janela.
+- **Atendimento:** a ação e o que a pessoa acompanha se chamam *atendimento* em todas as telas, mensagens e descrições de função. *Lead* fica só como indicador (*Leads válidos*), explicado no glossário.
+- **Glossário** em *Gestão → Regras e cálculos*: atendimento, lead válido, oportunidade, pagamento confirmado, embaixador e cliente assinante.
+- **Atalhos em Hoje:** *Mapear local e pessoas*, *Novo atendimento* e *Registrar venda e pagamento*, conforme a função.
+- **Mensagens:** as genéricas dizem o que aconteceu e o que fazer. Por exemplo, sessão terminou → *Entre de novo para continuar*; registro alterado por outra pessoa → *Atualize a página e repita a alteração*; falha de rede → *Confira a conexão e tente de novo*. Os salvamentos de Locais e Oportunidades dizem o que foi salvo. As mensagens que ainda citavam "Vendas e relacionamento", "CRM" ou "lead" agora apontam para a área certa.

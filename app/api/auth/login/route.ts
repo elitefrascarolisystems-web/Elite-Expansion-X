@@ -8,7 +8,7 @@ const headers = { "Cache-Control": "no-store" };
 const body = z.object({ email: z.string().trim().email().max(254), password: z.string().min(1).max(200) });
 
 export async function POST(request: Request) {
-  if (!sameOrigin(request)) return Response.json({ error: "Origem da solicitação não permitida." }, { status: 403, headers });
+  if (!sameOrigin(request)) return Response.json({ error: "Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo." }, { status: 403, headers });
   try {
     const v = body.safeParse(await request.json().catch(() => null));
     if (!v.success) return Response.json({ error: "Informe e-mail e senha." }, { status: 400, headers });

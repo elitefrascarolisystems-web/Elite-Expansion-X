@@ -11,9 +11,9 @@ const ADMIN_ACTIONS = new Set(["save_step", "delete_step", "move_step", "set_mem
 
 async function access(request: Request) {
   const user = await getCurrentUser();
-  if (!user) throw new PortalError("Entre para acessar.", 401);
+  if (!user) throw new PortalError("Sua sessão terminou. Entre de novo para continuar.", 401);
   const a = await getUserAccess(user.email, user.displayName, organizationFromRequest(request));
-  if (!a) throw new PortalError("Acesso não autorizado.", 403);
+  if (!a) throw new PortalError("Você não tem acesso a esta parte da plataforma. Fale com o administrador se precisar.", 403);
   return a;
 }
 function failure(error: unknown) {
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!sameOrigin(request)) return Response.json({ error: "Origem da solicitação não permitida." }, { status: 403, headers });
+  if (!sameOrigin(request)) return Response.json({ error: "Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo." }, { status: 403, headers });
   try {
     const a = await access(request);
     const body = await request.json().catch(() => null) as { action?: unknown; data?: unknown } | null;

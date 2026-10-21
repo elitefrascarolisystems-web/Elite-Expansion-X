@@ -231,7 +231,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     ensureCityPermission(access, cityId);
     const city = await db.prepare("SELECT tracking_mode FROM cities WHERE id = ?").bind(cityId).all();
     if (String(city.results[0]?.tracking_mode) === "Detalhado") {
-      throw new ActionError("Esta cidade usa acompanhamento detalhado. Registre leads, pagamentos e custos em seus módulos.");
+      throw new ActionError("Esta cidade usa acompanhamento detalhado: registre os atendimentos e pagamentos em Vendas e os custos em Resultados → Custos e canais.");
     }
     const insert = db.prepare(`
       INSERT INTO city_updates

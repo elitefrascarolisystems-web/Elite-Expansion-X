@@ -12,7 +12,7 @@ const body = z.discriminatedUnion("action", [
 
 /** Tela "definir senha": confere o link (info) e grava a senha nova (set). */
 export async function POST(request: Request) {
-  if (!sameOrigin(request)) return Response.json({ error: "Origem da solicitação não permitida." }, { status: 403, headers });
+  if (!sameOrigin(request)) return Response.json({ error: "Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo." }, { status: 403, headers });
   try {
     const v = body.safeParse(await request.json().catch(() => null));
     if (!v.success) return Response.json({ error: "Pedido inválido." }, { status: 400, headers });

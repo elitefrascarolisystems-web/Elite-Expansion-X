@@ -8,9 +8,9 @@ export const dynamic='force-dynamic';
 const headers={'Cache-Control':'no-store'};
 export async function POST(request:Request){
  try{
-  if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Origem não permitida.'},{status:403,headers});
-  const u=await getCurrentUser();if(!u)return Response.json({error:'Entre para acessar.'},{status:401,headers});
-  const a=await getTeamAccess(u.email,u.displayName,organizationFromRequest(request));if(!a||!['Administrador','Coordenação','Líder','Comercial'].includes(a.role))return Response.json({error:'Acesso não autorizado.'},{status:403,headers});
+  if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo.'},{status:403,headers});
+  const u=await getCurrentUser();if(!u)return Response.json({error:'Sua sessão terminou. Entre de novo para continuar.'},{status:401,headers});
+  const a=await getTeamAccess(u.email,u.displayName,organizationFromRequest(request));if(!a||!['Administrador','Coordenação','Líder','Comercial'].includes(a.role))return Response.json({error:'Você não tem acesso a esta parte da plataforma. Fale com o administrador se precisar.'},{status:403,headers});
   const body=await request.json();if(!Number.isInteger(body.cityId)||!canAccessCity(a,body.cityId))return Response.json({error:'Cidade fora do seu acesso.'},{status:403,headers});
   if(body.kind==='person')return Response.json({error:'Pessoas usam somente o centro da cidade. Não envie dados pessoais para geocodificação.'},{status:400,headers});
   const query=String(body.query??'').trim();if(query.length<3||query.length>160)return Response.json({error:'Informe um bairro ou local comercial de 3 a 160 caracteres.'},{status:400,headers});

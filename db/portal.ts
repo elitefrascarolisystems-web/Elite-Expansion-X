@@ -112,7 +112,7 @@ export async function portalAction(access: AccessView, action: string, input: un
     await audit(db, a.organizationId, a.email, "portal_referral", "lead", Number(lead?.id ?? 0), `Indicação recebida pelo portal: ${v.name}.`);
     return { ok: true };
   }
-  throw new PortalError("Ação não disponível.");
+  throw new PortalError("Esta ação não está disponível. Atualize a página e tente de novo.");
 }
 
 /* ---------- Gestão do portal (administrador) ---------- */
@@ -174,5 +174,5 @@ export async function portalAdminAction(access: AccessView, action: string, inpu
     await audit(db, a.organizationId, a.email, "portal_member", "app_user", v.userId, "Vínculos e próximo encontro do portal atualizados.");
     return {};
   }
-  throw new PortalError("Ação não disponível.");
+  throw new PortalError("Esta ação não está disponível. Atualize a página e tente de novo.");
 }

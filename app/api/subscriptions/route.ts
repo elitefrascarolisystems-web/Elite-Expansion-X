@@ -11,7 +11,7 @@ const headers = { "Cache-Control": "no-store" };
 
 async function owner(request: Request) {
   const user = await getCurrentUser();
-  if (!user) throw new OrganizationError("Entre para acessar.", 401);
+  if (!user) throw new OrganizationError("Sua sessão terminou. Entre de novo para continuar.", 401);
   const access = await getTeamAccess(user.email, user.displayName, organizationFromRequest(request));
   if (!access?.isPlatformOwner) throw new OrganizationError("Somente os donos da plataforma gerenciam assinaturas.", 403);
   return access;
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
 /** save: plano e limites · status: suspender ou reativar · create: nova empresa assinante. */
 export async function POST(request: Request) {
-  if (!sameOrigin(request)) return Response.json({ error: "Origem da solicitação não permitida." }, { status: 403, headers });
+  if (!sameOrigin(request)) return Response.json({ error: "Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo." }, { status: 403, headers });
   try {
     const access = await owner(request);
     const body = await request.json().catch(() => null) as { action?: unknown; data?: unknown } | null;
