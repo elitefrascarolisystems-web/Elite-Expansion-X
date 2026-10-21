@@ -22,16 +22,16 @@ export function setupSteps(data: DashboardData): Step[] {
   const people = data.mapping?.people ?? 0, linked = data.mapping?.linked ?? 0;
   const ambassadors = data.ambassadors.filter((item) => item.status === "Ativo").length;
   const steps: Step[] = [
-    { title: "Cidades", detail: data.cities.length ? `${data.cities.length} cidade(s) cadastrada(s).` : "Cadastre as cidades onde a operação vai atuar.", done: data.cities.length > 0, action: "Abrir cidades", tab: "cidades" },
-    { title: "Equipe com acesso", detail: others.length ? `${entered} de ${others.length} pessoa(s) já entraram.` : "Convide quem vai mapear e vender com você.", done: entered > 0, action: "Convidar equipe", tab: "time" },
+    { title: "Cidades", detail: data.cities.length ? `${data.cities.length} cidade(s) cadastrada(s).` : "Cadastre as cidades onde a operação vai atuar.", done: data.cities.length > 0, action: "Abrir cidades", tab: "territorio/cidades" },
+    { title: "Equipe com acesso", detail: others.length ? `${entered} de ${others.length} pessoa(s) já entraram.` : "Convide quem vai mapear e vender com você.", done: entered > 0, action: "Convidar equipe", tab: "gestao/time" },
     { title: "Escritórios e networks", detail: hubs ? `${hubs} local(is) de referência no mapa.` : "Marque os escritórios, networks e pontos de encontro.", done: hubs > 0, action: "Mapear local", tab: "mapear" },
     { title: "Empresas", detail: companies ? `${companies} empresa(s) com tipo e setor.` : "Cadastre as empresas com o setor de cada uma.", done: companies > 0, action: "Mapear empresa", tab: "mapear" },
     { title: "Pessoas ligadas a locais", detail: people ? `${people} pessoa(s) no mapa, ${linked} ligada(s) a um local.` : "Cadastre mentorados, parceiros e contatos, cada um no seu local.", done: linked > 0, action: "Mapear pessoas", tab: "mapear" },
-    { title: "Embaixadores ativos", detail: ambassadors ? `${ambassadors} embaixador(es) ativo(s).` : "Ative os primeiros embaixadores de cada cidade.", done: ambassadors > 0, action: "Abrir embaixadores", tab: "embaixadores" },
-    { title: "Leads e follow-up", detail: data.leads.length ? `${data.leads.length} lead(s) no acompanhamento.` : "Registre os primeiros leads e siga o Método F.E.C.H.A.", done: data.leads.length > 0, action: "Abrir vendas", tab: "followup" },
+    { title: "Embaixadores ativos", detail: ambassadors ? `${ambassadors} embaixador(es) ativo(s).` : "Ative os primeiros embaixadores de cada cidade.", done: ambassadors > 0, action: "Abrir embaixadores", tab: "rede/embaixadores" },
+    { title: "Atendimentos", detail: data.leads.length ? `${data.leads.length} atendimento(s) em acompanhamento.` : "Comece os primeiros atendimentos e siga o Método F.E.C.H.A.", done: data.leads.length > 0, action: "Abrir vendas", tab: "vendas/agenda" },
   ];
   // Só administradores convidam a equipe.
-  return data.access.role === "Administrador" ? steps : steps.filter((step) => step.tab !== "time");
+  return data.access.role === "Administrador" ? steps : steps.filter((step) => step.tab !== "gestao/time");
 }
 
 export function GettingStarted({ data, onGo }: { data: DashboardData; onGo: (tab: string) => void }) {
@@ -54,30 +54,30 @@ export function GettingStarted({ data, onGo }: { data: DashboardData; onGo: (tab
 const ROLE_WELCOME: Record<AccessView["role"], { what: string; steps: string[]; tab: string; start: string }> = {
   Administrador: {
     what: "Você organiza a operação inteira: cidades, equipe, mapa, vendas e custos.",
-    steps: ["Na aba Início, siga os Primeiros passos na ordem.", "Em Time e acessos, convide a equipe e envie o link de cada pessoa.", "Acompanhe quem já entrou e o que cada cidade produziu."],
-    tab: "visao", start: "Ver os Primeiros passos",
+    steps: ["Em Hoje, siga os Primeiros passos na ordem.", "Em Gestão → Time e acessos (ou + Novo → Convidar pessoa), convide a equipe e envie o link de cada pessoa.", "Em Resultados, acompanhe o que cada cidade e cada pessoa produziu."],
+    tab: "hoje", start: "Ver os Primeiros passos",
   },
   Coordenação: {
     what: "Você coordena uma cidade: mapa, embaixadores, leads, vendas e tarefas dela.",
-    steps: ["Use o botão “Mapear” para cadastrar os locais da cidade (escritórios, networks, empresas) e as pessoas de cada um.", "Quem autorizou contato: “Iniciar atendimento” e siga em Vendas e relacionamento com o Método F.E.C.H.A.", "Ative os embaixadores e acompanhe a cobertura da cidade na aba Início."],
+    steps: ["Use “+ Novo → Mapear local e pessoas” para cadastrar os locais da cidade (escritórios, networks, empresas) e as pessoas de cada um.", "Quem autorizou contato: “Iniciar atendimento” e siga em Vendas com o Método F.E.C.H.A.", "Ative os embaixadores e acompanhe a cobertura da cidade em Resultados → Mapeamento."],
     tab: "mapear", start: "Mapear o primeiro local",
   },
   Líder: {
     what: "Você lidera uma cidade: acompanha a equipe local e os resultados dela.",
-    steps: ["Confira o mapa da sua cidade e a cobertura na aba Início.", "Use “Mapear” para cadastrar locais e pessoas que você conhece.", "Acompanhe embaixadores e os atendimentos em Vendas e relacionamento."],
-    tab: "visao", start: "Começar",
+    steps: ["Confira o mapa da sua cidade em Território e a cobertura em Resultados.", "Use “+ Novo → Mapear local e pessoas” para cadastrar locais e pessoas que você conhece.", "Acompanhe os embaixadores em Rede e os atendimentos em Vendas."],
+    tab: "hoje", start: "Começar",
   },
   Comercial: {
     what: "Você mapeia pessoas e locais e cuida dos seus leads até a venda.",
-    steps: ["Use o botão “Mapear”: escolha a cidade e o local (empresa, escritório ou network, com tipo e setor).", "No mesmo passo a passo, cadastre as pessoas do local com o vínculo (sócio, colaborador, mentorado...).", "Em Vendas e relacionamento, siga cada lead com o roteiro do Método F.E.C.H.A."],
+    steps: ["Use “+ Novo → Mapear local e pessoas”: escolha a cidade e o local (empresa, escritório ou network, com tipo e setor).", "No mesmo passo a passo, cadastre as pessoas do local com o vínculo (sócio, colaborador, mentorado...).", "Em Vendas, siga cada atendimento com o roteiro do Método F.E.C.H.A."],
     tab: "mapear", start: "Mapear o primeiro local",
   },
   // Portal: as boas-vindas ficam no próprio portal (client-portal.tsx); aqui só para completar o tipo.
-  Mentorado: { what: "Sua área de mentoria.", steps: [], tab: "visao", start: "Começar" },
+  Mentorado: { what: "Sua área de mentoria.", steps: [], tab: "hoje", start: "Começar" },
   Embaixador: {
     what: "Você indica pessoas e acompanha suas tarefas.",
     steps: ["Aceite as regras e conclua o treinamento.", "Use seu link de indicação.", "Cumpra as tarefas da semana."],
-    tab: "visao", start: "Começar",
+    tab: "hoje", start: "Começar",
   },
 };
 

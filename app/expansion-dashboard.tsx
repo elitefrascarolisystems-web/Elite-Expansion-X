@@ -4,7 +4,8 @@ import {tenantFetch} from '@/lib/tenant-request';
 import {TerritoryDecisions} from '@/app/territory-decisions';
 import {FollowupWorkspace} from '@/app/followup-workspace';
 import {CommercialWorkspace} from '@/app/commercial-workspace';
-import {OrganizationSwitcher} from "@/app/organization-switcher";
+import { AppShell, type NewAction } from "@/app/app-shell";
+import { AdvisorsPanel } from "@/app/advisors-panel";
 import { copyText } from "@/lib/copy-text";
 import { GettingStarted, WelcomeDialog } from "@/app/getting-started";
 import { TeamPanel } from "@/app/team-panel";
@@ -16,7 +17,7 @@ import { PortalAdmin } from "@/app/portal-admin";
 import { PlanCard, SubscriptionsPanel } from "@/app/subscriptions-panel";
 /* eslint-disable @next/next/no-img-element -- QR remoto gerado somente após o administrador configurar o link-base. */
 
-import { type ReactNode, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -38,7 +39,6 @@ import {
   MapPin,
   Megaphone,
   Plus,
-  Radio,
   RefreshCcw,
   Settings,
   ShieldCheck,
@@ -46,6 +46,7 @@ import {
   TrendingDown,
   Trophy,
   UserCog,
+  UserPlus,
   Users,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
@@ -59,9 +60,9 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { availablePeriods, buildDashboardView, EMPTY_FILTERS } from "@/lib/expansion-domain";
 import { canPerform, type ActionName } from "@/lib/expansion-permissions";
+import { navigationFor, parseTarget, resolveLocation, type NavLocation } from "@/lib/navigation";
 import type {
   AlertMetric,
   AmbassadorMetric,
@@ -97,7 +98,7 @@ const successMessage: Partial<Record<ActionName, string>> = {
   update_ambassador: "Etapa do embaixador atualizada.",
   record_city: "Fechamento da cidade registrado.",
   record_ambassador: "Atividade registrada.",
-  create_lead: "Lead autorizado registrado.",
+  create_lead: "Atendimento registrado.",
   update_lead: "Etapa do lead atualizada.",
   record_sale: "Venda atualizada. A receita só entra após pagamento confirmado.",
   create_cost: "Custo registrado.",
@@ -108,7 +109,7 @@ const successMessage: Partial<Record<ActionName, string>> = {
   complete_task: "Tarefa concluída.",
   complete_training: "Treinamento concluído.",
   accept_terms: "Regras aceitas.",
-  update_settings: "Configurações atualizadas.",
+  update_settings: "Regras atualizadas.",
   create_user: "Perfil preparado. Gere o link de acesso para a pessoa criar a senha.",
 };
 
@@ -138,8 +139,9 @@ function EmptyState({ title, description, icon: Icon = Building2 }: { title: str
   return <div className="grid min-h-40 place-items-center px-5 text-center"><div><Icon className="mx-auto mb-4 size-8 text-[#c9a227]" /><h3 className="font-semibold text-white">{title}</h3><p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-zinc-500">{description}</p></div></div>;
 }
 
-function SectionHeader({ kicker, title, actions }: { kicker: string; title: string; actions?: ReactNode }) {
-  return <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><p className="section-kicker">{kicker}</p><h2 className="section-title">{title}</h2></div>{actions && <div className="flex flex-wrap gap-2">{actions}</div>}</div>;
+/** Linha de ações de uma seção: o que ela mostra (à esquerda) e os botões (à direita). */
+function ActionBar({ hint, children }: { hint: string; children?: ReactNode }) {
+  return <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><p className="max-w-2xl text-sm leading-6 text-zinc-400">{hint}</p>{children && <div className="flex flex-wrap gap-2">{children}</div>}</div>;
 }
 
 function FilterBar({ data, filters, onChange }: { data: DashboardData; filters: DashboardFilters; onChange: (filters: DashboardFilters) => void }) {
@@ -147,7 +149,9 @@ function FilterBar({ data, filters, onChange }: { data: DashboardData; filters: 
   const leaders = [...new Set(data.cities.map((city) => city.leaderName).filter(Boolean))].sort();
   const ambassadors = data.ambassadors.filter((item) => filters.cityId === null || item.cityId === filters.cityId);
   const activeCount = [filters.cityId !== null, filters.period, filters.channel, filters.leader, filters.ambassadorId !== null].filter(Boolean).length;
-  return <section className="elite-card mb-6 p-3 sm:p-4"><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto]">
+  // No celular os filtros ficam recolhidos para não empurrar o conteúdo para baixo.
+  const [open, setOpen] = useState(false);
+  return <section className="elite-card p-3 sm:p-4"><Button variant="ghost" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="w-full justify-between text-zinc-300 sm:hidden"><span className="flex items-center gap-2"><Filter /> Filtros{activeCount ? ` (${activeCount})` : ""}</span><span className="text-xs text-zinc-500">{open ? "Esconder" : "Mostrar"}</span></Button><div className={`${open ? "mt-2 grid" : "hidden"} gap-2 sm:mt-0 sm:grid sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto]`}>
     <Select value={filters.cityId === null ? "all" : String(filters.cityId)} onValueChange={(value) => onChange({ ...filters, cityId: value === "all" ? null : Number(value), ambassadorId: null })}><SelectTrigger className="w-full border-white/10 bg-white/[0.035]"><SelectValue placeholder="Todas as cidades" /></SelectTrigger><SelectContent><SelectItem value="all">Todas as cidades</SelectItem>{data.cities.map((city) => <SelectItem key={city.id} value={String(city.id)}>{city.name}</SelectItem>)}</SelectContent></Select>
     <Select value={filters.period || "all"} onValueChange={(value) => onChange({ ...filters, period: value === "all" ? "" : value })}><SelectTrigger className="w-full border-white/10 bg-white/[0.035]"><SelectValue placeholder="Todos os períodos" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os períodos</SelectItem>{periods.map((period) => <SelectItem key={period} value={period}>{period.split("-").reverse().join("/")}</SelectItem>)}</SelectContent></Select>
     <Select value={filters.channel || "all"} onValueChange={(value) => onChange({ ...filters, channel: value === "all" ? "" : value })}><SelectTrigger className="w-full border-white/10 bg-white/[0.035]"><SelectValue placeholder="Todos os canais" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os canais</SelectItem>{["Mídia paga", "Embaixador", "Parceiro", "Evento", "Conteúdo", "Orgânico", "Indicação", "Outro"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>
@@ -162,10 +166,27 @@ function Alerts({ items }: { items: AlertMetric[] }) {
   return <article className="elite-card overflow-hidden"><div className="border-b border-white/8 px-5 py-4"><p className="section-kicker">Ações necessárias</p><h3 className="text-lg font-semibold text-white">Alertas da operação</h3></div><div className="divide-y divide-white/7">{items.slice(0, 8).map((item) => <div key={item.id} className="flex gap-3 p-4"><AlertTriangle className={`mt-0.5 size-4 shrink-0 ${item.severity === "Alta" ? "text-red-300" : "text-amber-300"}`} /><div><p className="text-sm font-medium text-white">{item.title}</p><p className="mt-1 text-xs leading-5 text-zinc-500">{item.description}</p></div></div>)}</div></article>;
 }
 
-function Overview({ view }: { view: DashboardView }) {
+function TodayPanel({ data, view, onGo, onFollowup }: { data: DashboardData; view: DashboardView; onGo: (target: string) => void; onFollowup: (leadId: number) => void }) {
+  const summary = view.summary, agenda = data.agenda;
+  const manage = ["Administrador", "Coordenação", "Líder"].includes(data.access.role);
+  return <div className="space-y-5">
+    {agenda && (agenda.late || agenda.today) ? <AgendaBanner agenda={agenda} onAll={() => onGo("vendas/agenda")} onOpen={onFollowup} />
+      : <article className="elite-card flex flex-wrap items-center gap-4 p-5"><span className="rounded-xl bg-emerald-400/10 p-3 text-emerald-300"><Check /></span><div className="mr-auto"><p className="font-semibold text-white">Nenhum retorno atrasado ou para hoje</p><p className="mt-1 text-sm text-zinc-500">Quando houver, eles aparecem aqui primeiro.</p></div><Button variant="outline" onClick={() => onGo("vendas/agenda")} className="border-white/10 bg-white/5 text-white">Abrir a agenda</Button></article>}
+    {manage && <GettingStarted data={data} onGo={onGo} />}
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <Kpi label="Leads válidos" value={number(summary.validLeads)} helper={`${ratio(summary.organicShare)} sem mídia paga`} icon={Megaphone} />
+      <Kpi label="Clientes pagos" value={number(summary.confirmedPayments)} helper="Pagamentos confirmados" icon={BadgeCheck} />
+      <Kpi label="Conversão" value={ratio(summary.conversion)} helper="Pagamentos ÷ leads válidos" icon={Target} />
+      <Kpi label="Receita confirmada" value={money(summary.revenueCents, true)} helper="Somente pagamentos confirmados" icon={Banknote} emphasis />
+    </section>
+    {manage && <Alerts items={view.alerts} />}
+  </div>;
+}
+
+function ResultsOverview({ view, canExport }: { view: DashboardView; canExport: boolean }) {
   const summary = view.summary;
-  return <div className="space-y-6">
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
+  return <div className="space-y-5">
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <Kpi label="Cidades ativas" value={`${summary.activeCities}/${summary.plannedCities}`} helper="Operação autorizada" icon={MapPin} />
       <Kpi label="Embaixadores ativos" value={number(summary.activeAmbassadors)} helper={`${ratio(summary.activation)} de ${summary.eligibleAmbassadors} aprovados elegíveis`} icon={Users} />
       <Kpi label="Leads válidos" value={number(summary.validLeads)} helper={`${ratio(summary.organicShare)} sem mídia paga`} icon={Megaphone} />
@@ -175,11 +196,9 @@ function Overview({ view }: { view: DashboardView }) {
       <Kpi label="CAC" value={money(summary.cacCents)} helper="Custo por cliente pago" icon={TrendingDown} emphasis />
       <Kpi label="ROAS de mídia" value={multiple(summary.roas)} helper={`ROI total: ${ratio(summary.roi)}`} icon={Target} />
     </section>
-    <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
-      <article className="elite-card p-5 sm:p-6"><div className="mb-5"><p className="section-kicker">Evolução por período</p><h3 className="text-xl font-semibold text-white">Receita confirmada e custo</h3></div>{view.timeline.length ? <ChartContainer config={chartConfig} className="h-[290px] w-full aspect-auto"><BarChart data={view.timeline} margin={{ left: 0, right: 8, top: 10 }}><CartesianGrid vertical={false} strokeDasharray="4 4" /><XAxis dataKey="period" tickLine={false} axisLine={false} tickFormatter={(value) => String(value).slice(5)} /><YAxis tickLine={false} axisLine={false} width={54} tickFormatter={(value) => `R$${Math.round(value / 1000)}k`} /><ChartTooltip content={<ChartTooltipContent />} /><Bar dataKey="revenue" fill="var(--color-revenue)" radius={[5, 5, 0, 0]} /><Bar dataKey="cost" fill="var(--color-cost)" radius={[5, 5, 0, 0]} /></BarChart></ChartContainer> : <EmptyState title="Ainda não há evolução" description="Registre leads, pagamentos e custos no mesmo período para criar a comparação." icon={Activity} />}</article>
-      <Alerts items={view.alerts} />
-    </section>
-    <CityTable cities={view.cities} compact />
+    <article className="elite-card p-5 sm:p-6"><div className="mb-5"><p className="section-kicker">Evolução por período</p><h3 className="text-xl font-semibold text-white">Receita confirmada e custo</h3></div>{view.timeline.length ? <ChartContainer config={chartConfig} className="h-[290px] w-full aspect-auto"><BarChart data={view.timeline} margin={{ left: 0, right: 8, top: 10 }}><CartesianGrid vertical={false} strokeDasharray="4 4" /><XAxis dataKey="period" tickLine={false} axisLine={false} tickFormatter={(value) => String(value).slice(5)} /><YAxis tickLine={false} axisLine={false} width={54} tickFormatter={(value) => `R$${Math.round(value / 1000)}k`} /><ChartTooltip content={<ChartTooltipContent />} /><Bar dataKey="revenue" fill="var(--color-revenue)" radius={[5, 5, 0, 0]} /><Bar dataKey="cost" fill="var(--color-cost)" radius={[5, 5, 0, 0]} /></BarChart></ChartContainer> : <EmptyState title="Ainda não há evolução" description="Registre leads, pagamentos e custos no mesmo período para criar a comparação." icon={Activity} />}</article>
+    {canExport && <div className="flex justify-end"><Button onClick={() => { try { exportCsv(view); toast.success("Relatório exportado."); } catch { toast.error("Não foi possível exportar o relatório."); } }} variant="outline" className="border-white/10 bg-white/5 text-white"><Download /> Exportar cidades (CSV)</Button></div>}
+    <CityTable cities={view.cities} />
   </div>;
 }
 
@@ -205,21 +224,38 @@ function ChannelTable({ channels }: { channels: ChannelMetric[] }) {
   return <article className="elite-card overflow-hidden"><div className="border-b border-white/8 px-5 py-4"><p className="section-kicker">Origem dos resultados</p><h3 className="text-lg font-semibold text-white">Eficiência por canal</h3></div><div className="overflow-x-auto"><Table><TableHeader><TableRow className="border-white/8 hover:bg-transparent"><TableHead>Canal</TableHead><TableHead>Leads</TableHead><TableHead>Pagamentos</TableHead><TableHead>Receita</TableHead><TableHead>Custo</TableHead><TableHead>CPL</TableHead><TableHead>CAC</TableHead></TableRow></TableHeader><TableBody>{channels.map((item) => <TableRow key={item.channel} className="border-white/7"><TableCell className="font-medium text-white">{item.channel}</TableCell><TableCell>{item.leads}</TableCell><TableCell>{item.payments}</TableCell><TableCell>{money(item.revenueCents)}</TableCell><TableCell>{money(item.costCents)}</TableCell><TableCell>{money(item.leads ? item.costCents / item.leads : null)}</TableCell><TableCell>{money(item.payments ? item.costCents / item.payments : null)}</TableCell></TableRow>)}</TableBody></Table></div></article>;
 }
 
-function Operations({ data, onCompleteTask, saving }: { data: DashboardData; onCompleteTask: (id: number) => void; saving: boolean }) {
+function PartnersEvents({ data }: { data: DashboardData }) {
   return <div className="grid gap-4 xl:grid-cols-2">
     <article className="elite-card overflow-hidden"><div className="border-b border-white/8 p-5"><p className="section-kicker">Presença local</p><h3 className="text-lg font-semibold text-white">Parceiros</h3></div>{data.partners.length ? <div className="divide-y divide-white/7">{data.partners.slice(0, 12).map((item) => <div key={item.id} className="flex items-start justify-between gap-4 p-4"><div><p className="font-medium text-white">{item.name}</p><p className="mt-1 text-xs text-zinc-500">{item.cityName} · {item.type} · {item.contactName || "Sem contato"}</p><p className="mt-2 text-sm text-zinc-400">{item.nextAction || "Defina a próxima ação"}</p></div><Badge variant="outline" className={badgeClass(item.status)}>{item.status}</Badge></div>)}</div> : <EmptyState title="Nenhum parceiro" description="Cadastre quem pode abrir portas e espaços na cidade." icon={Handshake} />}</article>
     <article className="elite-card overflow-hidden"><div className="border-b border-white/8 p-5"><p className="section-kicker">Agenda local</p><h3 className="text-lg font-semibold text-white">Eventos</h3></div>{data.events.length ? <div className="divide-y divide-white/7">{data.events.slice(0, 12).map((item) => <div key={item.id} className="flex items-start justify-between gap-4 p-4"><div><p className="font-medium text-white">{item.name}</p><p className="mt-1 text-xs text-zinc-500">{item.cityName} · {dateOnly(item.eventDate)} · {item.ownerName || "Sem responsável"}</p><p className="mt-2 text-sm text-zinc-400">{item.reach} alcançados · {money(item.costCents)}</p></div><Badge variant="outline" className={badgeClass(item.status)}>{item.status}</Badge></div>)}</div> : <EmptyState title="Nenhum evento" description="Planeje uma ação local e registre seu responsável e custo." icon={CalendarDays} />}</article>
-    <article className="elite-card overflow-hidden"><div className="border-b border-white/8 p-5"><p className="section-kicker">Mensagem aprovada</p><h3 className="text-lg font-semibold text-white">Materiais</h3></div>{data.contents.length ? <div className="divide-y divide-white/7">{data.contents.slice(0, 12).map((item) => <div key={item.id} className="flex items-start justify-between gap-4 p-4"><div><p className="font-medium text-white">{item.title}</p><p className="mt-1 text-xs text-zinc-500">{item.cityName} · {item.type} · v{item.version}</p>{item.url && <a href={item.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-[#d6b94f]">Abrir material <ExternalLink className="size-3" /></a>}</div><Badge variant="outline" className={badgeClass(item.status)}>{item.status}</Badge></div>)}</div> : <EmptyState title="Nenhum material" description="Cadastre mensagens, vídeos, artes e roteiros antes da divulgação." icon={Library} />}</article>
-    <article className="elite-card overflow-hidden"><div className="border-b border-white/8 p-5"><p className="section-kicker">Execução da semana</p><h3 className="text-lg font-semibold text-white">Tarefas e missões</h3></div>{data.tasks.length ? <div className="divide-y divide-white/7">{data.tasks.slice(0, 12).map((item) => <div key={item.id} className="flex items-start justify-between gap-4 p-4"><div><p className="font-medium text-white">{item.title}</p><p className="mt-1 text-xs text-zinc-500">{item.ambassadorName} · {item.category} · {dateOnly(item.dueDate)}</p></div>{item.status === "Pendente" ? <Button size="sm" disabled={saving} onClick={() => onCompleteTask(item.id)} variant="outline" className="border-white/10 bg-white/5 text-white"><Check /> Concluir</Button> : <Badge variant="outline" className={badgeClass(item.status)}>{item.status}</Badge>}</div>)}</div> : <EmptyState title="Nenhuma tarefa" description="Crie missões simples com responsável e prazo." icon={ClipboardCheck} />}</article>
   </div>;
 }
 
-function ConfigPanel({ data, view, open }: { data: DashboardData; view: DashboardView; open: (dialog: DialogState) => void }) {
+function Materials({ data }: { data: DashboardData }) {
+  return <article className="elite-card overflow-hidden">{data.contents.length ? <div className="divide-y divide-white/7">{data.contents.slice(0, 50).map((item) => <div key={item.id} className="flex items-start justify-between gap-4 p-4"><div><p className="font-medium text-white">{item.title}</p><p className="mt-1 text-xs text-zinc-500">{item.cityName} · {item.type} · v{item.version}</p>{item.url && <a href={item.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-[#d6b94f]">Abrir material <ExternalLink className="size-3" /></a>}</div><Badge variant="outline" className={badgeClass(item.status)}>{item.status}</Badge></div>)}</div> : <EmptyState title="Nenhum material" description="Cadastre mensagens, vídeos, artes e roteiros antes da divulgação." icon={Library} />}</article>;
+}
+
+function Missions({ data, onCompleteTask, saving }: { data: DashboardData; onCompleteTask: (id: number) => void; saving: boolean }) {
+  return <article className="elite-card overflow-hidden"><div className="border-b border-white/8 p-5"><p className="section-kicker">Execução da semana</p><h3 className="text-lg font-semibold text-white">Tarefas e missões</h3></div>{data.tasks.length ? <div className="divide-y divide-white/7">{data.tasks.slice(0, 20).map((item) => <div key={item.id} className="flex items-start justify-between gap-4 p-4"><div><p className="font-medium text-white">{item.title}</p><p className="mt-1 text-xs text-zinc-500">{item.ambassadorName} · {item.category} · {dateOnly(item.dueDate)}</p></div>{item.status === "Pendente" ? <Button size="sm" disabled={saving} onClick={() => onCompleteTask(item.id)} variant="outline" className="border-white/10 bg-white/5 text-white"><Check /> Concluir</Button> : <Badge variant="outline" className={badgeClass(item.status)}>{item.status}</Badge>}</div>)}</div> : <EmptyState title="Nenhuma tarefa" description="Crie missões simples com responsável e prazo." icon={ClipboardCheck} />}</article>;
+}
+
+function CostsPanel({ data, view }: { data: DashboardData; view: DashboardView }) {
+  return <div className="space-y-5"><section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Kpi label="Custo total" value={money(view.summary.costCents, true)} helper="Todas as categorias" icon={CircleDollarSign} /><Kpi label="Mídia paga" value={money(view.summary.mediaCostCents, true)} helper="Parcela usada no ROAS" icon={Megaphone} /><Kpi label="CAC" value={money(view.summary.cacCents)} helper="Custo ÷ clientes pagos" icon={TrendingDown} /><Kpi label="ROAS" value={multiple(view.summary.roas)} helper="Receita de mídia ÷ custo de mídia" icon={Target} /></section><ChannelTable channels={view.channels} />{view.filteredCosts.length > 0 && <article className="elite-card overflow-hidden"><div className="border-b border-white/8 p-5"><p className="section-kicker">Lançamentos</p><h3 className="text-lg font-semibold text-white">Custos registrados</h3></div><div className="overflow-x-auto"><Table><TableHeader><TableRow className="border-white/8"><TableHead>Período</TableHead><TableHead>Cidade</TableHead><TableHead>Categoria</TableHead><TableHead>Canal</TableHead><TableHead>Valor</TableHead><TableHead>Observação</TableHead></TableRow></TableHeader><TableBody>{view.filteredCosts.slice(0, 100).map((item) => <TableRow key={item.id} className="border-white/7"><TableCell>{item.period}</TableCell><TableCell>{data.cities.find((city) => city.id === item.cityId)?.name}</TableCell><TableCell>{item.category}</TableCell><TableCell>{item.channel}</TableCell><TableCell>{money(item.amountCents)}</TableCell><TableCell>{item.note}</TableCell></TableRow>)}</TableBody></Table></div></article>}</div>;
+}
+
+function RulesPanel({ data, view, open }: { data: DashboardData; view: DashboardView; open: (dialog: DialogState) => void }) {
   return <div className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
     <article className="elite-card p-6"><div className="flex items-start justify-between gap-4"><div><p className="section-kicker">Regras visíveis</p><h3 className="text-xl font-semibold text-white">Critérios de decisão</h3></div><Button size="sm" onClick={() => open({ name: "settings" })} className="bg-[#c9a227] text-black"><Settings /> Editar</Button></div><dl className="mt-6 grid gap-4 text-sm"><div className="flex justify-between gap-4"><dt className="text-zinc-500">Embaixadores ativos</dt><dd className="text-white">{data.settings.minActiveAmbassadors || "Não definido"}</dd></div><div className="flex justify-between gap-4"><dt className="text-zinc-500">Pagamentos mínimos</dt><dd className="text-white">{data.settings.minConfirmedPayments || "Não definido"}</dd></div><div className="flex justify-between gap-4"><dt className="text-zinc-500">Períodos mínimos</dt><dd className="text-white">{data.settings.minDataPeriods || "Não definido"}</dd></div><div className="flex justify-between gap-4"><dt className="text-zinc-500">Meta orgânica</dt><dd className="text-white">{data.settings.organicGoalPercent ? `${data.settings.organicGoalPercent}%` : "Sem exigência"}</dd></div><div className="flex justify-between gap-4"><dt className="text-zinc-500">Inatividade</dt><dd className="text-white">{data.settings.inactivityDays ? `${data.settings.inactivityDays} dias` : "Qualquer atividade registrada"}</dd></div><div className="flex justify-between gap-4"><dt className="text-zinc-500">Atribuição</dt><dd className="text-right text-white">{data.settings.attributionModel}</dd></div></dl><div className="mt-6 rounded-xl border border-white/8 bg-white/[0.025] p-4 text-sm leading-6 text-zinc-400">Custo por embaixador ativo: <strong className="text-white">{money(view.summary.costPerActiveAmbassadorCents)}</strong><p className="mt-1 text-xs text-zinc-500">Custos ligados ao canal, ao embaixador ou a recompensa autorizada ÷ embaixadores ativos.</p></div></article>
     <article className="elite-card p-6"><p className="section-kicker">Transparência</p><h3 className="text-xl font-semibold text-white">Como os indicadores são calculados</h3><dl className="mt-5 grid gap-3 text-sm leading-5 text-zinc-400 sm:grid-cols-2"><div><dt className="text-white">Conversão</dt><dd>Pagamentos confirmados ÷ leads válidos.</dd></div><div><dt className="text-white">CPL</dt><dd>Custos atribuíveis ÷ leads válidos.</dd></div><div><dt className="text-white">CAC</dt><dd>Custos atribuíveis ÷ clientes com pagamento confirmado.</dd></div><div><dt className="text-white">Participação orgânica</dt><dd>Leads válidos sem mídia paga ÷ total de leads válidos.</dd></div><div><dt className="text-white">ROAS</dt><dd>Receita atribuída à mídia ÷ investimento em mídia.</dd></div><div><dt className="text-white">ROI</dt><dd>(Receita atribuída − custo atribuível) ÷ custo atribuível.</dd></div><div><dt className="text-white">Ativação</dt><dd>Embaixadores ativos ÷ aprovados elegíveis.</dd></div><div><dt className="text-white">Sem base confiável</dt><dd>O painel mostra “Sem dados suficientes” e não divide por zero.</dd></div></dl></article>
-    {data.advisors.length > 0 && <article className="elite-card p-6 xl:col-span-2"><p className="section-kicker">Acompanhamento</p><h3 className="text-lg font-semibold text-white">Assessoria Elite</h3><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">A equipe de assessoria da Elite Frascaroli Academy pode ver e editar os dados desta organização para mentorar e dar suporte à operação. Esse acesso faz parte do serviço contratado, e cada alteração feita pela assessoria aparece marcada em “Últimas alterações”.</p><ul className="mt-4 flex flex-wrap gap-2">{data.advisors.map((advisor) => <li key={advisor.email} className="rounded-lg border border-[#c9a227]/30 bg-[#c9a227]/5 px-3 py-2 text-sm"><span className="font-medium text-white">{advisor.name}</span><span className="block text-xs text-zinc-500">{advisor.email}</span></li>)}</ul></article>}<article className="elite-card overflow-hidden xl:col-span-2"><div className="border-b border-white/8 p-5"><p className="section-kicker">Rastreabilidade</p><h3 className="text-lg font-semibold text-white">Últimas alterações</h3></div>{data.auditLogs.length ? <div className="overflow-x-auto"><Table><TableHeader><TableRow className="border-white/8"><TableHead>Data</TableHead><TableHead>Responsável</TableHead><TableHead>Ação</TableHead><TableHead>Registro</TableHead><TableHead>Resumo</TableHead></TableRow></TableHeader><TableBody>{data.auditLogs.slice(0, 25).map((item) => <TableRow key={item.id} className="border-white/7"><TableCell>{dateTime(item.createdAt)}</TableCell><TableCell>{item.actorEmail}{item.advisory && <Badge variant="outline" className="ml-2 border-[#c9a227]/50 text-[#e8c766]">Assessoria Elite</Badge>}</TableCell><TableCell>{item.action}</TableCell><TableCell>{item.entityType} {item.entityId ? `#${item.entityId}` : ""}</TableCell><TableCell>{item.summary}</TableCell></TableRow>)}</TableBody></Table></div> : <EmptyState title="Nenhuma alteração registrada" description="As próximas ações importantes aparecerão aqui." icon={ShieldCheck} />}</article>
   </div>;
+}
+
+function HistoryPanel({ data }: { data: DashboardData }) {
+  return <article className="elite-card overflow-hidden">{data.auditLogs.length ? <div className="overflow-x-auto"><Table><TableHeader><TableRow className="border-white/8"><TableHead>Data</TableHead><TableHead>Responsável</TableHead><TableHead>Ação</TableHead><TableHead>Registro</TableHead><TableHead>Resumo</TableHead></TableRow></TableHeader><TableBody>{data.auditLogs.slice(0, 50).map((item) => <TableRow key={item.id} className="border-white/7"><TableCell>{dateTime(item.createdAt)}</TableCell><TableCell>{item.actorEmail}{item.advisory && <Badge variant="outline" className="ml-2 border-[#c9a227]/50 text-[#e8c766]">Assessoria Elite</Badge>}</TableCell><TableCell>{item.action}</TableCell><TableCell>{item.entityType} {item.entityId ? `#${item.entityId}` : ""}</TableCell><TableCell>{item.summary}</TableCell></TableRow>)}</TableBody></Table></div> : <EmptyState title="Nenhuma alteração registrada" description="As próximas ações importantes aparecerão aqui." icon={ShieldCheck} />}</article>;
+}
+
+function AdvisoryPanel({ data }: { data: DashboardData }) {
+  return <article className="elite-card p-6"><p className="section-kicker">Acompanhamento</p><h3 className="text-lg font-semibold text-white">Quem da Elite acompanha a sua empresa</h3><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">A equipe de assessoria da Elite Frascaroli Academy pode ver e editar os dados desta organização para mentorar e dar suporte à operação. Esse acesso faz parte do serviço contratado, e cada alteração feita pela assessoria aparece marcada no Histórico.</p><ul className="mt-4 flex flex-wrap gap-2">{data.advisors.map((advisor) => <li key={advisor.email} className="rounded-lg border border-[#c9a227]/30 bg-[#c9a227]/5 px-3 py-2 text-sm"><span className="font-medium text-white">{advisor.name}</span><span className="block text-xs text-zinc-500">{advisor.email}</span></li>)}</ul></article>;
 }
 
 function referralLink(base: string, code: string) {
@@ -259,19 +295,58 @@ function exportCsv(view: DashboardView) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
 }
 
-export function ExpansionDashboard({ initialData, userName, signOutPath }: { initialData: DashboardData; userName: string; signOutPath: string }) {
+const MANAGEMENT_ROLES = ["Administrador", "Coordenação", "Líder"];
+/** Sub-abas de Vendas que são visões do acompanhamento (a de Pagamentos é outra tela). */
+const FOLLOWUP_VIEWS = { agenda: "agenda", atendimentos: "table", fecha: "fecha", posvenda: "aftercare" } as const;
+/** Onde a barra de filtros (cidade, período, canal, líder, embaixador) vale. */
+const FILTERED = ["territorio/cidades", "rede/embaixadores", "vendas/pagamentos", "resultados/visao", "resultados/custos"];
+
+export function ExpansionDashboard({ initialData, userName, signOutPath, initialArea, initialView }: { initialData: DashboardData; userName: string; signOutPath: string; initialArea?: string | null; initialView?: string | null }) {
   const [data, setData] = useState(initialData);
   const [filters, setFilters] = useState<DashboardFilters>({ ...EMPTY_FILTERS });
   const [dialog, setDialog] = useState<DialogState>(null);
   const [saving, setSaving] = useState(false);
   const [mapPersonId, setMapPersonId] = useState<string | undefined>();
-  const [followupLeadId,setFollowupLeadId] = useState<number | undefined>();
+  const [followupLeadId, setFollowupLeadId] = useState<number | undefined>();
   const [mapLeadId, setMapLeadId] = useState<number | undefined>();
-  const [tab, setTab] = useState(initialData.access.role === "Comercial" ? "followup" : "visao");
   const [mappingOpen, setMappingOpen] = useState(false);
-  // "mapear" não é uma aba: abre o mapeamento guiado.
-  const go = (next: string) => { if (next === "mapear") setMappingOpen(true); else setTab(next); };
+  // Atendimentos: lista de acompanhamento ou dados das oportunidades (etapa, temperatura, empresa).
+  const [salesMode, setSalesMode] = useState<"lista" | "dados">("lista");
+  // Muda a cada "+ Novo → Convidar pessoa": reabre Time e acessos com o convite aberto.
+  const [inviteRequest, setInviteRequest] = useState(0);
+  const areas = useMemo(() => navigationFor(data.access, { hasAdvisors: data.advisors.length > 0 }), [data.access, data.advisors.length]);
+  const [location, setLocation] = useState<NavLocation>(() => resolveLocation(areas, initialData.access, initialArea, initialView));
   const view = useMemo(() => buildDashboardView(data, filters), [data, filters]);
+  const fullView = useMemo(() => buildDashboardView(data, EMPTY_FILTERS), [data]);
+  const areasRef = useRef(areas);
+  areasRef.current = areas;
+
+  // Área e sub-aba ficam no endereço: links diretos e o botão voltar do navegador funcionam.
+  useEffect(() => {
+    const onPop = () => { const p = new URLSearchParams(window.location.search); setLocation(resolveLocation(areasRef.current, data.access, p.get("area"), p.get("ver"))); };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [data.access]);
+
+  function navigate(next: NavLocation, { invite = false }: { invite?: boolean } = {}) {
+    setInviteRequest((value) => (invite ? value + 1 : 0));
+    if (next.area === location.area && next.view === location.view) return;
+    setLocation(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set("area", next.area);
+    if (next.view) url.searchParams.set("ver", next.view); else url.searchParams.delete("ver");
+    window.history.pushState(null, "", url);
+    window.scrollTo({ top: 0 });
+  }
+  /** "mapear" abre o mapeamento guiado; "area/sub-aba" leva até a tela. */
+  const go = (target: string) => {
+    if (target === "mapear") { setMappingOpen(true); return; }
+    const { area, view: sub } = parseTarget(target);
+    navigate(resolveLocation(areas, data.access, area, sub));
+  };
+  const openFollowup = (leadId: number) => { setFollowupLeadId(leadId); setSalesMode("lista"); navigate({ area: "vendas", view: "agenda" }); };
+  const openMapPerson = (personId: string) => { setMapPersonId(personId); setMapLeadId(undefined); navigate({ area: "territorio", view: "mapa" }); };
+  const openMapLead = (leadId: number) => { setMapPersonId(undefined); setMapLeadId(leadId); navigate({ area: "territorio", view: "mapa" }); };
 
   async function refreshDashboard(){const r=await tenantFetch("/api/dashboard");const v=await r.json();if(!r.ok)throw new Error(v.error);setData(v.data);}
   const savingLock = useRef(false);
@@ -292,7 +367,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath }: { ini
     return <><AmbassadorPortal data={data} view={view} open={setDialog} saving={saving} save={save} /><WelcomeDialog access={data.access} onStart={() => undefined} /><ExpansionDialog dialog={dialog} data={data} saving={saving} onClose={() => setDialog(null)} onSave={save} /></>;
   }
 
-  const canMap = data.access.active && ["Administrador", "Coordenação", "Líder", "Comercial"].includes(data.access.role);
+  const manage = MANAGEMENT_ROLES.includes(data.access.role);
+  const canMap = data.access.active && [...MANAGEMENT_ROLES, "Comercial"].includes(data.access.role);
   const canCity = canPerform(data.access, "create_city");
   const canAmbassador = canPerform(data.access, "create_ambassador");
   const canPipeline = canPerform(data.access, "create_lead");
@@ -301,39 +377,72 @@ export function ExpansionDashboard({ initialData, userName, signOutPath }: { ini
   const canOperation = canPerform(data.access, "create_partner");
   const canContent = canPerform(data.access, "create_content");
   const canTask = canPerform(data.access, "create_task");
-
-  // Abas na ordem de trabalho: base (cidades, mapa, locais) → pessoas → vendas → gestão.
-  const pending = (data.agenda?.late ?? 0) + (data.agenda?.today ?? 0);
-  const salesLabel = pending ? `Vendas e relacionamento (${pending})` : "Vendas e relacionamento";
-  const tabs: [string, string][] = data.access.role === "Comercial"
-    ? [["followup", salesLabel], ["mapa", "Mapa territorial"], ["empresas", "Empresas e locais"], ["pipeline", "CRM e pagamentos"], ["equipe", "Metas e desempenho"]]
-    : [["visao", "Início"], ["cidades", "Cidades"], ["mapa", "Mapa territorial"], ["empresas", "Empresas e locais"], ["embaixadores", "Embaixadores"], ["followup", salesLabel], ["pipeline", "CRM e pagamentos"], ["equipe", "Metas e desempenho"], ["operacao", "Operação local"], ["custos", "Custos"],
-      ...(data.access.role === "Administrador" ? [["time", "Time e acessos"], ["portal", "Portal"], ["config", "Configurações"]] as [string, string][] : []),
-      ...(data.access.isPlatformOwner ? [["assinaturas", "Assinaturas"]] as [string, string][] : [])];
-  const attributionWarning = (filters.channel || filters.ambassadorId !== null) && view.cities.some((city) => city.dataSource === "Consolidado");
+  const canImport = canMap && data.plan?.imports !== false;
   const eligibleLeads = data.leads.filter((lead) => lead.status !== "Cancelado" && !lead.consentRevokedAt);
+  const pending = (data.agenda?.late ?? 0) + (data.agenda?.today ?? 0);
+  const noCity = !data.cities.length ? "sem cidade" : undefined;
 
-  return <main className="elite-grid min-h-screen bg-[#080807] text-zinc-100">
-    <header className="sticky top-0 z-40 border-b border-white/8 bg-[#080807]/90 backdrop-blur-xl"><div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6 lg:px-8"><div className="flex items-center gap-3"><img src="/elite-emblem.png" alt="Elite Frascaroli Academy — logo oficial" width={541} height={541} className="elite-brand-logo" /><div><p className="font-semibold tracking-tight text-white">Elite Expansion X</p><p className="text-xs text-zinc-500">Cidades, pessoas e resultados</p></div></div><div className="flex min-w-0 max-w-full flex-wrap items-center gap-2"><OrganizationSwitcher access={data.access}/><Badge variant="outline" className={data.access.isAdvisory ? "border-[#c9a227]/50 text-[#e8c766]" : "hidden border-white/10 text-zinc-400 sm:inline-flex"}>{data.access.isAdvisory ? "Assessoria Elite" : data.access.role}</Badge><span className="hidden max-w-48 truncate text-sm text-zinc-400 lg:block">{userName}</span><Button asChild variant="ghost" size="icon" className="text-zinc-400 hover:bg-white/5 hover:text-white"><a href={signOutPath} aria-label="Sair da plataforma"><LogOut /></a></Button></div></div></header>{data.access.isAdvisory && <div role="status" className="border-b border-[#c9a227]/30 bg-[#c9a227]/10 px-4 py-2 text-center text-sm text-[#e8c766]">Modo assessoria: você está em <strong>{data.access.organizationName}</strong> pela Assessoria Elite. A empresa vê esse acesso, e tudo o que você alterar fica registrado no histórico dela.</div>}
-    <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <section className="mb-6 flex flex-col justify-between gap-5 lg:flex-row lg:items-end"><div><p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#c9a227]"><Radio className="size-3.5" /> operação privada</p><h1 className="text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">Expansão e vendas, em um só lugar</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Do mapa ao relacionamento: acompanhe oportunidades, pagamentos e indicações em uma única operação.</p><p className="mt-2 text-xs text-zinc-600">Atualizado em {dateTime(data.lastUpdated)}</p></div><div className="flex flex-wrap gap-2">{canMap && <Button disabled={saving || !data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-[#c9a227] text-black hover:bg-[#ddbd48]"><MapPin /> Mapear</Button>}{canPipeline && <Button disabled={saving} onClick={() => setDialog({ name: "lead" })} variant="outline" className="border-white/12 bg-white/4 text-white"><Plus /> Novo lead</Button>}{canSale && <Button disabled={saving || !eligibleLeads.length} title={!eligibleLeads.length ? "Cadastre um lead autorizado antes de registrar uma venda." : undefined} onClick={() => setDialog({ name: "sale" })} variant="outline" className="border-white/12 bg-white/4 text-white"><Banknote /> Registrar venda</Button>}{canAmbassador && <Button disabled={saving} onClick={() => setDialog({ name: "ambassador" })} variant="outline" className="border-white/12 bg-white/4 text-white"><Users /> Embaixador</Button>}{canCity && <Button disabled={saving} onClick={() => setDialog({ name: "city" })} variant="outline" className="border-white/12 bg-white/4 text-white"><MapPin /> Cidade</Button>}{data.plan?.exports !== false && <Button onClick={() => { try { exportCsv(view); toast.success("Relatório exportado."); } catch { toast.error("Não foi possível exportar o relatório."); } }} variant="ghost" className="text-zinc-400 hover:bg-white/5 hover:text-white"><Download /> Exportar</Button>}</div></section>
-      {data.agenda && tab !== "followup" && <AgendaBanner agenda={data.agenda} onAll={() => setTab("followup")} onOpen={(leadId) => { setFollowupLeadId(leadId); setTab("followup"); }} />}
-      {data.access.role !== "Comercial" && !["mapa","empresas","equipe","followup","time","portal","assinaturas"].includes(tab) && <FilterBar data={data} filters={filters} onChange={setFilters} />}
-      {attributionWarning && <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><AlertTriangle className="mt-1 size-4 shrink-0" />Filtros por canal ou embaixador não usam fechamentos consolidados, pois eles não possuem atribuição individual. Cidades detalhadas continuam sendo calculadas normalmente.</div>}
-      <Tabs value={tab} onValueChange={setTab} className="gap-6"><TabsList variant="line" className="w-full justify-start gap-5 overflow-x-auto border-b border-white/8 pb-0">
-        {tabs.map(([value, label]) => <TabsTrigger key={value} value={value} className="px-0 pb-3 text-zinc-500 data-[state=active]:text-[#d6b94f]">{label}</TabsTrigger>)}
-      </TabsList>
-      {data.access.role !== "Comercial" && <><TabsContent value="visao"><GettingStarted data={data} onGo={go} />{data.mappingStats && <MappingStatsPanel stats={data.mappingStats} />}<Overview view={view} /></TabsContent><TabsContent value="mapa"><TerritorialMap key={mapPersonId||mapLeadId||"map"} focusPersonId={mapPersonId} onFollowup={id=>{setFollowupLeadId(id);setTab("followup");}} focusLeadId={mapLeadId} view={buildDashboardView(data, EMPTY_FILTERS)} data={data} onOpen={setDialog} onRefresh={async () => { const r=await tenantFetch("/api/dashboard"); if(!r.ok) throw new Error("Painel indisponível"); const v=await r.json(); setData(v.data); }} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canMap && data.plan?.imports !== false && <PeopleImport data={data} onSaved={refreshDashboard} />}</TabsContent><TabsContent value="cidades" className="space-y-5"><SectionHeader kicker="Expansão controlada" title="Cidade por cidade" actions={<>{canPerform(data.access, "record_city") && <Button onClick={() => setDialog({ name: "city-result" })} variant="outline" className="border-white/10 bg-white/5 text-white"><Activity /> Fechamento consolidado</Button>}{canCity && <Button onClick={() => setDialog({ name: "city" })} className="bg-[#c9a227] text-black"><Plus /> Nova cidade</Button>}</>} /><CityTable cities={view.cities} onEdit={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} /><TerritoryDecisions data={data}/></TabsContent><TabsContent value="embaixadores" className="space-y-5"><SectionHeader kicker="Força local" title="Embaixadores e líderes" actions={<>{canPerform(data.access, "record_ambassador") && <Button disabled={!data.ambassadors.length} title={!data.ambassadors.length ? "Cadastre um embaixador antes de registrar atividade." : undefined} onClick={() => setDialog({ name: "ambassador-activity" })} variant="outline" className="border-white/10 bg-white/5 text-white"><Activity /> Atividade</Button>}{canAmbassador && <Button onClick={() => setDialog({ name: "ambassador" })} className="bg-[#c9a227] text-black"><Plus /> Cadastrar</Button>}</>} /><AmbassadorTable ambassadors={view.ambassadors} onEdit={canPerform(data.access, "update_ambassador") ? (id) => setDialog({ name: "ambassador-edit", entityId: id }) : undefined} /></TabsContent></>}
-      {data.access.role==="Comercial"&&<TabsContent value="mapa"><TerritorialMap key={mapPersonId||mapLeadId||"map"} focusPersonId={mapPersonId} onFollowup={id=>{setFollowupLeadId(id);setTab("followup");}} focusLeadId={mapLeadId} view={buildDashboardView(data,EMPTY_FILTERS)} data={data} onRefresh={refreshDashboard}/>{canMap && data.plan?.imports !== false && <PeopleImport data={data} onSaved={refreshDashboard} />}</TabsContent>}<TabsContent value="followup"><FollowupWorkspace key={followupLeadId??"all"} data={data} focusLeadId={followupLeadId} onRefresh={refreshDashboard} onMap={id=>{setMapPersonId(id);setMapLeadId(undefined);setTab("mapa");}} onLead={id=>setDialog({name:"lead-status",entityId:id})} onSale={id=>setDialog({name:"sale",entityId:id})} onNewLead={()=>setDialog({name:"lead"})} onCRM={()=>setTab("pipeline")}/></TabsContent><TabsContent value="empresas"><CommercialWorkspace data={data} mode="businesses" onRefresh={refreshDashboard}/></TabsContent><TabsContent value="equipe"><CommercialWorkspace data={data} mode="team" onRefresh={refreshDashboard}/></TabsContent><TabsContent value="pipeline" className="space-y-5"><CommercialWorkspace data={data} mode="pipeline" onFollowup={id=>{setFollowupLeadId(id);setTab("followup");}} onRefresh={refreshDashboard}/><SectionHeader kicker="Do contato ao pagamento" title="CRM e vendas confirmadas" actions={<>{canPipeline && <Button onClick={() => setDialog({ name: "lead" })} variant="outline" className="border-white/10 bg-white/5 text-white"><Plus /> Lead autorizado</Button>}{canSale && <Button disabled={!eligibleLeads.length} title={!eligibleLeads.length ? "Cadastre um lead autorizado antes de registrar uma venda." : undefined} onClick={() => setDialog({ name: "sale" })} className="bg-[#c9a227] text-black"><Banknote /> Venda e pagamento</Button>}</>} /><section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Kpi label="Leads válidos" value={number(view.summary.validLeads)} helper="Somente Lead válido e Oportunidade" icon={Megaphone} /><Kpi label="Vendas confirmadas" value={number(view.summary.confirmedSales)} helper="Inclui pagamentos confirmados" icon={Trophy} /><Kpi label="Pagamentos" value={number(view.summary.confirmedPayments)} helper="Base usada no CAC" icon={BadgeCheck} /><Kpi label="Conversão" value={ratio(view.summary.conversion)} helper="Pagamentos ÷ leads válidos" icon={Target} /></section><Pipeline view={view} onMap={(id) => {setMapPersonId(undefined);setMapLeadId(id);setTab("mapa");}} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} canEdit={canPerform(data.access, "update_lead") || canSale} /></TabsContent>
-      {data.access.role !== "Comercial" && <><TabsContent value="operacao" className="space-y-5"><SectionHeader kicker="Execução na cidade" title="Parceiros, eventos, materiais e missões" actions={<>{canOperation && <><Button onClick={() => setDialog({ name: "partner" })} variant="outline" className="border-white/10 bg-white/5 text-white"><Handshake /> Parceiro</Button><Button onClick={() => setDialog({ name: "event" })} variant="outline" className="border-white/10 bg-white/5 text-white"><CalendarDays /> Evento</Button></>}{canContent && <Button onClick={() => setDialog({ name: "content" })} variant="outline" className="border-white/10 bg-white/5 text-white"><Library /> Material</Button>}{canTask && <Button onClick={() => setDialog({ name: "task" })} className="bg-[#c9a227] text-black"><ClipboardCheck /> Tarefa</Button>}</>} /><Operations data={data} onCompleteTask={(id) => save("complete_task", { taskId: id })} saving={saving} /></TabsContent><TabsContent value="custos" className="space-y-5"><SectionHeader kicker="Menos dependência de mídia" title="Custos e eficiência por origem" actions={canCost && <Button onClick={() => setDialog({ name: "cost" })} className="bg-[#c9a227] text-black"><Plus /> Registrar custo</Button>} /><section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Kpi label="Custo total" value={money(view.summary.costCents, true)} helper="Todas as categorias" icon={CircleDollarSign} /><Kpi label="Mídia paga" value={money(view.summary.mediaCostCents, true)} helper="Parcela usada no ROAS" icon={Megaphone} /><Kpi label="CAC" value={money(view.summary.cacCents)} helper="Custo ÷ clientes pagos" icon={TrendingDown} /><Kpi label="ROAS" value={multiple(view.summary.roas)} helper="Receita de mídia ÷ custo de mídia" icon={Target} /></section><ChannelTable channels={view.channels} />{view.filteredCosts.length > 0 && <article className="elite-card overflow-hidden"><div className="border-b border-white/8 p-5"><p className="section-kicker">Lançamentos</p><h3 className="text-lg font-semibold text-white">Custos registrados</h3></div><div className="overflow-x-auto"><Table><TableHeader><TableRow className="border-white/8"><TableHead>Período</TableHead><TableHead>Cidade</TableHead><TableHead>Categoria</TableHead><TableHead>Canal</TableHead><TableHead>Valor</TableHead><TableHead>Observação</TableHead></TableRow></TableHeader><TableBody>{view.filteredCosts.slice(0, 100).map((item) => <TableRow key={item.id} className="border-white/7"><TableCell>{item.period}</TableCell><TableCell>{data.cities.find((city) => city.id === item.cityId)?.name}</TableCell><TableCell>{item.category}</TableCell><TableCell>{item.channel}</TableCell><TableCell>{money(item.amountCents)}</TableCell><TableCell>{item.note}</TableCell></TableRow>)}</TableBody></Table></div></article>}</TabsContent></>}
-      {data.access.isPlatformOwner && <TabsContent value="assinaturas"><SubscriptionsPanel /></TabsContent>}
-      {data.access.role === "Administrador" && <TabsContent value="portal"><PortalAdmin data={data} onGo={setTab} /></TabsContent>}
-      {data.access.role === "Administrador" && <TabsContent value="time"><TeamPanel data={data} onData={setData} onRefresh={refreshDashboard} open={setDialog} /></TabsContent>}
-      {data.access.role === "Administrador" && <TabsContent value="config" className="space-y-4">{data.access.organizationId !== 1 && data.plan && <PlanCard plan={data.plan} organization={data.access.organizationName} />}<ConfigPanel data={data} view={view} open={setDialog} /></TabsContent>}
-      </Tabs>
-    </div>
+  const when = (condition: boolean, ...items: NewAction[]) => (condition ? items : []);
+  const actions: NewAction[] = [
+    ...when(canMap, { id: "mapear", label: "Mapear local e pessoas", icon: MapPin, group: "dia", disabled: noCity, run: () => setMappingOpen(true) }),
+    ...when(canMap, { id: "atendimento-mapa", label: "Atendimento · pessoa do mapa", icon: Users, group: "dia", run: () => { navigate({ area: "territorio", view: "mapa" }); toast.info("Clique na pessoa no mapa e use “Iniciar atendimento”."); } }),
+    ...when(canPipeline, { id: "atendimento-novo", label: "Atendimento · contato novo", icon: UserPlus, group: "dia", disabled: noCity, run: () => setDialog({ name: "lead" }) }),
+    ...when(canSale, { id: "venda", label: "Venda e pagamento", icon: Banknote, group: "dia", disabled: !eligibleLeads.length ? "sem atendimento" : undefined, run: () => setDialog({ name: "sale" }) }),
+    ...when(canCity, { id: "cidade", label: "Cidade", icon: MapPin, group: "cadastro", run: () => setDialog({ name: "city" }) }),
+    ...when(canAmbassador, { id: "embaixador", label: "Embaixador", icon: Users, group: "cadastro", disabled: noCity, run: () => setDialog({ name: "ambassador" }) }),
+    ...when(canOperation, { id: "parceiro", label: "Parceiro", icon: Handshake, group: "cadastro", disabled: noCity, run: () => setDialog({ name: "partner" }) }, { id: "evento", label: "Evento", icon: CalendarDays, group: "cadastro", disabled: noCity, run: () => setDialog({ name: "event" }) }),
+    ...when(canContent, { id: "material", label: "Material", icon: Library, group: "cadastro", run: () => setDialog({ name: "content" }) }),
+    ...when(canTask, { id: "tarefa", label: "Tarefa ou missão", icon: ClipboardCheck, group: "cadastro", disabled: !data.ambassadors.length ? "sem embaixador" : undefined, run: () => setDialog({ name: "task" }) }),
+    ...when(canCost, { id: "custo", label: "Custo", icon: CircleDollarSign, group: "cadastro", disabled: noCity, run: () => setDialog({ name: "cost" }) }),
+    ...when(data.access.role === "Administrador", { id: "convidar", label: "Convidar pessoa", icon: UserPlus, group: "cadastro", run: () => navigate({ area: "gestao", view: "time" }, { invite: true }) }),
+  ];
+
+  const here = `${location.area}/${location.view}`;
+  const showFilters = data.access.role !== "Comercial" && FILTERED.includes(here);
+  const attributionWarning = showFilters && (filters.channel || filters.ambassadorId !== null) && view.cities.some((city) => city.dataSource === "Consolidado");
+  const followupView = location.area === "vendas" && !(location.view === "atendimentos" && salesMode === "dados") ? FOLLOWUP_VIEWS[location.view as keyof typeof FOLLOWUP_VIEWS] : undefined;
+  const outline = "border-white/10 bg-white/5 text-white";
+
+  return <>
+    <AppShell access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={pending ? { vendas: pending } : {}} actions={actions} onNavigate={(next) => navigate(next)}>
+      <div className="space-y-5">
+        {showFilters && <FilterBar data={data} filters={filters} onChange={setFilters} />}
+        {attributionWarning && <div className="flex items-start gap-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><AlertTriangle className="mt-1 size-4 shrink-0" />Filtros por canal ou embaixador não usam fechamentos consolidados, pois eles não possuem atribuição individual. Cidades detalhadas continuam sendo calculadas normalmente.</div>}
+
+        {location.area === "hoje" && <TodayPanel data={data} view={fullView} onGo={go} onFollowup={openFollowup} />}
+
+        {here === "territorio/mapa" && <>{canMap && <ActionBar hint="Locais e pessoas de cada cidade. Pessoas aparecem no local ligado a elas, nunca na residência."><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-[#c9a227] text-black"><MapPin /> Mapear local e pessoas</Button></ActionBar>}<TerritorialMap key={mapPersonId || mapLeadId || "map"} focusPersonId={mapPersonId} focusLeadId={mapLeadId} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canImport && <PeopleImport data={data} onSaved={refreshDashboard} />}</>}
+        {here === "territorio/cidades" && <><ActionBar hint="Saúde de cada cidade, decisão registrada e fechamentos consolidados.">{canPerform(data.access, "record_city") && <Button onClick={() => setDialog({ name: "city-result" })} variant="outline" className={outline}><Activity /> Fechamento consolidado</Button>}{canCity && <Button onClick={() => setDialog({ name: "city" })} className="bg-[#c9a227] text-black">Nova cidade</Button>}</ActionBar><CityTable cities={view.cities} onEdit={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} /><TerritoryDecisions data={data} /></>}
+        {here === "territorio/locais" && <CommercialWorkspace data={data} mode="businesses" onRefresh={refreshDashboard} />}
+
+        {location.area === "vendas" && location.view === "atendimentos" && <div className="elite-segmented" role="group" aria-label="Como ver os atendimentos"><button type="button" aria-pressed={salesMode === "lista"} onClick={() => setSalesMode("lista")}>Acompanhamento</button><button type="button" aria-pressed={salesMode === "dados"} onClick={() => setSalesMode("dados")}>Dados das oportunidades</button></div>}
+        {followupView && <FollowupWorkspace key={followupLeadId ?? "all"} view={followupView} data={data} focusLeadId={followupLeadId} onRefresh={refreshDashboard} onMap={openMapPerson} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} onNewLead={() => setDialog({ name: "lead" })} onCRM={() => { setSalesMode("dados"); navigate({ area: "vendas", view: "atendimentos" }); }} />}
+        {here === "vendas/atendimentos" && salesMode === "dados" && <CommercialWorkspace data={data} mode="pipeline" onFollowup={openFollowup} onRefresh={refreshDashboard} />}
+        {here === "vendas/pagamentos" && <><ActionBar hint="Cada atendimento com a etapa, a venda e o valor. A receita só conta depois do pagamento confirmado.">{canSale && <Button disabled={!eligibleLeads.length} title={!eligibleLeads.length ? "Comece um atendimento antes de registrar uma venda." : undefined} onClick={() => setDialog({ name: "sale" })} className="bg-[#c9a227] text-black"><Banknote /> Venda e pagamento</Button>}</ActionBar><Pipeline view={view} onMap={openMapLead} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} canEdit={canPerform(data.access, "update_lead") || canSale} /></>}
+
+        {here === "rede/embaixadores" && <><ActionBar hint="Etapa, treinamento, atividade e resultado de cada embaixador, e as missões da semana.">{canPerform(data.access, "record_ambassador") && <Button disabled={!data.ambassadors.length} title={!data.ambassadors.length ? "Cadastre um embaixador antes de registrar atividade." : undefined} onClick={() => setDialog({ name: "ambassador-activity" })} variant="outline" className={outline}><Activity /> Atividade</Button>}{canTask && <Button disabled={!data.ambassadors.length} onClick={() => setDialog({ name: "task" })} variant="outline" className={outline}><ClipboardCheck /> Tarefa</Button>}{canAmbassador && <Button onClick={() => setDialog({ name: "ambassador" })} className="bg-[#c9a227] text-black">Cadastrar embaixador</Button>}</ActionBar><AmbassadorTable ambassadors={view.ambassadors} onEdit={canPerform(data.access, "update_ambassador") ? (id) => setDialog({ name: "ambassador-edit", entityId: id }) : undefined} /><Missions data={data} onCompleteTask={(id) => save("complete_task", { taskId: id })} saving={saving} /></>}
+        {here === "rede/indicacoes" && <FollowupWorkspace view="network" data={data} onFocusLead={openFollowup} onRefresh={refreshDashboard} onMap={openMapPerson} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} onNewLead={() => setDialog({ name: "lead" })} onCRM={() => navigate({ area: "vendas", view: "atendimentos" })} />}
+        {here === "rede/mentorados" && <PortalAdmin data={data} onGo={go} />}
+        {here === "rede/parceiros" && <><ActionBar hint="Quem abre portas na cidade e as ações locais planejadas.">{canOperation && <><Button onClick={() => setDialog({ name: "partner" })} variant="outline" className={outline}><Handshake /> Parceiro</Button><Button onClick={() => setDialog({ name: "event" })} className="bg-[#c9a227] text-black"><CalendarDays /> Evento</Button></>}</ActionBar><PartnersEvents data={data} /></>}
+        {here === "rede/materiais" && <><ActionBar hint="Mensagens, vídeos e roteiros aprovados. Escolha para quem: embaixadores, mentorados ou todos.">{canContent && <Button onClick={() => setDialog({ name: "content" })} className="bg-[#c9a227] text-black"><Library /> Material</Button>}</ActionBar><Materials data={data} /></>}
+
+        {here === "resultados/visao" && <ResultsOverview view={view} canExport={data.plan?.exports !== false} />}
+        {here === "resultados/metas" && <CommercialWorkspace data={data} mode="team" onRefresh={refreshDashboard} />}
+        {here === "resultados/mapeamento" && (data.mappingStats ? <MappingStatsPanel stats={data.mappingStats} /> : <article className="elite-card"><EmptyState title="Sem dados de mapeamento" description="Os indicadores aparecem quando houver locais e pessoas no mapa." /></article>)}
+        {here === "resultados/custos" && <><ActionBar hint="Quanto custa cada resultado, por origem.">{canCost && <Button onClick={() => setDialog({ name: "cost" })} className="bg-[#c9a227] text-black"><CircleDollarSign /> Registrar custo</Button>}</ActionBar><CostsPanel data={data} view={view} /></>}
+
+        {here === "gestao/time" && <TeamPanel key={inviteRequest} startInvite={inviteRequest > 0} data={data} onData={setData} onRefresh={refreshDashboard} open={setDialog} />}
+        {here === "gestao/regras" && <RulesPanel data={data} view={view} open={setDialog} />}
+        {here === "gestao/plano" && data.plan && <PlanCard plan={data.plan} organization={data.access.organizationName} />}
+        {here === "gestao/historico" && <HistoryPanel data={data} />}
+        {here === "gestao/assessoria" && <AdvisoryPanel data={data} />}
+
+        {here === "plataforma/assinaturas" && <SubscriptionsPanel />}
+        {here === "plataforma/assessores" && <AdvisorsPanel />}
+      </div>
+    </AppShell>
     <ExpansionDialog dialog={dialog} data={data} saving={saving} onClose={() => setDialog(null)} onSave={save} />
     <WelcomeDialog access={data.access} onStart={go} />
     {canMap && <MappingWizard open={mappingOpen} data={data} onClose={() => setMappingOpen(false)} onSaved={refreshDashboard} />}
-  </main>;
+  </>;
 }

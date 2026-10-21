@@ -15,4 +15,3 @@ export function businessIdentity(name:string,address:string){return [name,addres
 export function csvCell(value:unknown){const s=String(value??'');return '"'+(/^[\s]*[=+@\-\t\r]/.test(s)?"'"+s:s).replaceAll('"','""')+'"';}
 
 export const decisionInput=z.object({id:z.string().uuid(),cityId:z.number().int().positive(),decision:z.enum(["Avançar","Ajustar","Corrigir","Pausar","Sem dados suficientes"]),reason:str(2000).min(10),nextAction:str(1000).min(3),reviewDate:daySchema});
-export const planInput=z.object({name:str(100).nullable(),userLimit:z.number().int().min(1).max(100000).nullable(),cityLimit:z.number().int().min(1).max(100000).nullable()});

@@ -141,6 +141,13 @@
       "when": 1792599358214,
       "tag": "0019_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1792608791387,
+      "tag": "0020_cliente_assinante",
+      "breakpoints": true
     }
   ]
 }

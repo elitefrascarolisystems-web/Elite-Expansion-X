@@ -277,8 +277,10 @@ test('map providers remain disabled without configuration and Street View reject
 test('city decisions, draft plans and exports are scoped and audited',async()=>{
  const m=await modules();const {saveCommercial,getCommercial}=await vite.ssrLoadModule('/db/commercial.ts');
  const d={id:crypto.randomUUID(),cityId:1,decision:'Sem dados suficientes',reason:'Ainda não há um período completo.',nextAction:'Concluir primeiro período',reviewDate:'2026-10-30'};await saveCommercial(m.access,'decision',d);await saveCommercial(m.access,'decision',d);assert.equal(sqlite.prepare('SELECT count(*) n FROM city_decisions').get().n,1);
- await saveCommercial(m.access,'plan',{name:'Plano em avaliação',userLimit:10,cityLimit:4});const result=await getCommercial(m.access,new URLSearchParams('city=1'));assert.equal(result.decisions.length,1);assert.equal(result.plan.user_limit,10);
- await assert.rejects(saveCommercial({...m.access,role:'Comercial'},'decision',d),/gestão/);await assert.rejects(saveCommercial({...m.access,role:'Líder',cityId:1},'plan',{name:'Tentativa',userLimit:1,cityLimit:1}),/administrador/);
+ const result=await getCommercial(m.access,new URLSearchParams('city=1'));assert.equal(result.decisions.length,1);
+ // O antigo rascunho de plano saiu: o plano de verdade é o da assinatura (db/plan.ts).
+ await assert.rejects(saveCommercial(m.access,'plan',{name:'Plano em avaliação',userLimit:10,cityLimit:4}),/Ação inválida/);assert.equal(result.plan,undefined);
+ await assert.rejects(saveCommercial({...m.access,role:'Comercial'},'decision',d),/gestão/);
  const api=await vite.ssrLoadModule('/app/api/commercial/route.ts');const csv=await api.GET(new Request('https://test.invalid/api/commercial?format=csv&mode=businesses',{headers:ORG()}));assert.equal(csv.status,200);assert.match(csv.headers.get('content-type'),/text\/csv/);assert.equal(sqlite.prepare("SELECT count(*) n FROM audit_logs WHERE action='export_commercial'").get().n,1);
 });
 
@@ -364,7 +366,7 @@ test('mapa com mais de 100 pessoas respeita o limite de 100 parâmetros do D1',a
 
 test('locais com tipo e setor no mapa; pessoa aparece no local vinculado, nunca na residência',async()=>{
  const m=await modules(),c=await vite.ssrLoadModule('/db/commercial.ts');
- const business=(id,name,placeType,sector,cityId=1)=>c.saveCommercial(m.access,'business',{id,cityId,name,segment:'Atividade teste',source:'Cadastro manual',ownerEmail:m.access.email,status:'Assinante',placeType,sector,publicBusiness:true});
+ const business=(id,name,placeType,sector,cityId=1)=>c.saveCommercial(m.access,'business',{id,cityId,name,segment:'Atividade teste',source:'Cadastro manual',ownerEmail:m.access.email,status:'Cliente assinante',placeType,sector,publicBusiness:true});
  const office=crypto.randomUUID(),shop=crypto.randomUUID(),other=crypto.randomUUID();
  await business(office,'Escritório Centro','Escritório','');
  await business(shop,'Clínica Teste','Empresa','Saúde');

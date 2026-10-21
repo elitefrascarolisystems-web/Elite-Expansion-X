@@ -376,7 +376,7 @@ function alerts(data: DashboardData, cities: CityMetric[], ambassadors: Ambassad
       id: "settings-incomplete",
       severity: "Alta",
       title: "Critérios de decisão incompletos",
-      description: "Defina os mínimos de embaixadores, pagamentos e períodos em Configurações.",
+      description: "Defina os mínimos de embaixadores, pagamentos e períodos em Gestão → Regras e cálculos.",
       cityId: null,
     });
   }

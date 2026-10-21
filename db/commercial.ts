@@ -3,7 +3,7 @@ import {database,brazilTimestamp} from '@/db/runtime';
 import {featureBlocked} from '@/db/plan';
 import type {AccessView} from '@/lib/expansion-types';
 import {canAccessCity,canAccessLead} from '@/lib/expansion-permissions';
-import {decisionInput,planInput,businessSchema,opportunitySchema,activityInput,goalInput,reportInput,businessIdentity,daySchema} from '@/lib/commercial';
+import {decisionInput,businessSchema,opportunitySchema,activityInput,goalInput,reportInput,businessIdentity,daySchema} from '@/lib/commercial';
 export class CommercialError extends Error{constructor(message:string,public status=400){super(message);}}
 type Row=Record<string,unknown>;type Value=string|number|null;
 const rows=async(sql:string,args:Value[]=[])=> (await database().prepare(sql).bind(...args).all()).results as Row[];
@@ -29,17 +29,14 @@ export async function getCommercial(a:AccessView,p:URLSearchParams){
  const pipelineTotals=await rows(`SELECT r.owner_email,r.city_id,SUM(substr(l.created_at,1,10)=?) AS new_leads,SUM(substr(l.created_at,1,10)=? AND r.temperature='Frio') AS cold,SUM(substr(l.created_at,1,10)=? AND r.temperature='Quente') AS hot,SUM(r.stage NOT IN ('Ganho','Perdido') AND r.due_date<? AND NOT ${followupInactiveSql('r','s')}) AS overdue,SUM(s.status='Pagamento confirmado' AND s.paid_at IS NOT NULL AND substr(s.paid_at,1,10)=?) AS payments FROM opportunities r JOIN leads l ON l.id=r.lead_id LEFT JOIN sales s ON s.lead_id=r.lead_id WHERE ${common}${liveLeadScope} AND l.consent_revoked_at IS NULL AND l.status<>'Cancelado' GROUP BY r.owner_email,r.city_id`,[day,day,day,day,new Date().toISOString(),day,...args,...liveLeadArgs]);
  const memberWhere=a.role==='Administrador'?'1=1':a.role==='Comercial'?'lower(email)=lower(?)':'(city_id=? OR (city_id IS NULL AND role IN (\'Administrador\',\'Comercial\')))';
  const members=await rows(`SELECT email,name,role,city_id FROM app_users WHERE organization_id=? AND active=1 AND role IN ('Administrador','Coordenação','Líder','Comercial') AND ${memberWhere} ORDER BY name LIMIT 500`,[a.organizationId,...a.role==='Administrador'?[]:[a.role==='Comercial'?a.email:a.cityId]]);
- const decisions=a.role==='Comercial'?[]:await rows(`SELECT r.*,c.name AS city_name FROM city_decisions r JOIN cities c ON c.id=r.city_id WHERE ${common} ORDER BY r.created_at DESC LIMIT 200`,args);const plan=a.role==='Administrador'?(await rows('SELECT name,user_limit,city_limit,updated_at FROM organization_plans WHERE organization_id=?',[a.organizationId]))[0]??null:null;
- return {decisions,plan,businesses:businesses.slice(0,200),opportunities:opportunities.slice(0,200),activities:activities.slice(0,200),goals,reports,activityTotals,pipelineTotals,members,limited:businesses.length>200||opportunities.length>200||activities.length>200,day,updatedAt:brazilTimestamp()};
+ const decisions=a.role==='Comercial'?[]:await rows(`SELECT r.*,c.name AS city_name FROM city_decisions r JOIN cities c ON c.id=r.city_id WHERE ${common} ORDER BY r.created_at DESC LIMIT 200`,args);
+ return {decisions,businesses:businesses.slice(0,200),opportunities:opportunities.slice(0,200),activities:activities.slice(0,200),goals,reports,activityTotals,pipelineTotals,members,limited:businesses.length>200||opportunities.length>200||activities.length>200,day,updatedAt:brazilTimestamp()};
 }
 export async function saveCommercial(a:AccessView,action:string,input:unknown){
  allowed(a);const db=database(),now=brazilTimestamp();
  if(action==='decision'){
   if(a.role==='Comercial')throw new CommercialError('Somente a gestão registra decisões.',403);const v=decisionInput.parse(input);await city(a,v.cityId);const existing=(await rows('SELECT organization_id,owner_email FROM city_decisions WHERE id=?',[v.id]))[0];if(existing){if(Number(existing.organization_id)!==a.organizationId||existing.owner_email!==a.email)throw new CommercialError('Identificador já utilizado.',409);return {id:v.id};}
   await db.batch([db.prepare('INSERT INTO city_decisions(id,organization_id,city_id,owner_email,decision,reason,next_action,review_date,created_at) VALUES(?,?,?,?,?,?,?,?,?)').bind(v.id,a.organizationId,v.cityId,a.email,v.decision,v.reason,v.nextAction,v.reviewDate,now),audit(a,'city_decision',v.id)]);return {id:v.id};
- }
- if(action==='plan'){
-  if(a.role!=='Administrador')throw new CommercialError('Somente o administrador planeja limites.',403);const v=planInput.parse(input);await db.batch([db.prepare('INSERT INTO organization_plans(organization_id,name,user_limit,city_limit,updated_by,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(organization_id) DO UPDATE SET name=excluded.name,user_limit=excluded.user_limit,city_limit=excluded.city_limit,updated_by=excluded.updated_by,updated_at=excluded.updated_at').bind(a.organizationId,v.name,v.userLimit,v.cityLimit,a.email,now),audit(a,'organization_plan',String(a.organizationId))]);return {};
  }
  if(action==='import_preview'||action==='import_commit'){
   const blocked=await featureBlocked(a.organizationId,'imports');if(blocked)throw new CommercialError(blocked,403);

@@ -15,13 +15,13 @@ export const SECTORS = [
 export type Sector = (typeof SECTORS)[number];
 
 /** Situação da empresa na relação com a Elite. */
-export const BUSINESS_STATUSES = ["Identificada", "Selecionada", "Contato autorizado", "Cliente", "Assinante", "Parceira"] as const;
+export const BUSINESS_STATUSES = ["Identificada", "Selecionada", "Contato autorizado", "Cliente", "Cliente assinante", "Parceira"] as const;
 
 /** Como a pessoa se liga ao local (aparece no ponto do local, nunca na residência). */
 export const PLACE_LINKS = ["Sócio / dono", "Colaborador", "Mentorado", "Membro do network", "Responsável", "Frequenta"] as const;
 
 /** Papéis de pessoa no mapa (além de Líder, Embaixador, Lead e Cliente, que vêm de outros cadastros). */
-export const PERSON_ROLES = ["Mentor", "Mentorado", "Equipe", "Parceiro", "Vendedor", "Assinante", "Network"] as const;
+export const PERSON_ROLES = ["Mentor", "Mentorado", "Equipe", "Parceiro", "Vendedor", "Cliente assinante", "Network"] as const;
 
 /** Rótulo usado para o ícone de um local a partir dos papéis gravados ("Tipo,Setor"). */
 export function placeIconLabel(roles: string[]): string {
@@ -56,4 +56,4 @@ export const sectorFromText = (value: string) => fromList(SECTORS, value, {
 export const placeLinkFromText = (value: string) => fromList(PLACE_LINKS, value, {
   socio: "Sócio / dono", dono: "Sócio / dono", proprietario: "Sócio / dono", funcionario: "Colaborador", membro: "Membro do network",
 });
-export const personRoleFromText = (value: string) => fromList(PERSON_ROLES, value, { mentorada: "Mentorado", assinante: "Assinante" });
+export const personRoleFromText = (value: string) => fromList(PERSON_ROLES, value, { mentorada: "Mentorado", assinante: "Cliente assinante" });

@@ -222,7 +222,7 @@ function StatusDialog({ target, onClose, onSaved }: { target: SubscriberRow | nu
   </DialogContent></Dialog>;
 }
 
-/** O plano visto pela própria empresa assinante (Configurações). */
+/** O plano visto pela própria empresa assinante (Gestão → Plano). */
 export function PlanCard({ plan, organization }: { plan: PlanUsage; organization: string }) {
   const meter = (used: number, limit: number | null, label: string) => <div><div className="flex justify-between text-xs"><span className="text-zinc-400">{label}</span><span className={limit !== null && used >= limit ? "text-amber-200" : "text-white"}>{used}{limit !== null ? ` de ${limit}` : " · sem limite"}</span></div>{limit !== null && <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/8"><div className="h-full rounded-full bg-[#c9a227]" style={{ width: `${Math.min(100, Math.round((used / Math.max(limit, 1)) * 100))}%` }} /></div>}</div>;
   return <article className="elite-card grid gap-5 p-6 lg:grid-cols-[1fr_1fr]">

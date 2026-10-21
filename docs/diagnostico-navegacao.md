@@ -205,3 +205,25 @@ As permissões continuam exatamente as de hoje. A área só aparece se a pessoa 
 3. **Papel "Assinante" no mapa:** renomear para *Cliente assinante*, para não confundir com empresa assinante da plataforma? Ou manter?
 4. **Coordenação** abre em Território, e **Líder** em Hoje. Ou os dois em Hoje?
 5. **Busca rápida** no cabeçalho (pessoa, local, lead): entra já na Etapa 1 ou fica para depois? Ela precisa de uma consulta nova no servidor, só de leitura.
+
+---
+
+## 7. Situação (Etapa 1 concluída)
+
+Decisões aprovadas: os nomes das áreas, "Atendimento" como nome único, o papel *Cliente assinante* no mapa (com os dados antigos convertidos), Coordenação abrindo em Território e Líder em Hoje, e a busca rápida para depois.
+
+O que ficou diferente do proposto:
+- **Atendimentos:** as duas listas viraram uma sub-aba com duas visões, *Acompanhamento* e *Dados das oportunidades*. Assim nada se perde: etapa, temperatura, empresa vinculada e motivo da perda continuam editáveis. Uma lista única de verdade fica para depois.
+- **Comercial:** vê também *Rede → Indicações*, porque já usava as indicações dentro de Vendas. Ficam 5 áreas.
+
+Cliques depois da Etapa 1 (Administrador):
+
+| Ação | Antes | Depois |
+|---|:-:|:-:|
+| Mapear pessoa | 5 | 5 pelo botão *Mapear* em Território → Mapa · 6 pelo + Novo |
+| Iniciar atendimento | 4 | 4 |
+| Registrar retorno | 3 | 3 |
+| Registrar venda | 3 | 4 (+ Novo abre o menu) |
+| Convidar pessoa | 5 | 4 |
+
+Registrar venda ganhou um clique pelo "+ Novo"; em *Vendas → Pagamentos* o botão continua direto. Na Etapa 2 dá para pôr atalhos dessas ações no *Hoje*, se quiser.

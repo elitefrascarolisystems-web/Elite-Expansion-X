@@ -1,0 +1,100 @@
+"use client";
+/* eslint-disable @next/next/no-img-element -- emblema estático e pequeno, igual ao do cabeçalho anterior. */
+import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { BarChart3, Building2, ChevronsLeft, ChevronsRight, HandCoins, LogOut, Map, Menu, Network, Plus, Settings2, Sun, type LucideIcon } from "lucide-react";
+
+import { OrganizationSwitcher } from "@/app/organization-switcher";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import type { AccessView } from "@/lib/expansion-types";
+import type { AreaId, NavArea, NavLocation } from "@/lib/navigation";
+
+export const AREA_ICONS: Record<AreaId, LucideIcon> = {
+  hoje: Sun, territorio: Map, vendas: HandCoins, rede: Network, resultados: BarChart3, gestao: Settings2, plataforma: Building2,
+};
+
+/** Uma ação do botão "+ Novo". `group` separa as ações do dia a dia das de cadastro. */
+export type NewAction = { id: string; label: string; icon: LucideIcon; group: "dia" | "cadastro"; disabled?: string; run: () => void };
+
+// Menu recolhido: preferência só deste navegador (sem ela, o menu abre expandido).
+const COLLAPSE_KEY = "elite-sidebar-collapsed";
+const collapseListeners = new Set<() => void>();
+function readCollapsed() { try { return window.localStorage.getItem(COLLAPSE_KEY) === "1"; } catch { return false; } }
+function subscribeCollapsed(listener: () => void) { collapseListeners.add(listener); return () => { collapseListeners.delete(listener); }; }
+function writeCollapsed(value: boolean) { try { window.localStorage.setItem(COLLAPSE_KEY, value ? "1" : "0"); } catch { /* sem armazenamento: vale só nesta tela */ } collapseListeners.forEach((listener) => listener()); }
+
+/**
+ * Estrutura da plataforma da equipe: barra lateral (computador), barra inferior
+ * (celular), cabeçalho com a organização e o "+ Novo", título da área e sub-abas.
+ */
+export function AppShell({ access, userName, signOutPath, areas, location, badges, actions, onNavigate, children }: {
+  access: AccessView; userName: string; signOutPath: string; areas: NavArea[]; location: NavLocation;
+  badges: Partial<Record<AreaId, number>>; actions: NewAction[]; onNavigate: (location: NavLocation) => void; children: ReactNode;
+}) {
+  const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const current = areas.find((area) => area.id === location.area) ?? areas[0];
+  const go = (area: NavArea) => onNavigate({ area: area.id, view: area.views[0]?.id ?? "" });
+  // Celular: até 5 itens na barra; passando disso, os 4 primeiros + "Mais".
+  const primary = areas.length <= 5 ? areas : areas.slice(0, 4), extra = areas.length <= 5 ? [] : areas.slice(4);
+  const toggle = () => writeCollapsed(!collapsed);
+
+  const badge = (id: AreaId, compact = false) => badges[id] ? <span className={`elite-nav-badge ${compact ? "is-compact" : ""}`} aria-label={`${badges[id]} pendentes`}>{badges[id]}</span> : null;
+
+  return <div className={`elite-shell ${collapsed ? "is-collapsed" : ""}`}>
+    <aside className="elite-sidebar" aria-label="Áreas da plataforma">
+      <div className="elite-sidebar-brand"><img src="/elite-emblem.png" alt="Elite Frascaroli Academy — logo oficial" width={541} height={541} className="elite-brand-logo" />{!collapsed && <div className="min-w-0"><p className="truncate font-semibold tracking-tight text-white">Elite Expansion X</p><p className="truncate text-xs text-zinc-500">{access.organizationName}</p></div>}</div>
+      <nav className="elite-sidebar-nav">{areas.map((area) => { const Icon = AREA_ICONS[area.id]; const active = area.id === current.id; return <button key={area.id} type="button" onClick={() => go(area)} aria-current={active ? "page" : undefined} title={collapsed ? area.label : undefined} className={`elite-nav-item ${active ? "is-active" : ""}`}><Icon className="size-[18px] shrink-0" />{!collapsed && <span className="flex-1 truncate text-left">{area.label}</span>}{badge(area.id, collapsed)}</button>; })}</nav>
+      <div className="elite-sidebar-foot">
+        {!collapsed && <div className="min-w-0 px-2"><p className="truncate text-sm text-zinc-200">{userName}</p><p className="truncate text-xs text-zinc-500">{access.isAdvisory ? "Assessoria Elite" : access.role}</p></div>}
+        <div className={`flex ${collapsed ? "flex-col" : ""} items-center gap-1`}>
+          <Button asChild variant="ghost" size="icon" className="text-zinc-400 hover:bg-white/5 hover:text-white"><a href={signOutPath} aria-label="Sair da plataforma" title="Sair"><LogOut /></a></Button>
+          <Button variant="ghost" size="icon" onClick={toggle} className="text-zinc-500 hover:bg-white/5 hover:text-white" aria-label={collapsed ? "Expandir menu" : "Recolher menu"} title={collapsed ? "Expandir menu" : "Recolher menu"}>{collapsed ? <ChevronsRight /> : <ChevronsLeft />}</Button>
+        </div>
+      </div>
+    </aside>
+
+    <div className="elite-shell-main">
+      <header className="elite-topbar">
+        <div className="flex shrink-0 items-center lg:hidden"><img src="/elite-emblem.png" alt="Elite Frascaroli Academy — logo oficial" width={541} height={541} className="elite-brand-logo" /></div>
+        <div className="ml-auto flex min-w-0 items-center gap-2">
+          <OrganizationSwitcher access={access} />
+          {actions.length > 0 && <NewMenu actions={actions} />}
+        </div>
+      </header>
+      {access.isAdvisory && <div role="status" className="border-b border-[#c9a227]/30 bg-[#c9a227]/10 px-4 py-2 text-center text-sm text-[#e8c766]">Modo assessoria: você está em <strong>{access.organizationName}</strong> pela Assessoria Elite. A empresa vê esse acesso, e tudo o que você alterar fica registrado no histórico dela.</div>}
+
+      <main className="elite-area">
+        <div className="elite-area-head">
+          <h1 className="text-2xl font-semibold tracking-[-0.03em] text-white sm:text-3xl">{current.label}</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-zinc-400">{current.description}</p>
+          {current.views.length > 1 && <nav className="elite-subnav" aria-label={`Seções de ${current.label}`}>{current.views.map((view) => <button key={view.id} type="button" aria-current={view.id === location.view ? "page" : undefined} onClick={() => onNavigate({ area: current.id, view: view.id })} className={view.id === location.view ? "is-active" : ""}>{view.label}</button>)}</nav>}
+        </div>
+        {children}
+      </main>
+    </div>
+
+    <nav className="elite-bottomnav" aria-label="Áreas da plataforma">
+      {primary.map((area) => { const Icon = AREA_ICONS[area.id]; const active = area.id === current.id; return <button key={area.id} type="button" onClick={() => go(area)} aria-current={active ? "page" : undefined} className={active ? "is-active" : ""}><span className="relative"><Icon className="size-5" />{badge(area.id, true)}</span><span>{area.label}</span></button>; })}
+      {extra.length > 0 && <button type="button" onClick={() => setMoreOpen(true)} className={extra.some((area) => area.id === current.id) ? "is-active" : ""}><Menu className="size-5" /><span>Mais</span></button>}
+    </nav>
+    <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+      <SheetContent side="bottom" className="border-white/10 bg-[#0d0d0b] pb-8 text-white">
+        <SheetHeader><SheetTitle className="text-white">Mais áreas</SheetTitle><SheetDescription className="text-zinc-400">{userName} · {access.isAdvisory ? "Assessoria Elite" : access.role}</SheetDescription></SheetHeader>
+        <div className="grid gap-1 px-4">{extra.map((area) => { const Icon = AREA_ICONS[area.id]; return <button key={area.id} type="button" onClick={() => { setMoreOpen(false); go(area); }} className={`elite-nav-item ${area.id === current.id ? "is-active" : ""}`}><Icon className="size-[18px]" /><span className="flex-1 text-left">{area.label}</span>{badge(area.id)}</button>; })}
+          <a href={signOutPath} className="elite-nav-item text-zinc-400"><LogOut className="size-[18px]" /><span>Sair</span></a></div>
+      </SheetContent>
+    </Sheet>
+  </div>;
+}
+
+function NewMenu({ actions }: { actions: NewAction[] }) {
+  const groups = [["dia", "No dia a dia"], ["cadastro", "Cadastros"]] as const;
+  return <DropdownMenu>
+    <DropdownMenuTrigger asChild><Button className="bg-[#c9a227] text-black hover:bg-[#ddbd48]"><Plus /> Novo</Button></DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className="w-64 border-white/10 bg-[#11110f] text-zinc-100">
+      {groups.map(([group, label], index) => { const items = actions.filter((action) => action.group === group); if (!items.length) return null; return <div key={group}>{index > 0 && <DropdownMenuSeparator className="bg-white/8" />}<DropdownMenuLabel className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">{label}</DropdownMenuLabel>{items.map(({ id, label: text, icon: Icon, disabled, run }) => <DropdownMenuItem key={id} disabled={Boolean(disabled)} onSelect={run} className="gap-2 focus:bg-white/8 focus:text-white"><Icon className="size-4 text-[#d6b94f]" /><span className="flex-1">{text}</span>{disabled && <span className="text-[10px] text-zinc-500">{disabled}</span>}</DropdownMenuItem>)}</div>; })}
+    </DropdownMenuContent>
+  </DropdownMenu>;
+}

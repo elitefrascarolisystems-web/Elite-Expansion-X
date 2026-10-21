@@ -11,8 +11,9 @@ import { isPortalRole } from "@/lib/expansion-types";
 import Image from "next/image";
 
 export const dynamic = "force-dynamic";
+const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? null;
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   const user = await getCurrentUser();
   if (!user) redirect(SIGN_IN_PATH);
   // Cada aba fica fixa na organização da sua URL (?org=). Sem ela, abrimos a
@@ -52,10 +53,14 @@ export default async function Home() {
   if (isPortalRole(access.role)) return <ClientPortal initialData={await getPortalData(access)} signOutPath={signOutPath()} />;
 
   const data = await getDashboardData(access);
+  // Área e sub-aba vêm do endereço (?area=&ver=), para os links e o botão voltar.
+  const query = (await searchParams) ?? {};
 
   return (
     <ExpansionDashboard
       initialData={data}
+      initialArea={first(query.area)}
+      initialView={first(query.ver)}
       userName={access.name}
       signOutPath={signOutPath()}
     />

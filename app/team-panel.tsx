@@ -115,9 +115,10 @@ function BulkInviteDialog({ open, data, onClose, onData }: { open: boolean; data
 }
 
 /** Aba "Time e acessos": quem é da equipe, o que cada um acessa e em que pé está o login. */
-export function TeamPanel({ data, onData, onRefresh, open }: { data: DashboardData; onData: (data: DashboardData) => void; onRefresh: () => Promise<void>; open: (dialog: DialogState) => void }) {
+export function TeamPanel({ data, onData, onRefresh, open, startInvite = false }: { data: DashboardData; onData: (data: DashboardData) => void; onRefresh: () => Promise<void>; open: (dialog: DialogState) => void; startInvite?: boolean }) {
   const [linkFor, setLinkFor] = useState<UserProfileRecord | null>(null);
-  const [bulk, setBulk] = useState(false);
+  // "+ Novo → Convidar pessoa" abre esta tela já com o convite aberto.
+  const [bulk, setBulk] = useState(startInvite);
   const states = data.users.map(accessState);
   const count = (tone: Access["tone"]) => states.filter((state) => state.tone === tone).length;
   return <section className="space-y-4">

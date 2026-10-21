@@ -9,7 +9,7 @@ export const PLAN_FEATURES = [
 ] as const;
 export type PlanFeature = (typeof PLAN_FEATURES)[number][0];
 
-/** Plano da organização e quanto já usa (para a própria empresa ver em Configurações). */
+/** Plano da organização e quanto já usa (para a própria empresa ver em Gestão → Plano). */
 export type PlanUsage = {
   plan: string;
   userLimit: number | null;

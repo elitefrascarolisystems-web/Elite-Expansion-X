@@ -3,7 +3,7 @@ import {primaryRole} from '@/lib/territory-appearance';
 import {placeIconLabel} from '@/lib/places';
 
 /** Pessoas: ícone pelo papel principal. */
-export const personIcons={Líder:Flag,Embaixador:Shield,Mentor:Compass,Mentorado:GraduationCap,Assinante:Gem,Equipe:Users,Vendedor:UserRound,Parceiro:Handshake,Network:Waypoints,Cliente:BadgeCheck,Lead:UserPlus,Pessoa:UserRound};
+export const personIcons={Líder:Flag,Embaixador:Shield,Mentor:Compass,Mentorado:GraduationCap,"Cliente assinante":Gem,Equipe:Users,Vendedor:UserRound,Parceiro:Handshake,Network:Waypoints,Cliente:BadgeCheck,Lead:UserPlus,Pessoa:UserRound};
 /** Locais que não são empresa: ícone pelo tipo. */
 export const placeTypeIcons={'Escritório':Crown,'Network / comunidade':Network,'Instituição de ensino':School,'Ponto de encontro':MapPinned};
 /** Empresas: ícone pelo setor. */

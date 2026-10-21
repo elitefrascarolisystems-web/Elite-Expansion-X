@@ -20,7 +20,12 @@ test("ships the territorial map and existing expansion identity", async () => {
   const mapSource = await readFile(new URL("../app/territorial-map.tsx", import.meta.url), "utf8");
   const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
 
-  assert.match(clientFiles, /Mapa territorial/);
+  // O mapa fica em Território → Mapa (navegação por áreas).
+  const navigation = await readFile(new URL("../lib/navigation.ts", import.meta.url), "utf8");
+  assert.match(navigation, /label: "Território"/);
+  assert.match(navigation, /id: "mapa", label: "Mapa"/);
+  assert.match(clientFiles, /<TerritorialMap /);
+  assert.match(mapSource, /Mapa territorial/);
   assert.match(clientFiles, /elite-emblem\.png/);
   assert.match(await readFile(new URL("../app/brand-hero.tsx", import.meta.url), "utf8"), /elite-emblem\.png/, 'entrada usa o emblema sem fundo');
   assert.match(mapSource, /nunca na residência/);
