@@ -70,7 +70,7 @@ export function Wordmark({ compact = false }: { compact?: boolean }) {
   return (
     <div className={compact ? "text-center" : ""}>
       <p className={`elite-wordmark ${compact ? "text-2xl" : "text-[1.6rem] xl:text-[2rem] 2xl:text-[2.5rem]"}`}>ELITE EXPANSION <span className="elite-wordmark-x">X</span></p>
-      <p className={`mt-1 text-[11px] font-medium uppercase tracking-[0.42em] text-zinc-500 ${compact ? "" : "pl-1"}`}>Elite Frascaroli Academy</p>
+      <p className={`mt-1 text-[11px] font-medium uppercase tracking-[0.42em] text-subtle ${compact ? "" : "pl-1"}`}>Elite Frascaroli Academy</p>
     </div>
   );
 }
@@ -78,7 +78,7 @@ export function Wordmark({ compact = false }: { compact?: boolean }) {
 /** Lado da marca na tela de entrada: emblema em órbita, proposta, pilares e a cadeia da estratégia. */
 export function BrandHero() {
   return (
-    <section className="elite-hero relative hidden min-h-screen flex-col justify-between overflow-hidden border-r border-[#c9a227]/10 px-12 py-12 lg:flex xl:px-16">
+    <section className="elite-hero relative hidden min-h-screen flex-col justify-between overflow-hidden border-r border-gold/10 px-12 py-12 lg:flex xl:px-16">
       <div className="elite-stars" aria-hidden />
       <div className="relative z-10"><Wordmark /></div>
 
@@ -91,7 +91,7 @@ export function BrandHero() {
           </h2>
           <p className="mt-6 max-w-lg text-base leading-7 text-zinc-400">Território, rede de embaixadores, funil comercial e follow-up com o Método F.E.C.H.A. A operação inteira da sua expansão, num só lugar, do primeiro contato ao resultado.</p>
           <ul className="mt-8 flex flex-wrap gap-2">
-            {PILLARS.map(({ icon: Icon, label }) => <li key={label} className="flex items-center gap-2 rounded-full border border-[#c9a227]/20 bg-[#c9a227]/[0.04] px-3 py-1.5 text-xs font-medium text-zinc-300"><Icon className="size-3.5 text-[#d6b94f]" aria-hidden />{label}</li>)}
+            {PILLARS.map(({ icon: Icon, label }) => <li key={label} className="flex items-center gap-2 rounded-full border border-gold/20 bg-gold/[0.04] px-3 py-1.5 text-xs font-medium text-zinc-300"><Icon className="size-3.5 text-gold-soft" aria-hidden />{label}</li>)}
           </ul>
         </div>
       </div>
@@ -103,8 +103,8 @@ export function BrandHero() {
           </div>
         </div>
         <div className="flex items-end justify-between gap-6 text-xs">
-          <p className="font-medium uppercase tracking-[0.28em] text-[#c9a227]/80">Mais visão · Mais estratégia · Mais impacto</p>
-          <p className="text-zinc-600">Novos territórios, mesmo propósito.</p>
+          <p className="font-medium uppercase tracking-[0.28em] text-gold/80">Mais visão · Mais estratégia · Mais impacto</p>
+          <p className="text-subtle">Novos territórios, mesmo propósito.</p>
         </div>
       </div>
     </section>

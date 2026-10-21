@@ -43,25 +43,25 @@ async function post(action: string, data: unknown) {
 function Usage({ used, limit, label }: { used: number; limit: number | null; label: string }) {
   const full = limit !== null && used >= limit;
   const words = limit === null && used === 1 ? label.split(" ").map((w) => w.replace(/s$/, "")).join(" ") : label;
-  return <p className={full ? "text-amber-200" : "text-zinc-300"}>{used}{limit !== null ? ` de ${limit}` : ""} <span className="text-zinc-500">{words}</span>{full && <span className="sr-only"> (limite atingido)</span>}</p>;
+  return <p className={full ? "text-amber-200" : "text-zinc-300"}>{used}{limit !== null ? ` de ${limit}` : ""} <span className="text-subtle">{words}</span>{full && <span className="sr-only"> (limite atingido)</span>}</p>;
 }
 
 function Company({ s }: { s: SubscriberRow }) {
-  return <div><p className="font-medium text-white">{s.name}</p><p className="text-xs text-zinc-500">{s.ownerName || s.ownerEmail}</p>{!s.active && <span className="mt-1 inline-flex rounded-full border border-red-400/30 bg-red-400/10 px-2 py-0.5 text-[11px] text-red-300">Suspensa</span>}{s.active && !s.ownerJoined && <p className="mt-1 text-xs text-amber-200">Responsável ainda não criou a senha</p>}</div>;
+  return <div><p className="font-medium text-white">{s.name}</p><p className="text-xs text-subtle">{s.ownerName || s.ownerEmail}</p>{!s.active && <span className="mt-1 inline-flex rounded-full border border-red-400/30 bg-red-400/10 px-2 py-0.5 text-[11px] text-red-300">Suspensa</span>}{s.active && !s.ownerJoined && <p className="mt-1 text-xs text-amber-200">Responsável ainda não criou a senha</p>}</div>;
 }
 function PlanInfo({ s }: { s: SubscriberRow }) {
   const off = PLAN_FEATURES.filter(([key]) => !s[key]).map(([, label]) => label.toLowerCase());
-  return <div><p className="text-white">{s.plan || <span className="text-zinc-500">Sem plano</span>}</p><p className="text-xs text-zinc-400">{s.priceCents ? `${money(s.priceCents)}/mês` : "Valor não definido"}</p>{off.length > 0 && <p className="mt-1 text-[11px] text-zinc-500">Sem {off.join(", ")}</p>}</div>;
+  return <div><p className="text-white">{s.plan || <span className="text-subtle">Sem plano</span>}</p><p className="text-xs text-zinc-400">{s.priceCents ? `${money(s.priceCents)}/mês` : "Valor não definido"}</p>{off.length > 0 && <p className="mt-1 text-[11px] text-subtle">Sem {off.join(", ")}</p>}</div>;
 }
 function Payment({ s, today }: { s: SubscriberRow; today: string }) {
   const pay = paymentState(s.paidUntil, today);
-  return <div><span className={`inline-flex rounded-full border px-2 py-0.5 text-xs ${toneClass[pay.tone]}`}>{pay.label}</span>{s.paidUntil && <p className="mt-1 text-xs text-zinc-500">Pago até {day(s.paidUntil)}</p>}</div>;
+  return <div><span className={`inline-flex rounded-full border px-2 py-0.5 text-xs ${toneClass[pay.tone]}`}>{pay.label}</span>{s.paidUntil && <p className="mt-1 text-xs text-subtle">Pago até {day(s.paidUntil)}</p>}</div>;
 }
 function UsageInfo({ s }: { s: SubscriberRow }) {
-  return <><Usage used={s.users} limit={s.userLimit} label="usuários" /><Usage used={s.cities} limit={s.cityLimit} label="cidades ativas" />{s.mentorados > 0 && <p className="text-zinc-500">{s.mentorados} mentorado{s.mentorados > 1 ? "s" : ""}</p>}</>;
+  return <><Usage used={s.users} limit={s.userLimit} label="usuários" /><Usage used={s.cities} limit={s.cityLimit} label="cidades ativas" />{s.mentorados > 0 && <p className="text-subtle">{s.mentorados} mentorado{s.mentorados > 1 ? "s" : ""}</p>}</>;
 }
 function Activity({ s }: { s: SubscriberRow }) {
-  return <div className="text-xs text-zinc-400"><p>{s.people} pessoas no mapa · {s.leads} leads</p><p className="text-zinc-500">Último acesso: {when(s.lastLogin)}</p></div>;
+  return <div className="text-xs text-zinc-400"><p>{s.people} pessoas no mapa · {s.leads} leads</p><p className="text-subtle">Último acesso: {when(s.lastLogin)}</p></div>;
 }
 function Actions({ s, onEdit, onStatus, className }: { s: SubscriberRow; onEdit: (s: SubscriberRow) => void; onStatus: (s: SubscriberRow) => void; className: string }) {
   return <div className={`flex flex-wrap gap-1.5 ${className}`}>
@@ -102,7 +102,7 @@ export function SubscriptionsPanel() {
   return <div className="space-y-5">
     <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div><p className="section-kicker">Plataforma</p><h2 className="text-2xl font-semibold text-white">Empresas assinantes</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-400">Cada empresa usa a plataforma inteira em um ambiente só dela. Aqui você controla plano, valor, vencimento e limites, e suspende quem deixou de pagar. A cobrança é feita fora da plataforma.</p></div>
-      <Button onClick={() => setEditing("new")} className="w-fit bg-[#c9a227] text-black hover:bg-[#ddbd48]"><Plus /> Nova empresa assinante</Button>
+      <Button onClick={() => setEditing("new")} className="w-fit bg-gold text-black hover:bg-gold-hover"><Plus /> Nova empresa assinante</Button>
     </section>
 
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -111,7 +111,7 @@ export function SubscriptionsPanel() {
         { label: "Receita mensal", value: money(totals.revenue), helper: "Soma dos planos das empresas ativas", icon: CircleDollarSign },
         { label: "Pagamento vencido", value: String(totals.late), helper: "Empresas ativas com a data de pagamento vencida", icon: TriangleAlert },
         { label: "Vencem em 7 dias", value: String(totals.soon), helper: "Hora de lembrar o cliente", icon: TriangleAlert },
-      ].map(({ label, value, helper, icon: Icon }) => <article key={label} className="elite-card p-4"><div className="flex items-center justify-between text-xs uppercase tracking-[0.16em] text-zinc-500">{label}<Icon className="size-4 text-[#c9a227]" /></div><p className="mt-2 text-2xl font-semibold text-white">{value}</p><p className="mt-1 text-xs text-zinc-500">{helper}</p></article>)}
+      ].map(({ label, value, helper, icon: Icon }) => <article key={label} className="elite-card p-4"><div className="flex items-center justify-between text-xs uppercase tracking-[0.16em] text-subtle">{label}<Icon className="size-4 text-gold" /></div><p className="mt-2 text-2xl font-semibold text-white">{value}</p><p className="mt-1 text-xs text-subtle">{helper}</p></article>)}
     </section>
 
     <section className="elite-card overflow-hidden">
@@ -136,7 +136,7 @@ export function SubscriptionsPanel() {
       </Table></div></>}
     </section>
 
-    {data.audit.length > 0 && <section className="elite-card p-5"><h3 className="text-sm font-semibold text-white">Histórico das assinaturas</h3><ul className="mt-3 grid gap-2 text-xs text-zinc-400">{data.audit.slice(0, 12).map((item, index) => <li key={index} className="flex flex-wrap gap-x-2"><span className="text-zinc-500">{when(item.at)}</span><span className="text-white">{names.get(item.organizationId) ?? `Empresa ${item.organizationId}`}</span><span className="text-[#d6b94f]">{ACTIONS[item.action] ?? item.action}</span><span className="min-w-0 break-words">{item.reason}</span><span className="text-zinc-600">por {item.actor}</span></li>)}</ul></section>}
+    {data.audit.length > 0 && <section className="elite-card p-5"><h3 className="text-sm font-semibold text-white">Histórico das assinaturas</h3><ul className="mt-3 grid gap-2 text-xs text-zinc-400">{data.audit.slice(0, 12).map((item, index) => <li key={index} className="flex flex-wrap gap-x-2"><span className="text-subtle">{when(item.at)}</span><span className="text-white">{names.get(item.organizationId) ?? `Empresa ${item.organizationId}`}</span><span className="text-gold-soft">{ACTIONS[item.action] ?? item.action}</span><span className="min-w-0 break-words">{item.reason}</span><span className="text-subtle">por {item.actor}</span></li>)}</ul></section>}
 
     {/* A chave recria o formulário a cada abertura: erro limpo e nova solicitação. */}
     <PlanDialog key={editing === "new" ? "new" : `plan-${editing?.id ?? "closed"}`} target={editing} onClose={() => setEditing(null)} onSaved={(next, created) => { setData(next); setEditing(null); if (created) toast.success("Empresa criada. Use Entrar para gerar o link do responsável em Time e acessos."); else toast.success("Plano salvo."); }} />
@@ -171,7 +171,7 @@ function PlanDialog({ target, onClose, onSaved }: { target: SubscriberRow | "new
     finally { setBusy(false); }
   }
 
-  return <Dialog open={target !== null} onOpenChange={(open) => { if (!open && !busy) onClose(); }}><DialogContent className="max-h-[92dvh] overflow-y-auto border-white/10 bg-[#11110f] text-white sm:max-w-xl">
+  return <Dialog open={target !== null} onOpenChange={(open) => { if (!open && !busy) onClose(); }}><DialogContent className="max-h-[92dvh] overflow-y-auto border-white/10 bg-surface-raised text-white sm:max-w-xl">
     <DialogHeader><DialogTitle>{isNew ? "Nova empresa assinante" : `Plano da ${row?.name ?? ""}`}</DialogTitle><DialogDescription className="text-zinc-400">{isNew ? "Cria o ambiente da empresa, vazio e só dela, já com o plano. Depois você entra nele e gera o link de acesso do responsável." : "Os limites valem na hora. Quem já está cadastrado continua com acesso; só não entram pessoas ou cidades novas além do limite."}</DialogDescription></DialogHeader>
     {target && <form key={row?.id ?? "new"} onSubmit={submit} className="grid gap-3 text-sm">
       {isNew && <div className="grid gap-3 sm:grid-cols-2">
@@ -184,13 +184,13 @@ function PlanDialog({ target, onClose, onSaved }: { target: SubscriberRow | "new
         <label className="grid gap-1">Valor mensal (R$)<input name="price" inputMode="decimal" defaultValue={row?.priceCents ? (row.priceCents / 100).toFixed(2).replace(".", ",") : ""} placeholder="497,00" className="commercial-input" /></label>
         <label className="grid gap-1">Pago até<input name="paidUntil" type="date" defaultValue={row?.paidUntil ?? ""} className="commercial-input" /></label>
         <span className="hidden sm:block" />
-        <label className="grid gap-1">Usuários da equipe<input name="userLimit" type="number" min={1} max={100000} defaultValue={row?.userLimit ?? ""} placeholder="Sem limite" className="commercial-input" /><span className="text-xs text-zinc-500">Mentorados não contam.{row ? ` Hoje: ${row.users}.` : ""}</span></label>
-        <label className="grid gap-1">Cidades ativas<input name="cityLimit" type="number" min={1} max={100000} defaultValue={row?.cityLimit ?? ""} placeholder="Sem limite" className="commercial-input" /><span className="text-xs text-zinc-500">Cidades planejadas não contam.{row ? ` Hoje: ${row.cities}.` : ""}</span></label>
+        <label className="grid gap-1">Usuários da equipe<input name="userLimit" type="number" min={1} max={100000} defaultValue={row?.userLimit ?? ""} placeholder="Sem limite" className="commercial-input" /><span className="text-xs text-subtle">Mentorados não contam.{row ? ` Hoje: ${row.users}.` : ""}</span></label>
+        <label className="grid gap-1">Cidades ativas<input name="cityLimit" type="number" min={1} max={100000} defaultValue={row?.cityLimit ?? ""} placeholder="Sem limite" className="commercial-input" /><span className="text-xs text-subtle">Cidades planejadas não contam.{row ? ` Hoje: ${row.cities}.` : ""}</span></label>
       </div>
-      <fieldset className="grid gap-2 rounded-lg border border-white/8 p-3"><legend className="px-1 text-xs text-zinc-400">Recursos incluídos</legend>{PLAN_FEATURES.map(([key, label]) => <label key={key} className="flex items-center gap-2 text-zinc-200"><input type="checkbox" name={key} defaultChecked={row ? row[key] : true} />{label}</label>)}<p className="text-xs text-zinc-500">Mapa, cidades, equipe, vendas, portal de mentorados e indicadores fazem parte de todo plano.</p></fieldset>
+      <fieldset className="grid gap-2 rounded-lg border border-white/8 p-3"><legend className="px-1 text-xs text-zinc-400">Recursos incluídos</legend>{PLAN_FEATURES.map(([key, label]) => <label key={key} className="flex items-center gap-2 text-zinc-200"><input type="checkbox" name={key} defaultChecked={row ? row[key] : true} />{label}</label>)}<p className="text-xs text-subtle">Mapa, cidades, equipe, vendas, portal de mentorados e indicadores fazem parte de todo plano.</p></fieldset>
       <label className="grid gap-1">Anotações internas<Textarea name="notes" maxLength={1000} defaultValue={row?.notes ?? ""} placeholder="Forma de pagamento, contato financeiro, combinados…" className="commercial-input min-h-20" /></label>
       {error && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-red-200">{error}</p>}
-      <div className="flex justify-end gap-2"><Button type="button" variant="ghost" disabled={busy} onClick={onClose}>Cancelar</Button><Button type="submit" disabled={busy} className="bg-[#c9a227] text-black">{busy && <LoaderCircle className="animate-spin" />} {isNew ? "Criar empresa" : "Salvar plano"}</Button></div>
+      <div className="flex justify-end gap-2"><Button type="button" variant="ghost" disabled={busy} onClick={onClose}>Cancelar</Button><Button type="submit" disabled={busy} className="bg-gold text-black">{busy && <LoaderCircle className="animate-spin" />} {isNew ? "Criar empresa" : "Salvar plano"}</Button></div>
     </form>}
   </DialogContent></Dialog>;
 }
@@ -212,7 +212,7 @@ function StatusDialog({ target, onClose, onSaved }: { target: SubscriberRow | nu
     finally { setBusy(false); }
   }
 
-  return <Dialog open={target !== null} onOpenChange={(open) => { if (!open && !busy) onClose(); }}><DialogContent className="border-white/10 bg-[#11110f] text-white sm:max-w-lg">
+  return <Dialog open={target !== null} onOpenChange={(open) => { if (!open && !busy) onClose(); }}><DialogContent className="border-white/10 bg-surface-raised text-white sm:max-w-lg">
     <DialogHeader><DialogTitle>{suspend ? `Suspender ${target?.name ?? ""}` : `Reativar ${target?.name ?? ""}`}</DialogTitle><DialogDescription className="text-zinc-400">{suspend ? "Ninguém da empresa entra enquanto estiver suspensa, nem a Assessoria Elite. Os dados ficam guardados e voltam ao reativar." : "Toda a equipe da empresa volta a entrar normalmente, com os dados como estavam."}</DialogDescription></DialogHeader>
     {target && <form key={target.id} onSubmit={submit} className="grid gap-3 text-sm">
       <label className="grid gap-1">Motivo (fica no histórico)<Textarea name="reason" required minLength={5} maxLength={500} placeholder={suspend ? "Ex.: pagamento de outubro em aberto" : "Ex.: pagamento confirmado"} className="commercial-input min-h-20" /></label>
@@ -224,10 +224,10 @@ function StatusDialog({ target, onClose, onSaved }: { target: SubscriberRow | nu
 
 /** O plano visto pela própria empresa assinante (Gestão → Plano). */
 export function PlanCard({ plan, organization }: { plan: PlanUsage; organization: string }) {
-  const meter = (used: number, limit: number | null, label: string) => <div><div className="flex justify-between text-xs"><span className="text-zinc-400">{label}</span><span className={limit !== null && used >= limit ? "text-amber-200" : "text-white"}>{used}{limit !== null ? ` de ${limit}` : " · sem limite"}</span></div>{limit !== null && <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/8"><div className="h-full rounded-full bg-[#c9a227]" style={{ width: `${Math.min(100, Math.round((used / Math.max(limit, 1)) * 100))}%` }} /></div>}</div>;
+  const meter = (used: number, limit: number | null, label: string) => <div><div className="flex justify-between text-xs"><span className="text-zinc-400">{label}</span><span className={limit !== null && used >= limit ? "text-amber-200" : "text-white"}>{used}{limit !== null ? ` de ${limit}` : " · sem limite"}</span></div>{limit !== null && <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/8"><div className="h-full rounded-full bg-gold" style={{ width: `${Math.min(100, Math.round((used / Math.max(limit, 1)) * 100))}%` }} /></div>}</div>;
   return <article className="elite-card grid gap-5 p-6 lg:grid-cols-[1fr_1fr]">
     <div><p className="section-kicker">Assinatura</p><h3 className="text-xl font-semibold text-white">{plan.plan || `Plano da ${organization}`}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">A plataforma de expansão completa, só da {organization}. Mentorados não ocupam vaga da equipe. Para ampliar o plano, fale com a Elite.</p>
-      <ul className="mt-3 grid gap-1 text-sm">{PLAN_FEATURES.map(([key, label]) => <li key={key} className={plan[key] ? "text-zinc-200" : "text-zinc-500 line-through"}>{plan[key] ? "✓" : "—"} {label}</li>)}</ul></div>
+      <ul className="mt-3 grid gap-1 text-sm">{PLAN_FEATURES.map(([key, label]) => <li key={key} className={plan[key] ? "text-zinc-200" : "text-subtle line-through"}>{plan[key] ? "✓" : "—"} {label}</li>)}</ul></div>
     <div className="grid content-start gap-4">{meter(plan.users, plan.userLimit, "Usuários da equipe")}{meter(plan.cities, plan.cityLimit, "Cidades ativas")}</div>
   </article>;
 }

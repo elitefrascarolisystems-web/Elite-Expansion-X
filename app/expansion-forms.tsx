@@ -54,7 +54,7 @@ function Field({ label, hint, children, wide = false }: { label: string; hint?: 
     <label className={`grid gap-2 text-sm font-medium text-zinc-200 ${wide ? "sm:col-span-2" : ""}`}>
       <span>{label}</span>
       {children}
-      {hint && <span className="text-xs font-normal leading-5 text-zinc-500">{hint}</span>}
+      {hint && <span className="text-xs font-normal leading-5 text-subtle">{hint}</span>}
     </label>
   );
 }
@@ -81,7 +81,7 @@ function FormShell({
       <div className="my-6 grid gap-4 sm:grid-cols-2">{children}</div>
       <DialogFooter>
         <DialogClose asChild><Button type="button" variant="outline" className="border-white/12 bg-transparent text-white">Cancelar</Button></DialogClose>
-        <Button type="submit" disabled={saving} aria-busy={saving} className="bg-[#c9a227] text-black hover:bg-[#ddbd48]">
+        <Button type="submit" disabled={saving} aria-busy={saving} className="bg-gold text-black hover:bg-gold-hover">
           {saving && <LoaderCircle className="animate-spin" />}{saving ? "Salvando" : "Salvar"}
         </Button>
       </DialogFooter>
@@ -228,7 +228,7 @@ function LeadForm({ data, saving, onSave }: { data: DashboardData; saving: boole
     <Field label="Origem detalhada"><Input name="sourceLabel" placeholder="Ex.: indicação no encontro" className={inputClass} /></Field><Field label="Campanha"><Input name="campaign" className={inputClass} /></Field>
     <Field label="UTM source"><Input name="utmSource" className={inputClass} /></Field><Field label="UTM medium"><Input name="utmMedium" className={inputClass} /></Field><Field label="UTM campaign"><Input name="utmCampaign" className={inputClass} /></Field>{data.access.role !== "Embaixador" && <Field label="Responsável comercial"><Input name="assignedToEmail" type="email" placeholder="E-mail cadastrado" className={inputClass} /></Field>}
     <Field label="Como a autorização foi recebida"><Input name="consentSource" required placeholder="Ex.: formulário, WhatsApp ou evento" className={inputClass} /></Field><Field label="Finalidade informada"><Input name="consentPurpose" required placeholder="Ex.: contato sobre a Jornada U.F.A." className={inputClass} /></Field>
-    <div className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-[#c9a227]/20 bg-[#c9a227]/5 p-4"><Checkbox id="consent" checked={consent} onCheckedChange={(value) => setConsent(value === true)} /><label htmlFor="consent" className="text-sm leading-6 text-zinc-300">Confirmo que este contato autorizou o registro e o atendimento para a finalidade informada.</label></div>
+    <div className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-gold/20 bg-gold/5 p-4"><Checkbox id="consent" checked={consent} onCheckedChange={(value) => setConsent(value === true)} /><label htmlFor="consent" className="text-sm leading-6 text-zinc-300">Confirmo que este contato autorizou o registro e o atendimento para a finalidade informada.</label></div>
   </FormShell>;
 }
 
@@ -347,7 +347,7 @@ function UserForm({ data, userId, saving, onSave }: { data: DashboardData; userI
 export function ExpansionDialog({ dialog, data, saving, onClose, onSave }: { dialog: DialogState; data: DashboardData; saving: boolean; onClose: () => void; onSave: Save }) {
   const city = useMemo(() => data.cities.find((item) => item.id === dialog?.entityId), [data.cities, dialog]);
   const ambassador = useMemo(() => data.ambassadors.find((item) => item.id === dialog?.entityId), [data.ambassadors, dialog]);
-  return <Dialog open={dialog !== null} onOpenChange={(open) => !open && onClose()}><DialogContent className="max-h-[92vh] overflow-y-auto border-white/10 bg-[#11110f] text-white sm:max-w-3xl">
+  return <Dialog open={dialog !== null} onOpenChange={(open) => !open && onClose()}><DialogContent className="max-h-[92vh] overflow-y-auto border-white/10 bg-surface-raised text-white sm:max-w-3xl">
     {dialog?.name === "city" && <CityFields mode="create" saving={saving} onSave={onSave} />}
     {dialog?.name === "city-edit" && city && <CityFields mode="edit" city={city} saving={saving} onSave={onSave} />}
     {dialog?.name === "city-result" && <CityResultForm data={data} saving={saving} onSave={onSave} />}

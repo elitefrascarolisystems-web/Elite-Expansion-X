@@ -52,17 +52,17 @@ export function PasswordForm() {
   if (!info) return (
     <div className="grid gap-5">
       <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm text-red-200">{error}</p>
-      <a href="/entrar" className="text-center text-sm font-medium text-[#e8c766] hover:underline">Ir para a tela de entrada</a>
+      <a href="/entrar" className="text-center text-sm font-medium text-gold-light hover:underline">Ir para a tela de entrada</a>
     </div>
   );
   return (
     <form onSubmit={submit} className="grid gap-5">
-      <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm"><span className="text-zinc-500">Conta: </span><span className="font-medium text-white">{info.email}</span></div>
+      <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm"><span className="text-subtle">Conta: </span><span className="font-medium text-white">{info.email}</span></div>
       <PasswordField id="password" name="password" label={info.hasPassword ? "Nova senha" : "Crie sua senha"} autoComplete="new-password" autoFocus />
       <PasswordField id="confirm" name="confirm" label="Repita a senha" autoComplete="new-password" />
-      <p className="text-xs leading-5 text-zinc-500">Mínimo de 10 caracteres, com letras e números. Não use o seu e-mail.</p>
+      <p className="text-xs leading-5 text-subtle">Mínimo de 10 caracteres, com letras e números. Não use o seu e-mail.</p>
       {error && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm text-red-200">{error}</p>}
-      <Button type="submit" disabled={busy} className="h-12 bg-gradient-to-r from-[#f3d27a] via-[#c9a227] to-[#b8901f] text-base font-semibold tracking-wide text-black shadow-[0_10px_30px_-10px_rgba(201,162,39,0.7)] transition hover:brightness-110">
+      <Button type="submit" disabled={busy} className="h-12 bg-gradient-to-r from-[#f3d27a] via-gold to-[#b8901f] text-base font-semibold tracking-wide text-black shadow-[0_10px_30px_-10px_rgba(201,162,39,0.7)] transition hover:brightness-110">
         {busy ? <><LoaderCircle className="animate-spin" /> Salvando…</> : info.hasPassword ? "Salvar nova senha e entrar" : "Criar senha e entrar"}
       </Button>
     </form>

@@ -48,10 +48,10 @@ export function StartAttendanceDialog({ person, data, onClose, onStarted }: { pe
     } catch { setError({ message: "Sem conexão. Tente de novo." }); }
     finally { setBusy(false); }
   }
-  return <Dialog open={person !== null} onOpenChange={(value) => { if (!value && !busy) { setError(null); onClose(); } }}><DialogContent className="max-h-[92dvh] overflow-y-auto border-white/10 bg-[#11110f] text-white sm:max-w-xl">
+  return <Dialog open={person !== null} onOpenChange={(value) => { if (!value && !busy) { setError(null); onClose(); } }}><DialogContent className="max-h-[92dvh] overflow-y-auto border-white/10 bg-surface-raised text-white sm:max-w-xl">
     <DialogHeader><DialogTitle>Iniciar atendimento</DialogTitle><DialogDescription className="text-zinc-400">A pessoa do mapa vira lead e oportunidade de uma vez, já com o primeiro retorno na agenda.</DialogDescription></DialogHeader>
     {person && <form onSubmit={submit} className="grid gap-3 text-sm">
-      <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2.5"><p className="font-medium text-white">{person.name}</p><p className="text-xs text-zinc-500">{[person.cityName, person.placeName].filter(Boolean).join(" · ") || "Pessoa do mapa"}</p></div>
+      <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2.5"><p className="font-medium text-white">{person.name}</p><p className="text-xs text-subtle">{[person.cityName, person.placeName].filter(Boolean).join(" · ") || "Pessoa do mapa"}</p></div>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1">WhatsApp<input name="whatsapp" inputMode="tel" maxLength={30} placeholder="(31) 9 9999-9999" className="commercial-input" /></label>
         <label className="grid gap-1">E-mail<input name="email" type="email" maxLength={254} placeholder="opcional se tiver WhatsApp" className="commercial-input" /></label>
@@ -65,7 +65,7 @@ export function StartAttendanceDialog({ person, data, onClose, onStarted }: { pe
       </div>
       <label className="flex items-start gap-2 text-zinc-300"><input name="consent" type="checkbox" required className="mt-1" />A pessoa autorizou receber contato da {data.access.organizationName} por esse WhatsApp ou e-mail.</label>
       {error && <div role="alert" className="grid gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-red-200"><p>{error.message}</p>{error.leadId ? <Button type="button" size="sm" variant="outline" className="w-fit border-white/10 bg-white/5 text-white" onClick={() => onStarted(error.leadId!)}>Abrir acompanhamento</Button> : null}</div>}
-      <div className="flex justify-end gap-2"><Button type="button" variant="ghost" disabled={busy} onClick={onClose}>Cancelar</Button><Button type="submit" disabled={busy} className="bg-[#c9a227] text-black">{busy ? <LoaderCircle className="animate-spin" /> : <HandCoins />} Iniciar atendimento</Button></div>
+      <div className="flex justify-end gap-2"><Button type="button" variant="ghost" disabled={busy} onClick={onClose}>Cancelar</Button><Button type="submit" disabled={busy} className="bg-gold text-black">{busy ? <LoaderCircle className="animate-spin" /> : <HandCoins />} Iniciar atendimento</Button></div>
     </form>}
   </DialogContent></Dialog>;
 }

@@ -41,8 +41,8 @@ export function AdvisorsPanel() {
       <div className="border-b border-white/8 p-5"><p className="section-kicker">Assessoria Elite</p><h2 className="text-lg font-semibold text-white">Quem acompanha as empresas clientes</h2><p className="mt-1 text-sm leading-6 text-zinc-400">Assessores podem ver e editar as empresas clientes para mentoria e suporte. Os clientes veem quem tem esse acesso, e cada alteração fica registrada. Quem sai do time Elite perde o acesso na hora.</p></div>
       {advisors === null && !error ? <p role="status" className="flex items-center gap-2 p-5 text-sm text-zinc-400"><LoaderCircle className="size-4 animate-spin" /> Carregando…</p>
         : <ul className="divide-y divide-white/7">{(advisors ?? []).map((a) => <li key={a.email} className="flex items-center justify-between gap-3 p-4">
-          <div className="min-w-0"><p className="truncate font-medium text-white">{a.name || a.email}</p><p className="truncate text-xs text-zinc-500">{a.email}{!a.active ? " · acesso retirado" : !a.eliteMember ? " · fora do time Elite (sem acesso)" : ""}</p></div>
-          {a.platformOwner ? <span className="shrink-0 text-xs text-zinc-500">Dono da plataforma</span>
+          <div className="min-w-0"><p className="truncate font-medium text-white">{a.name || a.email}</p><p className="truncate text-xs text-subtle">{a.email}{!a.active ? " · acesso retirado" : !a.eliteMember ? " · fora do time Elite (sem acesso)" : ""}</p></div>
+          {a.platformOwner ? <span className="shrink-0 text-xs text-subtle">Dono da plataforma</span>
             : <Button size="sm" variant="outline" disabled={busy} className="shrink-0 border-white/10 bg-white/5 text-white" onClick={() => save({ email: a.email, active: !a.active })}>{a.active ? "Retirar" : "Reativar"}</Button>}
         </li>)}</ul>}
     </article>
@@ -50,7 +50,7 @@ export function AdvisorsPanel() {
       <h3 className="font-semibold text-white">Adicionar assessor</h3>
       <label className="grid gap-1 text-zinc-300">E-mail de um membro ativo da Elite<input required type="email" maxLength={254} className="commercial-input" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
       {error && <p role="alert" className="rounded-lg border border-amber-400/30 bg-amber-400/5 p-3 text-amber-100">{error}</p>}
-      <Button disabled={busy} type="submit" className="bg-[#c9a227] text-black">{busy ? "Salvando…" : "Conceder assessoria"}</Button>
+      <Button disabled={busy} type="submit" className="bg-gold text-black">{busy ? "Salvando…" : "Conceder assessoria"}</Button>
     </form>
   </section>;
 }

@@ -227,3 +227,16 @@ Cliques depois da Etapa 1 (Administrador):
 | Convidar pessoa | 5 | 4 |
 
 Registrar venda ganhou um clique pelo "+ Novo"; em *Vendas → Pagamentos* o botão continua direto. Na Etapa 2 dá para pôr atalhos dessas ações no *Hoje*, se quiser.
+
+## 8. Etapa 2 — visual premium (concluída)
+
+- **Tokens únicos** em `app/globals.css` (`--elite-*`): dourados, superfícies, linhas, sombras, raio e curva de movimento. No código as cores viraram classes (`bg-gold`, `text-gold-soft`, `bg-surface`, `text-subtle`…) e não ficaram mais cores soltas nas telas.
+- **Superfícies:** cartões em vidro escuro com fio dourado no topo; janelas, menus e painéis no mesmo vidro. O fundo ganhou brilho dourado e uma grade quase invisível.
+- **Botão dourado** com gradiente metálico e brilho ao passar o mouse; campos com foco em halo dourado.
+- **Cabeçalho de cada área:** ícone em vidro dourado, nome da empresa e título com brilho.
+- **Empresa assinante:** o nome dela é a marca principal da barra lateral.
+- **Indicadores:** padronizados, com variação contra o mês anterior quando há dois meses com dados. "Sem dados suficientes" aparece como um traço discreto, com o motivo na explicação.
+- **Celular:** as tabelas viram cartões (cidades, embaixadores, pagamentos, canais, custos, histórico, time).
+- **Telas vazias:** mostram o próximo passo e o botão dele, quando a pessoa pode fazer.
+- **Movimento:** a área entra subindo de leve. Para quem pede menos movimento no aparelho, nada se mexe.
+- **Acessibilidade:** o texto auxiliar passou a ter contraste AA (antes ~4:1, agora acima de 5:1); o contorno de foco é dourado e visível no teclado.
