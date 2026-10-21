@@ -19,6 +19,10 @@ export type AccessView = {
   canManageCity: boolean;
   canManagePipeline: boolean;
   canManageContent: boolean;
+  /** Cargo na equipe, só descritivo. */
+  title?: string;
+  /** Já viu a tela de boas-vindas nesta organização. */
+  welcomed?: boolean;
 };
 
 export type SettingsView = {
@@ -225,6 +229,12 @@ export type UserProfileRecord = {
   active: boolean;
   /** Já criou a senha de acesso. */
   hasPassword: boolean;
+  title: string;
+  mentorshipCycle: number;
+  lastLoginAt: string | null;
+  /** Último link de acesso: ainda vale, venceu, já foi usado ou nunca foi gerado. */
+  linkStatus: "Nenhum" | "Válido" | "Vencido" | "Usado";
+  linkExpiresAt: string | null;
   createdAt: string;
 };
 
@@ -244,6 +254,8 @@ export type DashboardData = {
   people?: Array<{id: string; cityId: number; name: string}>;
   /** Empresas, escritórios e networks para vincular pessoas a um local. */
   places?: Array<{id: string; cityId: number; name: string; placeType: string}>;
+  /** Pessoas no mapa e quantas estão ligadas a um local (para os Primeiros passos). */
+  mapping?: { people: number; linked: number };
   access: AccessView;
   settings: SettingsView;
   cities: CityRecord[];

@@ -548,13 +548,13 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     if (existing.results[0]) {
       entityId = asNumber(existing.results[0].id);
       await db.prepare(`
-        UPDATE app_users SET name = ?, role = ?, city_id = ?, ambassador_id = ?, active = 1 WHERE id = ?
-      `).bind(text(input, "name"), text(input, "role"), cityId, ambassadorId, entityId).run();
+        UPDATE app_users SET name = ?, role = ?, city_id = ?, ambassador_id = ?, title = ?, mentorship_cycle = ?, active = 1 WHERE id = ?
+      `).bind(text(input, "name"), text(input, "role"), cityId, ambassadorId, text(input, "title"), asNumber(input.mentorshipCycle), entityId).run();
     } else {
       const result = await db.prepare(`
-        INSERT INTO app_users (organization_id,email, name, role, city_id, ambassador_id, active, created_by, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
-      `).bind(access.organizationId,email, text(input, "name"), text(input, "role"), cityId, ambassadorId, access.email, timestamp).run();
+        INSERT INTO app_users (organization_id,email, name, role, city_id, ambassador_id, title, mentorship_cycle, active, created_by, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+      `).bind(access.organizationId,email, text(input, "name"), text(input, "role"), cityId, ambassadorId, text(input, "title"), asNumber(input.mentorshipCycle), access.email, timestamp).run();
       entityId = asNumber(result.meta.last_row_id);
     }
     await audit(db, access.organizationId, access.email, action, "app_user", entityId, `Perfil interno preparado para ${email}; nenhum convite foi enviado.`);

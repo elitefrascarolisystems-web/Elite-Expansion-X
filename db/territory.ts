@@ -12,12 +12,14 @@ const dbRows = async (sql:string, args:(string|number|null)[] = []) => (await da
 const n = (v:unknown) => v === null || v === undefined ? null : Number(v);
 const str = (v:unknown) => String(v ?? '');
 function management(a:AccessView) { return a.active && ['Administrador','Coordenação','Líder'].includes(a.role); }
+/** Quem mapeia: a gestão e o Comercial (Executivo de Vendas), que cadastra pessoas e valida os próprios locais. */
+function mapper(a:AccessView) { return management(a) || (a.active && a.role==='Comercial'); }
 function localScope(a:AccessView, alias = 'r') {
   if (!a.active) return {sql:'1=0',values:[] as (string|number)[]};
   if (a.role === 'Administrador') return {sql:'1=1',values:[] as (string|number)[]};
   if (['Coordenação','Líder'].includes(a.role) && a.cityId !== null) return {sql:`${alias}.city_id = ?`,values:[a.cityId]};
   if (a.role === 'Embaixador' && a.ambassadorId !== null) return {sql:`${alias}.kind = 'person' AND ${alias}.ambassador_id = ?`,values:[a.ambassadorId]};
-  if (a.role === 'Comercial') return {sql:`((${alias}.kind = 'person' AND ${alias}.lead_id IN (SELECT id FROM leads WHERE lower(assigned_to_email)=lower(?) AND consent_revoked_at IS NULL)) OR (${alias}.kind='business' AND ${alias}.id IN (SELECT id FROM businesses WHERE lower(owner_email)=lower(?))))`,values:[a.email,a.email]};
+  if (a.role === 'Comercial') return {sql:`((${alias}.kind = 'person' AND (${alias}.lead_id IN (SELECT id FROM leads WHERE lower(assigned_to_email)=lower(?) AND consent_revoked_at IS NULL) OR ${alias}.id IN (SELECT id FROM territory_people WHERE lower(created_by)=lower(?)))) OR (${alias}.kind='business' AND ${alias}.id IN (SELECT id FROM businesses WHERE lower(owner_email)=lower(?))) OR (${alias}.kind='action' AND ${alias}.id IN (SELECT id FROM territory_actions WHERE lower(created_by)=lower(?))))`,values:[a.email,a.email,a.email,a.email]};
   return {sql:'1=0',values:[]};
 }
 function scope(a:AccessView,alias='r') {const local=localScope(a,alias);return {sql:`(${local.sql}) AND ${alias}.city_id IN (SELECT id FROM cities WHERE organization_id=?)`,values:[...local.values,a.organizationId]};}
@@ -103,10 +105,10 @@ export async function getTerritory(a:AccessView, params:URLSearchParams):Promise
   }
   // Local vinculado de cada pessoa (para a ficha e para editar), em lotes pelo limite do D1.
   for(let i=0;i<personIds.length;i+=80){const batch=personIds.slice(i,i+80);for(const p of await dbRows(`SELECT tp.id,tp.place_id,tp.place_link,b.name AS place_name,b.place_type FROM territory_people tp JOIN businesses b ON b.id=tp.place_id AND b.organization_id=? WHERE tp.id IN (${batch.map(()=>'?').join(',')})`,[a.organizationId,...batch])){const record=records.find(r=>r.kind==='person'&&r.id===str(p.id));if(record)record.place={id:str(p.place_id),name:str(p.place_name),type:str(p.place_type),link:str(p.place_link)};}}
-  return {roleCounts:{Mentor:Number(count[0]?.mentors??0),Mentorado:Number(count[0]?.members??0),Embaixador:Number(count[0]?.ambassadors??0),Líder:Number(count[0]?.leaders??0)},points:points.slice(0,1000).map(p=>({latitude:Number(p.latitude),longitude:Number(p.longitude),count:Number(p.count),people:Number(p.people),key:str(p.entity_key),kind:str(p.kind) as TerritoryRecord['kind'],roles:str(p.roles).split(','),status:str(p.status)})),pointsCapped:points.length>1000,inView:Number(inView[0]?.total??0),people:Number(count[0]?.people??0),pending:Number(count[0]?.pending??0),records,total:Number(count[0]?.total??0),hasMore:result.length>200,nextOffset:result.length>200?offset+200:null,updatedAt:brazilTimestamp(),canEdit:management(a)};
+  return {roleCounts:{Mentor:Number(count[0]?.mentors??0),Mentorado:Number(count[0]?.members??0),Embaixador:Number(count[0]?.ambassadors??0),Líder:Number(count[0]?.leaders??0)},points:points.slice(0,1000).map(p=>({latitude:Number(p.latitude),longitude:Number(p.longitude),count:Number(p.count),people:Number(p.people),key:str(p.entity_key),kind:str(p.kind) as TerritoryRecord['kind'],roles:str(p.roles).split(','),status:str(p.status)})),pointsCapped:points.length>1000,inView:Number(inView[0]?.total??0),people:Number(count[0]?.people??0),pending:Number(count[0]?.pending??0),records,total:Number(count[0]?.total??0),hasMore:result.length>200,nextOffset:result.length>200?offset+200:null,updatedAt:brazilTimestamp(),canEdit:mapper(a)};
 }
 async function allowedCity(a:AccessView,cityId:number) {
-  if(!management(a)||!canAccessCity(a,cityId)) throw new TerritoryError('Registro fora do seu acesso.',403);
+  if(!mapper(a)||!canAccessCity(a,cityId)) throw new TerritoryError('Registro fora do seu acesso.',403);
   if(!(await dbRows('SELECT id FROM cities WHERE id=? AND organization_id=?',[cityId,a.organizationId]))[0]) throw new TerritoryError('Cidade não encontrada.',404);
 }
 async function entity(a:AccessView,key:string) {
@@ -117,7 +119,7 @@ function auditStatement(a:AccessView,action:string,key:string) {
   return database().prepare('INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,summary,created_at) VALUES(?,?,?,?,?,?)').bind(a.organizationId,a.email,action,'territory',`Registro territorial ${key}.`,brazilTimestamp());
 }
 export async function mutateTerritory(a:AccessView,action:string,input:unknown) {
-  if(!management(a)) throw new TerritoryError('Seu perfil não pode alterar o território.',403);
+  if(!mapper(a)||(!management(a)&&action==='event_status')) throw new TerritoryError('Seu perfil não pode alterar o território.',403);
   const db=database(),now=brazilTimestamp();
   if(action==='location') {
     const v=locationSchema.parse(input);if(v.key.startsWith('person:'))throw new TerritoryError('Pessoas usam somente o centro da cidade. Valide a referência da cidade.');const row=await entity(a,v.key);await allowedCity(a,Number(row.city_id));
@@ -133,6 +135,8 @@ export async function mutateTerritory(a:AccessView,action:string,input:unknown) 
   }
   if(action==='person') {
     const v=personSchema.parse(input);await allowedCity(a,v.cityId);const id=v.id??v.requestId??crypto.randomUUID();
+    // Líder da cidade é decisão da gestão: quem só mapeia mantém o que já estava gravado.
+    if(!management(a)){if(v.leader&&!(v.id&&(await dbRows('SELECT leader FROM territory_people WHERE id=?',[id]))[0]?.leader))throw new TerritoryError('Só a gestão define o líder da cidade.',403);v.leader=Boolean(v.id&&(await dbRows('SELECT leader FROM territory_people WHERE id=?',[id]))[0]?.leader);}
     if(!v.id&&v.requestId){const existing=await dbRows('SELECT created_by,city_id FROM '+'territory_people'+' WHERE id=?',[id]);if(existing[0]){if(existing[0].created_by!==a.email||Number(existing[0].city_id)!==v.cityId)throw new TerritoryError('Identificador já utilizado.',409);return {id};}}
     if(v.id){const old=await entity(a,`person:${id}`);if(Number(old.city_id)!==v.cityId) throw new TerritoryError('A mudança de cidade exige revisão dos vínculos existentes.');}
     if(v.referrerId){const ref=await entity(a,`person:${v.referrerId}`);if(Number(ref.city_id)!==v.cityId) throw new TerritoryError('A indicação deve pertencer à cidade autorizada.');

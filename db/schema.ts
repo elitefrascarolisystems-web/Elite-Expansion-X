@@ -62,6 +62,12 @@ export const appUsers = sqliteTable("app_users", {
   cityId: integer("city_id").references(() => cities.id, { onDelete: "set null" }),
   ambassadorId: integer("ambassador_id").references(() => ambassadors.id, { onDelete: "set null" }),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
+  /** Cargo na equipe (ex.: "Executivo de Vendas"); só descreve, quem define o acesso é a função. */
+  title: text("title").notNull().default(""),
+  /** Ciclo de mentoria da pessoa na Elite (0 = não é mentorada). */
+  mentorshipCycle: integer("mentorship_cycle").notNull().default(0),
+  /** Quando a pessoa fechou a tela de boas-vindas nesta organização. */
+  welcomedAt: text("welcomed_at"),
   createdBy: text("created_by").notNull().default(""),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
@@ -345,7 +351,7 @@ export const platformAdvisors=sqliteTable('platform_advisors',{
 },(table)=>[uniqueIndex('platform_advisors_email_unique').on(table.email)]);
 /** Login por e-mail e senha. A senha nunca é guardada: só o PBKDF2 com sal próprio. */
 export const userCredentials=sqliteTable('user_credentials',{
- email:text('email').primaryKey(),passwordHash:text('password_hash').notNull(),passwordSalt:text('password_salt').notNull(),iterations:integer('iterations').notNull(),updatedAt:text('updated_at').notNull(),
+ email:text('email').primaryKey(),passwordHash:text('password_hash').notNull(),passwordSalt:text('password_salt').notNull(),iterations:integer('iterations').notNull(),updatedAt:text('updated_at').notNull(),lastLoginAt:text('last_login_at'),
 });
 /** Sessões abertas. O navegador guarda o token; aqui fica só o SHA-256 dele. */
 export const userSessions=sqliteTable('user_sessions',{

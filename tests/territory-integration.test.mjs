@@ -376,3 +376,21 @@ test('locais com tipo e setor no mapa; pessoa aparece no local vinculado, nunca 
  // Coordenada pessoal continua proibida.
  await assert.rejects(m.mutateTerritory(m.access,'location',{key:'person:'+loose.id,latitude:-19.7,longitude:-44.3,region:'',precision:'Região aproximada',source:'Teste',validated:true,authorized:true,visibility:'Equipe'}));
 });
+
+test('executivo de vendas (Comercial) mapeia pessoas, vê o que cadastrou e não mexe no que é dos outros',async()=>{
+ const m=await modules();
+ const sales={...m.access,role:'Comercial',email:'sales@example.invalid',cityId:null};
+ const other={...sales,email:'other@example.invalid'};
+ const {id}=await m.mutateTerritory(sales,'person',person('Mapeada pelo vendedor'));
+ assert.equal(sqlite.prepare('SELECT created_by FROM territory_people WHERE id=?').get(id).created_by,'sales@example.invalid');
+ const mine=await m.getTerritory(sales,new URLSearchParams());assert.equal(mine.total,1);assert.equal(mine.canEdit,true);
+ assert.equal((await m.getTerritory(other,new URLSearchParams())).total,0,'outro vendedor não vê');
+ await assert.rejects(m.mutateTerritory(other,'person',{...person('Troca'),id}),/fora do seu acesso/);
+ await m.mutateTerritory(sales,'person',{...person('Nome corrigido'),id});
+ assert.equal(sqlite.prepare('SELECT name FROM territory_people WHERE id=?').get(id).name,'Nome corrigido');
+ await assert.rejects(m.mutateTerritory(sales,'event_status',{id:1,status:'Realizado'}),/não pode/);
+ await assert.rejects(m.mutateTerritory(sales,'person',{...person('Quer ser líder'),leader:true}),/gestão define o líder/);
+ await m.mutateTerritory(m.access,'person',{...person('Nome corrigido'),id,leader:true});await m.mutateTerritory(sales,'person',{...person('Nome final'),id,leader:false});
+ assert.equal(sqlite.prepare('SELECT leader FROM territory_people WHERE id=?').get(id).leader,1,'vendedor não tira o líder definido pela gestão');
+ await assert.rejects(m.mutateTerritory({...sales,cityId:2},'person',person('Fora da cidade',1)),/fora do seu acesso/);
+});

@@ -221,6 +221,8 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     role: z.enum(USER_ROLES),
     cityId: optionalId,
     ambassadorId: optionalId,
+    title: z.string().trim().max(80).default(""),
+    mentorshipCycle: z.number().int().min(0).max(10).default(0),
   }).superRefine((value, context) => {
     if (["Líder", "Embaixador", "Coordenação"].includes(value.role) && !value.cityId) {
       context.addIssue({ code: "custom", path: ["cityId"], message: "Selecione a cidade deste perfil." });

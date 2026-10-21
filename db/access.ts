@@ -67,7 +67,7 @@ export async function getUserAccess(email: string, displayName: string, organiza
   await ensureSystemData(email, displayName);
   const db = database();
   const result = await db.prepare(`
-    SELECT u.id,u.email,u.name,u.role,u.city_id,u.ambassador_id,u.active,u.organization_id,o.name AS organization_name,o.owner_email
+    SELECT u.id,u.email,u.name,u.role,u.city_id,u.ambassador_id,u.active,u.title,u.welcomed_at,u.organization_id,o.name AS organization_name,o.owner_email
     FROM app_users u JOIN organizations o ON o.id=u.organization_id AND o.active=1 WHERE lower(u.email)=lower(?) AND u.active=1 AND (? IS NULL OR u.organization_id=?) ORDER BY u.organization_id LIMIT 1
   `).bind(email,organizationId??null,organizationId??null).all();
   const row = result.results[0];
@@ -90,6 +90,8 @@ export async function getUserAccess(email: string, displayName: string, organiza
     canManageCity: ["Administrador", "Coordenação", "Líder"].includes(role),
     canManagePipeline: ["Administrador", "Coordenação", "Líder", "Comercial"].includes(role),
     canManageContent: ["Administrador", "Coordenação", "Líder"].includes(role),
+    title: String(row.title ?? ""),
+    welcomed: Boolean(row.welcomed_at),
   };
 }
 

@@ -37,6 +37,16 @@ on:
         default: "Coordenação"
         type: choice
         options: [Coordenação, Administrador, Comercial]
+      membro_cargo:
+        description: "Opcional: cargo dessa pessoa (ex.: Executivo de Vendas)"
+        required: false
+        default: ""
+        type: string
+      membro_mentoria:
+        description: "Ciclo de mentoria dessa pessoa (0 = não é mentorada)"
+        required: false
+        default: "0"
+        type: string
 
 concurrency:
   group: publicar-teste
@@ -140,7 +150,10 @@ jobs:
           TOKEN_HASH: ${{ inputs.link_token_hash }}
         run: |
           set -euo pipefail
-          [[ "$TOKEN_HASH" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::link_token_hash precisa ter 64 caracteres hexadecimais."; exit 1; }
+          # Sem link_token_hash: só cadastra ou atualiza o perfil, sem mexer no link que a pessoa já tem.
+          [ -z "$TOKEN_HASH" ] || [[ "$TOKEN_HASH" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::link_token_hash precisa ter 64 caracteres hexadecimais."; exit 1; }
+          [ -z "$CARGO" ] || { [[ "$CARGO" =~ ^[[:alpha:]][[:alpha:]\ .,/-]{1,79}$ ]] && [[ "$CARGO" != *\'* ]]; } || { echo "::error::membro_cargo inválido (só letras, espaço e . , / -)."; exit 1; }
+          [[ "$MENTORIA" =~ ^([0-9]|10)$ ]] || { echo "::error::membro_mentoria deve ser um número de 0 a 10."; exit 1; }
           cat > wrangler.link.json <<JSON
           {"name":"$WORKER_NAME","compatibility_date":"2026-05-15",
            "d1_databases":[{"binding":"DB","database_name":"$D1_DATABASE_NAME","database_id":"$D1_DATABASE_ID"}]}
@@ -163,6 +176,8 @@ jobs:
           FUNCAO: ${{ inputs.membro_funcao }}
           TOKEN_HASH: ${{ inputs.link_token_hash }}
           OUTRO_LINK: ${{ inputs.link_email }}
+          CARGO: ${{ inputs.membro_cargo }}
+          MENTORIA: ${{ inputs.membro_mentoria }}
           ATOR: ${{ github.actor }}
         run: |
           set -euo pipefail
@@ -179,10 +194,15 @@ jobs:
           expires="$(date -u -d '+72 hours' +%Y-%m-%dT%H:%M:%S.000Z)"
           npx wrangler d1 execute DB --remote -c wrangler.link.json --command \
             "INSERT INTO app_users(organization_id,email,name,role,active,created_by,created_at) SELECT 1,'$EMAIL','$NOME','$FUNCAO',1,'github-actions','$now' WHERE NOT EXISTS(SELECT 1 FROM app_users WHERE organization_id=1 AND lower(email)='$EMAIL'); \
-             UPDATE app_users SET active=1,role='$FUNCAO',name='$NOME' WHERE organization_id=1 AND lower(email)='$EMAIL'; \
+             UPDATE app_users SET active=1,role='$FUNCAO',name='$NOME'$([ -z "$CARGO" ] || printf ",title='%s'" "$CARGO"),mentorship_cycle=$MENTORIA WHERE organization_id=1 AND lower(email)='$EMAIL'; \
              DELETE FROM login_throttle WHERE key='email:$EMAIL'; \
-             DELETE FROM password_links WHERE email='$EMAIL' AND used_at IS NULL; \
-             INSERT INTO password_links(token_hash,email,created_by,created_at,expires_at) VALUES('$TOKEN_HASH','$EMAIL','github-actions','$now','$expires'); \
-             INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,summary,created_at) VALUES(1,'github-actions','create_user','app_user','Perfil de $EMAIL definido como $FUNCAO e link de acesso criado pela publicação de teste (pedido de $ATOR).','$now');"
+             INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,summary,created_at) VALUES(1,'github-actions','create_user','app_user','Perfil de $EMAIL definido como $FUNCAO pela publicação de teste (pedido de $ATOR).','$now');"
+          if [ -n "$TOKEN_HASH" ]; then
+            npx wrangler d1 execute DB --remote -c wrangler.link.json --command \
+              "DELETE FROM password_links WHERE email='$EMAIL' AND used_at IS NULL; \
+               INSERT INTO password_links(token_hash,email,created_by,created_at,expires_at) VALUES('$TOKEN_HASH','$EMAIL','github-actions','$now','$expires');"
+            echo "::notice title=Membro cadastrado::$EMAIL ($FUNCAO). Link de acesso válido até $expires (UTC)."
+          else
+            echo "::notice title=Perfil atualizado::$EMAIL ($FUNCAO). Nenhum link novo foi gerado."
+          fi
           rm wrangler.link.json
-          echo "::notice title=Membro cadastrado::$EMAIL ($FUNCAO). Link de acesso válido até $expires (UTC)."

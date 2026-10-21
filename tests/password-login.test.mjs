@@ -124,3 +124,42 @@ test('rotas: login exige mesma origem, grava cookie seguro; sair apaga o cookie'
  const {link}=await r.json();assert.match(link,/^https:\/\/elite\.invalid\/definir-senha#[a-f0-9]{64}$/);
  globalThis.__eliteTestUser=null;assert.equal((await linkApi.POST(linkReq('rota@elite.invalid'))).status,401);
 });
+
+test('equipe: convite em lote com cargo e mentoria, situação do acesso, boas-vindas e último acesso',async()=>{
+ const m=await load();
+ const teamApi=await vite.ssrLoadModule('/app/api/team/route.ts');
+ const {getDashboardData}=await vite.ssrLoadModule('/db/queries.ts');
+ const post=(body,origin='https://elite.invalid')=>teamApi.POST(new Request('https://elite.invalid/api/team',{method:'POST',headers:{origin,'content-type':'application/json','X-Elite-Organization':'1'},body:JSON.stringify(body)}));
+ const rows=[
+  {name:'Flávia Silva',email:'Flavia@Elite.invalid',role:'Comercial',cityId:null,title:'Executiva de Vendas',mentorshipCycle:2},
+  {name:'Fabricio',email:'fabricio@elite.invalid',role:'Comercial',cityId:null,title:'Executivo de Vendas',mentorshipCycle:1},
+  {name:'Sem cidade',email:'coord@elite.invalid',role:'Coordenação',cityId:null,title:'',mentorshipCycle:0},
+  {name:'Repetida',email:'flavia@elite.invalid',role:'Comercial',cityId:null,title:'',mentorshipCycle:0},
+ ];
+ assert.equal((await post({action:'invite',rows},'https://evil.invalid')).status,403,'mesma origem');
+ const r=await post({action:'invite',rows});assert.equal(r.status,200);
+ const {results,data}=await r.json();
+ assert.deepEqual(results.map(x=>x.ok),[true,true,false,false]);
+ assert.match(results[0].link,/^https:\/\/elite\.invalid\/definir-senha#[a-f0-9]{64}$/);
+ assert.match(results[2].error,/cidade/);assert.match(results[3].error,/repetido/);
+ assert.equal(sqlite.prepare("SELECT count(*) n FROM app_users WHERE email='coord@elite.invalid'").get().n,0,'linha com erro não cadastra');
+ const flavia=data.users.find(u=>u.email==='flavia@elite.invalid');
+ assert.equal(flavia.title,'Executiva de Vendas');assert.equal(flavia.mentorshipCycle,2);assert.equal(flavia.linkStatus,'Válido');assert.equal(flavia.hasPassword,false);
+ // Flávia cria a senha: link usado, último acesso gravado; boas-vindas aparece só até ela fechar.
+ const token=results[0].link.split('#')[1];await m.redeemPasswordLink(token,STRONG);
+ const firstLogin=sqlite.prepare("SELECT last_login_at FROM user_credentials WHERE email='flavia@elite.invalid'").get().last_login_at;assert.match(firstLogin,/^\d{4}-\d\d-\d\dT/);
+ sqlite.prepare("UPDATE user_credentials SET last_login_at='2000-01-01T00:00:00.000Z'").run();
+ await m.login('flavia@elite.invalid',STRONG,'2.2.2.2');
+ assert.notEqual(sqlite.prepare("SELECT last_login_at FROM user_credentials WHERE email='flavia@elite.invalid'").get().last_login_at,'2000-01-01T00:00:00.000Z');
+ const owner=await m.getUserAccess(OWNER,'Dono',1);
+ const after=(await getDashboardData(owner)).users;
+ assert.equal(after.find(u=>u.email==='flavia@elite.invalid').linkStatus,'Usado');assert.ok(after.find(u=>u.email==='flavia@elite.invalid').lastLoginAt);
+ sqlite.prepare("UPDATE password_links SET expires_at='2000-01-01T00:00:00.000Z' WHERE email='fabricio@elite.invalid'").run();
+ assert.equal((await getDashboardData(owner)).users.find(u=>u.email==='fabricio@elite.invalid').linkStatus,'Vencido');
+ globalThis.__eliteTestUser={email:'flavia@elite.invalid',displayName:'Flávia'};
+ const before=await m.getUserAccess('flavia@elite.invalid','Flávia',1);assert.equal(before.welcomed,false);assert.equal(before.title,'Executiva de Vendas');
+ assert.equal((await post({action:'invite',rows:[rows[1]]})).status,403,'só administrador convida');
+ assert.equal((await post({action:'welcome'})).status,200);
+ assert.equal((await m.getUserAccess('flavia@elite.invalid','Flávia',1)).welcomed,true);
+ globalThis.__eliteTestUser=null;assert.equal((await post({action:'welcome'})).status,401);
+});

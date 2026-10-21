@@ -1,0 +1,79 @@
+import { z, ZodError } from "zod";
+import { getCurrentUser } from "@/app/auth";
+import { getUserAccess } from "@/db/access";
+import { AuthError, createPasswordLink } from "@/db/auth";
+import { ActionError, executeAction } from "@/db/mutations";
+import { getDashboardData } from "@/db/queries";
+import { brazilTimestamp, database } from "@/db/runtime";
+import { canPerform } from "@/lib/expansion-permissions";
+import { parseActionPayload } from "@/lib/expansion-validation";
+import { sameOrigin } from "@/lib/session-cookie";
+import { MAX_TEAM_ROWS } from "@/lib/team";
+import { organizationFromRequest } from "@/lib/tenant-request";
+
+export const dynamic = "force-dynamic";
+
+const headers = { "Cache-Control": "no-store" };
+const inviteBody = z.object({
+  action: z.literal("invite"),
+  rows: z.array(z.object({
+    name: z.string(), email: z.string(), role: z.string(), cityId: z.number().int().nullable(),
+    title: z.string().default(""), mentorshipCycle: z.number().int().default(0),
+  })).min(1).max(MAX_TEAM_ROWS),
+});
+
+type InviteResult = { email: string; name: string; ok: boolean; link?: string; error?: string };
+
+function rowError(error: unknown) {
+  if (error instanceof ZodError) return error.issues[0]?.message ?? "Revise os dados desta pessoa.";
+  if (error instanceof ActionError || error instanceof AuthError) return error.message;
+  return "Não foi possível cadastrar agora. Tente de novo.";
+}
+
+/**
+ * Equipe:
+ * - invite: o administrador cadastra várias pessoas de uma vez e recebe o link de acesso de cada uma;
+ * - welcome: a pessoa fechou a tela de boas-vindas (não aparece de novo).
+ */
+export async function POST(request: Request) {
+  if (!sameOrigin(request)) return Response.json({ error: "Origem da solicitação não permitida." }, { status: 403, headers });
+  try {
+    const user = await getCurrentUser();
+    if (!user) return Response.json({ error: "Entre para acessar." }, { status: 401, headers });
+    const access = await getUserAccess(user.email, user.displayName, organizationFromRequest(request));
+    if (!access) return Response.json({ error: "Acesso não autorizado." }, { status: 403, headers });
+    const body = await request.json().catch(() => null) as { action?: unknown } | null;
+
+    if (body?.action === "welcome") {
+      if (!access.isAdvisory) {
+        await database().prepare("UPDATE app_users SET welcomed_at=? WHERE id=? AND organization_id=? AND welcomed_at IS NULL")
+          .bind(brazilTimestamp(), access.id, access.organizationId).run();
+      }
+      return Response.json({ ok: true }, { headers });
+    }
+
+    if (!canPerform(access, "create_user")) return Response.json({ error: "Somente administradores convidam a equipe." }, { status: 403, headers });
+    const parsed = inviteBody.safeParse(body);
+    if (!parsed.success) return Response.json({ error: `Envie de 1 a ${MAX_TEAM_ROWS} pessoas por vez.` }, { status: 400, headers });
+
+    const results: InviteResult[] = [];
+    const seen = new Set<string>();
+    for (const row of parsed.data.rows) {
+      const email = row.email.trim().toLowerCase();
+      try {
+        if (seen.has(email)) throw new ActionError("E-mail repetido na lista.");
+        seen.add(email);
+        if (row.role === "Embaixador") throw new ActionError("Embaixador precisa ser ligado ao cadastro dele: use \"Adicionar pessoa\".");
+        const data = parseActionPayload("create_user", { ...row, email, ambassadorId: null });
+        await executeAction("create_user", data, access);
+        const token = await createPasswordLink(access, email);
+        results.push({ email, name: row.name.trim(), ok: true, link: new URL(`/definir-senha#${token}`, request.url).toString() });
+      } catch (error) {
+        results.push({ email, name: row.name.trim(), ok: false, error: rowError(error) });
+      }
+    }
+    return Response.json({ results, data: await getDashboardData(access) }, { headers });
+  } catch {
+    return Response.json({ error: "Não foi possível concluir agora. Tente novamente." }, { status: 503, headers });
+  }
+}

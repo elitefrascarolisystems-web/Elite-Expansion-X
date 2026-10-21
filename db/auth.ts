@@ -86,7 +86,11 @@ export async function login(emailInput: string, password: string, network: strin
     await recordFailure(networkKey, MAX_FAILURES_PER_NETWORK);
     throw new AuthError("E-mail ou senha incorretos.", 401);
   }
-  await database().prepare("DELETE FROM login_throttle WHERE key=?").bind(emailKey).run();
+  const db = database();
+  await db.batch([
+    db.prepare("DELETE FROM login_throttle WHERE key=?").bind(emailKey),
+    db.prepare("UPDATE user_credentials SET last_login_at=? WHERE email=?").bind(iso(), email),
+  ]);
   return openSession(email);
 }
 
@@ -145,9 +149,9 @@ export async function redeemPasswordLink(token: unknown, password: string): Prom
     .bind(iso(), await sha256Hex(token), iso()).run();
   if (Number(claim.meta?.changes ?? 0) !== 1) throw new AuthError("Este link acabou de ser usado. Peça um novo ao administrador.", 403);
   await db.batch([
-    db.prepare(`INSERT INTO user_credentials(email,password_hash,password_salt,iterations,updated_at) VALUES(?,?,?,?,?)
-      ON CONFLICT(email) DO UPDATE SET password_hash=excluded.password_hash,password_salt=excluded.password_salt,iterations=excluded.iterations,updated_at=excluded.updated_at`)
-      .bind(info.email, hashed.hash, hashed.salt, hashed.iterations, brazilTimestamp()),
+    db.prepare(`INSERT INTO user_credentials(email,password_hash,password_salt,iterations,updated_at,last_login_at) VALUES(?,?,?,?,?,?)
+      ON CONFLICT(email) DO UPDATE SET password_hash=excluded.password_hash,password_salt=excluded.password_salt,iterations=excluded.iterations,updated_at=excluded.updated_at,last_login_at=excluded.last_login_at`)
+      .bind(info.email, hashed.hash, hashed.salt, hashed.iterations, brazilTimestamp(), iso()),
     db.prepare("DELETE FROM user_sessions WHERE email=?").bind(info.email),
     db.prepare("DELETE FROM login_throttle WHERE key=?").bind(`email:${info.email}`),
   ]);

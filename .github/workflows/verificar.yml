@@ -43,6 +43,7 @@ jobs:
             tests/followup-integration.test.mjs \
             tests/password-login.test.mjs \
             tests/rendered-html.test.mjs \
+            tests/team.test.mjs \
             tests/territory-integration.test.mjs \
             tests/ui-components.test.mjs 2>&1 | tee resultado-testes.txt
 

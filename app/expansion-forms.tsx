@@ -320,18 +320,25 @@ function SettingsForm({ data, saving, onSave }: { data: DashboardData; saving: b
 
 const CITY_REQUIRED = ["Coordenação", "Líder", "Embaixador"];
 const ROLE_HELP: Record<string, string> = {
-  Administrador: "Vê e altera tudo da organização, cadastra pessoas e gera links de acesso.",
-  Coordenação: "Coordena uma cidade: registra pessoas, embaixadores, leads, vendas, custos e tarefas dela.",
+  Administrador: "Vê e altera tudo da organização, cadastra a equipe e gera links de acesso.",
+  Coordenação: "Coordena uma cidade: registra pessoas, locais, embaixadores, leads, vendas, custos e tarefas dela.",
   Líder: "Líder local de uma cidade: acompanha a equipe e os resultados dela.",
   Embaixador: "Vê só o próprio portal: treinamento, link de indicação e tarefas.",
-  Comercial: "Vendedor: vê os próprios leads, oportunidades, agenda e metas.",
+  Comercial: "Executivo(a) de vendas: mapeia pessoas e locais, cuida dos próprios leads, oportunidades, agenda e metas.",
 };
+const TITLE_SUGGESTIONS = ["Executivo de Vendas", "Executiva de Vendas", "Assessor Executivo", "Assessora Executiva", "Coordenador Regional", "Mapeador", "Líder Local"];
 
-function UserForm({ data, saving, onSave }: { data: DashboardData; saving: boolean; onSave: Save }) {
-  const [role, setRole] = useState("Embaixador"); const [cityId, setCityId] = useState("none"); const [ambassadorId, setAmbassadorId] = useState("none");
-  return <FormShell title="Preparar perfil" description="Define o que a pessoa pode ver e fazer. Depois de salvar, use Gerar link na tabela de perfis para ela criar a própria senha." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("create_user", { email: f.get("email"), name: f.get("name"), role, cityId: cityId === "none" || cityId === "" ? null : Number(cityId), ambassadorId: ambassadorId === "none" ? null : Number(ambassadorId) }); }}>
-    <Field label="Nome"><Input name="name" required className={inputClass} /></Field><Field label="E-mail"><Input name="email" type="email" required className={inputClass} /></Field><Field label="Função"><Select value={role} onValueChange={(value) => { setRole(value); if (CITY_REQUIRED.includes(value) && cityId === "none") setCityId(""); if (!CITY_REQUIRED.includes(value) && cityId === "") setCityId("none"); }}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Administrador", "Coordenação", "Líder", "Embaixador", "Comercial"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
-    <p className="text-xs leading-5 text-zinc-400 sm:col-span-2">{ROLE_HELP[role]}</p><Field label="Cidade"><Select value={cityId} onValueChange={(value) => { setCityId(value); setAmbassadorId("none"); }}><SelectTrigger className={selectClass}><SelectValue placeholder="Selecione a cidade" /></SelectTrigger><SelectContent>{!CITY_REQUIRED.includes(role) && <SelectItem value="none">Todas as cidades</SelectItem>}{data.cities.map((city) => <SelectItem key={city.id} value={String(city.id)}>{city.name}</SelectItem>)}</SelectContent></Select></Field>
+function UserForm({ data, userId, saving, onSave }: { data: DashboardData; userId?: number; saving: boolean; onSave: Save }) {
+  const user = data.users.find((item) => item.id === userId);
+  const [role, setRole] = useState<string>(user?.role ?? "Comercial"); const [cityId, setCityId] = useState(user?.cityId ? String(user.cityId) : "none"); const [ambassadorId, setAmbassadorId] = useState(user?.ambassadorId ? String(user.ambassadorId) : "none");
+  const [mentorship, setMentorship] = useState(String(user?.mentorshipCycle ?? 0));
+  return <FormShell title={user ? "Editar pessoa da equipe" : "Adicionar pessoa à equipe"} description={user ? "Altere cargo, função, cidade ou mentoria. O e-mail é o login e não muda." : "Define o que a pessoa pode ver e fazer. Depois de salvar, use \u201cGerar link\u201d na lista da equipe para ela criar a própria senha."} saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("create_user", { email: user?.email ?? f.get("email"), name: f.get("name"), role, cityId: cityId === "none" || cityId === "" ? null : Number(cityId), ambassadorId: ambassadorId === "none" ? null : Number(ambassadorId), title: f.get("title") ?? "", mentorshipCycle: Number(mentorship) }); }}>
+    <Field label="Nome"><Input name="name" required defaultValue={user?.name} placeholder="Ex.: Flávia Silva" className={inputClass} /></Field><Field label="E-mail (login)"><Input name="email" type="email" required={!user} disabled={Boolean(user)} defaultValue={user?.email} placeholder="nome@exemplo.com" className={inputClass} /></Field>
+    <Field label="Cargo na equipe" hint="Só descreve a pessoa. O que ela acessa vem da função."><Input name="title" list="team-title-suggestions" maxLength={80} defaultValue={user?.title} placeholder="Ex.: Executiva de Vendas" className={inputClass} /><datalist id="team-title-suggestions">{TITLE_SUGGESTIONS.map((item) => <option key={item} value={item} />)}</datalist></Field>
+    <Field label="Mentoria Elite"><Select value={mentorship} onValueChange={setMentorship}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="0">Não é mentorado(a)</SelectItem>{[1, 2, 3, 4, 5].map((cycle) => <SelectItem key={cycle} value={String(cycle)}>Mentorado(a) · {cycle}º ciclo</SelectItem>)}</SelectContent></Select></Field>
+    <Field label="Função (o que pode acessar)"><Select value={role} onValueChange={(value) => { setRole(value); if (CITY_REQUIRED.includes(value) && cityId === "none") setCityId(""); if (!CITY_REQUIRED.includes(value) && cityId === "") setCityId("none"); }}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Administrador", "Coordenação", "Líder", "Embaixador", "Comercial"].map((item) => <SelectItem key={item} value={item}>{item === "Comercial" ? "Comercial (Executivo de Vendas)" : item}</SelectItem>)}</SelectContent></Select></Field>
+    <Field label="Cidade"><Select value={cityId} onValueChange={(value) => { setCityId(value); setAmbassadorId("none"); }}><SelectTrigger className={selectClass}><SelectValue placeholder="Selecione a cidade" /></SelectTrigger><SelectContent>{!CITY_REQUIRED.includes(role) && <SelectItem value="none">Todas as cidades</SelectItem>}{data.cities.map((city) => <SelectItem key={city.id} value={String(city.id)}>{city.name}</SelectItem>)}</SelectContent></Select></Field>
+    <p className="text-xs leading-5 text-zinc-400 sm:col-span-2">{ROLE_HELP[role]}</p>
     {role === "Embaixador" && <Field label="Embaixador"><Select value={ambassadorId} onValueChange={setAmbassadorId}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Não vinculado</SelectItem>{data.ambassadors.filter((item) => cityId !== "none" && item.cityId === Number(cityId)).map((item) => <SelectItem key={item.id} value={String(item.id)}>{item.name}</SelectItem>)}</SelectContent></Select></Field>}
   </FormShell>;
 }
@@ -355,7 +362,7 @@ export function ExpansionDialog({ dialog, data, saving, onClose, onSave }: { dia
     {dialog?.name === "content" && <ContentForm data={data} saving={saving} onSave={onSave} />}
     {dialog?.name === "task" && <TaskForm data={data} saving={saving} onSave={onSave} />}
     {dialog?.name === "settings" && <SettingsForm data={data} saving={saving} onSave={onSave} />}
-    {dialog?.name === "user" && <UserForm data={data} saving={saving} onSave={onSave} />}
+    {dialog?.name === "user" && <UserForm key={dialog.entityId ?? "new"} data={data} userId={dialog.entityId} saving={saving} onSave={onSave} />}
   </DialogContent></Dialog>;
 }
 

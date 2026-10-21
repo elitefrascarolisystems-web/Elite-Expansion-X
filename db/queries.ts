@@ -51,6 +51,14 @@ function nullableText(value: unknown) {
   return value === null || value === undefined || value === "" ? null : String(value);
 }
 
+/** Situação do último link de acesso, a partir de "vence_em|usado_em". */
+function linkState(info: string | null): Pick<UserProfileRecord, "linkStatus" | "linkExpiresAt"> {
+  if (!info) return { linkStatus: "Nenhum", linkExpiresAt: null };
+  const [expiresAt, usedAt] = info.split("|");
+  if (usedAt) return { linkStatus: "Usado", linkExpiresAt: expiresAt };
+  return { linkStatus: expiresAt > new Date().toISOString() ? "Válido" : "Vencido", linkExpiresAt: expiresAt };
+}
+
 export async function getDashboardData(access: AccessView): Promise<DashboardData> {
   const scope = cityScope(access, "c.id");
   const tableScope = cityScope(access);
@@ -181,9 +189,11 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     `, [access.organizationId,...taskWhere.values]),
     access.role === "Administrador" ? rows(`
       SELECT u.id, u.email, u.name, u.role, u.city_id, COALESCE(c.name, '') AS city_name,
-        u.ambassador_id, COALESCE(a.name, '') AS ambassador_name, u.active, u.created_at,
-        EXISTS(SELECT 1 FROM user_credentials cr WHERE cr.email = lower(u.email)) AS has_password
+        u.ambassador_id, COALESCE(a.name, '') AS ambassador_name, u.active, u.created_at, u.title, u.mentorship_cycle,
+        cr.email IS NOT NULL AS has_password, cr.last_login_at,
+        (SELECT pl.expires_at||'|'||COALESCE(pl.used_at,'') FROM password_links pl WHERE pl.email = lower(u.email) ORDER BY pl.created_at DESC LIMIT 1) AS link_info
       FROM app_users u
+      LEFT JOIN user_credentials cr ON cr.email = lower(u.email)
       LEFT JOIN cities c ON c.id = u.city_id
       LEFT JOIN ambassadors a ON a.id = u.ambassador_id
       WHERE u.organization_id=?
@@ -316,6 +326,8 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     cityId: asNullableNumber(row.city_id), cityName: String(row.city_name ?? ""),
     ambassadorId: asNullableNumber(row.ambassador_id), ambassadorName: String(row.ambassador_name ?? ""),
     active: Boolean(row.active), hasPassword: Number(row.has_password) === 1, createdAt: String(row.created_at),
+    title: String(row.title ?? ""), mentorshipCycle: asNumber(row.mentorship_cycle ?? 0), lastLoginAt: nullableText(row.last_login_at),
+    ...linkState(nullableText(row.link_info)),
   }));
 
   const auditLogs: AuditRecord[] = auditRows.map((row) => ({
@@ -328,10 +340,12 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
   const advisors = access.role === "Administrador" && access.organizationId !== 1 ? await listActiveAdvisors() : [];
 
   const people = ["Administrador", "Coordenação", "Líder"].includes(access.role) ? await rows(`SELECT id, city_id, name FROM territory_people WHERE (${tableScope.where}) AND (leader=1 OR EXISTS(SELECT 1 FROM ambassadors a WHERE a.person_id=territory_people.id) OR NOT EXISTS(SELECT 1 FROM leads l WHERE l.person_id=territory_people.id AND l.consent_revoked_at IS NOT NULL)) ORDER BY name LIMIT 200`, tableScope.values) : [];
-  const places = ["Administrador", "Coordenação", "Líder"].includes(access.role) ? await rows(`SELECT id, city_id, name, place_type FROM businesses WHERE organization_id = ? AND (${tableScope.where}) ORDER BY name LIMIT 1000`, [access.organizationId, ...tableScope.values]) : [];
+  const mapping = ["Administrador", "Coordenação", "Líder"].includes(access.role) ? (await rows(`SELECT COUNT(*) AS people, COUNT(place_id) AS linked FROM territory_people WHERE ${tableScope.where}`, tableScope.values))[0] : undefined;
+  const places = ["Administrador", "Coordenação", "Líder", "Comercial"].includes(access.role) ? await rows(`SELECT id, city_id, name, place_type FROM businesses WHERE organization_id = ? AND (${tableScope.where}) ORDER BY name LIMIT 1000`, [access.organizationId, ...tableScope.values]) : [];
   return {
     people: people.map(p => ({id: String(p.id), cityId: Number(p.city_id), name: String(p.name)})),
     places: places.map(p => ({id: String(p.id), cityId: Number(p.city_id), name: String(p.name), placeType: String(p.place_type)})),
+    mapping: mapping ? { people: asNumber(mapping.people), linked: asNumber(mapping.linked) } : undefined,
     access,
     settings,
     cities,
