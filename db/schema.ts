@@ -322,3 +322,17 @@ export const cityDecisions = sqliteTable('city_decisions', {
 export const organizationPlans = sqliteTable('organization_plans', {
  organizationId:integer('organization_id').primaryKey(),name:text('name'),userLimit:integer('user_limit'),cityLimit:integer('city_limit'),updatedBy:text('updated_by').notNull(),updatedAt:text('updated_at').notNull(),
 });
+// Address-book contacts awaiting authorization. Visible only to the person who imported them;
+// they never become leads, map points or metrics until consent is recorded through create_lead.
+export const prospectContacts = sqliteTable('prospect_contacts', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),ownerEmail:text('owner_email').notNull(),
+ cityId:integer('city_id').references(()=>cities.id,{onDelete:'set null'}),name:text('name').notNull(),whatsapp:text('whatsapp').notNull(),
+ email:text('email').notNull().default(''),tags:text('tags').notNull().default(''),temperature:text('temperature').notNull().default('Frio'),
+ status:text('status').notNull().default('A contatar'),note:text('note').notNull().default(''),source:text('source').notNull(),
+ lastContactedAt:text('last_contacted_at'),leadId:integer('lead_id').references(()=>leads.id,{onDelete:'set null'}),
+ version:integer('version').notNull().default(1),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
+},t=>[uniqueIndex('prospect_owner_whatsapp').on(t.organizationId,t.ownerEmail,t.whatsapp),index('prospect_owner_status').on(t.organizationId,t.ownerEmail,t.status)]);
+// People who asked not to be contacted. Only a salted hash of the number is kept, to block re-imports.
+export const contactOptouts = sqliteTable('contact_optouts', {
+ organizationId:integer('organization_id').notNull(),identityHash:text('identity_hash').notNull(),createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),
+},t=>[uniqueIndex('contact_optouts_identity').on(t.organizationId,t.identityHash)]);

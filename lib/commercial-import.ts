@@ -1,10 +1,12 @@
-export function parseCsv(text:string):string[][]{
- if(text.length>1_000_000)throw new Error('Arquivo muito grande. Limite: 1 MB.');
+type GridLimits={rows:number;columns:number;bytes:number};
+const BUSINESS_LIMITS:GridLimits={rows:50,columns:30,bytes:1_000_000};
+export function parseCsv(text:string,limits:GridLimits=BUSINESS_LIMITS):string[][]{
+ if(text.length>limits.bytes)throw new Error(`Arquivo muito grande. Limite: ${limits.bytes/1_000_000} MB.`);
  const first=text.split(/\r?\n/,1)[0],sep=first.includes(';')?';':',';const rows:string[][]=[];let row:string[]=[],value='',quoted=false;
- for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){value+='"';i++;}else if(!value||quoted)quoted=!quoted;else throw new Error('Aspas inválidas no CSV.');}else if(c===sep&&!quoted){row.push(value);value='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(value);if(row.some(v=>v.trim()))rows.push(row);row=[];value='';}else value+=c;if(rows.length>51)throw new Error('Limite de 50 registros por arquivo.');}
- if(quoted)throw new Error('Aspas não fechadas no CSV.');row.push(value);if(row.some(v=>v.trim()))rows.push(row);return validateGrid(rows);
+ for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){value+='"';i++;}else if(!value||quoted)quoted=!quoted;else throw new Error('Aspas inválidas no CSV.');}else if(c===sep&&!quoted){row.push(value);value='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(value);if(row.some(v=>v.trim()))rows.push(row);row=[];value='';}else value+=c;if(rows.length>limits.rows+1)throw new Error(`Limite de ${limits.rows} registros por arquivo.`);}
+ if(quoted)throw new Error('Aspas não fechadas no CSV.');row.push(value);if(row.some(v=>v.trim()))rows.push(row);return validateGrid(rows,limits);
 }
-function validateGrid(rows:string[][]){if(rows.length<2||rows.length>51||rows.some(r=>r.length>30||r.some(c=>c.length>2000)))throw new Error('Use cabeçalho e até 50 linhas, com até 30 colunas.');return rows.map(r=>r.map(v=>v.replace(/^\uFEFF/,'').trim()));}
+function validateGrid(rows:string[][],limits:GridLimits=BUSINESS_LIMITS){if(rows.length<2||rows.length>limits.rows+1||rows.some(r=>r.length>limits.columns||r.some(c=>c.length>2000)))throw new Error(`Use cabeçalho e até ${limits.rows} linhas, com até ${limits.columns} colunas.`);return rows.map(r=>r.map(v=>v.replace(/^\uFEFF/,'').trim()));}
 export async function parseBusinessFile(file:File){
  if(file.size>1_000_000)throw new Error('Limite: 1 MB.');if(/\.csv$/i.test(file.name))return parseCsv(await file.text());if(!/\.xlsx$/i.test(file.name))throw new Error('Selecione CSV ou XLSX, sem macros.');
  const {unzipSync,strFromU8}=await import('fflate');let total=0;
