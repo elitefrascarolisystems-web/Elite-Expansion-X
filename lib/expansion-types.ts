@@ -1,4 +1,7 @@
-export const USER_ROLES = ["Administrador", "Coordenação", "Líder", "Embaixador", "Comercial"] as const;
+export const USER_ROLES = ["Administrador", "Coordenação", "Líder", "Embaixador", "Comercial", "Mentorado", "Assinante"] as const;
+/** Clientes da Elite com área própria: nunca acessam os dados da equipe. */
+export const PORTAL_ROLES = ["Mentorado", "Assinante"] as const;
+export function isPortalRole(role: string): role is (typeof PORTAL_ROLES)[number] { return (PORTAL_ROLES as readonly string[]).includes(role); }
 export type UserRole = (typeof USER_ROLES)[number];
 
 export type AccessView = {
@@ -23,6 +26,9 @@ export type AccessView = {
   title?: string;
   /** Já viu a tela de boas-vindas nesta organização. */
   welcomed?: boolean;
+  /** Portal: pessoa do mapa e empresa assinante ligadas a este login. */
+  personId?: string | null;
+  businessId?: string | null;
 };
 
 export type SettingsView = {

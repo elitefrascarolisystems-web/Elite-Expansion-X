@@ -1,6 +1,6 @@
 import { ZodError } from "zod";
 import { getCurrentUser } from "@/app/auth";
-import { getUserAccess } from "@/db/access";
+import { getTeamAccess } from "@/db/access";
 import { JourneyError, startAttendance } from "@/db/journey";
 import { ActionError } from "@/db/mutations";
 import { CommercialError } from "@/db/commercial";
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
     if (!user) return Response.json({ error: "Entre para acessar." }, { status: 401, headers });
-    const access = await getUserAccess(user.email, user.displayName, organizationFromRequest(request));
+    const access = await getTeamAccess(user.email, user.displayName, organizationFromRequest(request));
     if (!access) return Response.json({ error: "Acesso não autorizado." }, { status: 403, headers });
     const body = await request.json().catch(() => null) as { action?: unknown; data?: unknown } | null;
     if (body?.action !== "start") return Response.json({ error: "Ação não disponível." }, { status: 400, headers });

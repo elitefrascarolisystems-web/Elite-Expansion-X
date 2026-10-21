@@ -5,7 +5,7 @@ import { ArrowRight, BookOpen, Check, Compass, LoaderCircle, MapPin, ShieldCheck
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import type { AccessView, DashboardData } from "@/lib/expansion-types";
+import { isPortalRole, type AccessView, type DashboardData } from "@/lib/expansion-types";
 import { tenantFetch } from "@/lib/tenant-request";
 
 export const GUIDE_PATH = "/guia";
@@ -14,7 +14,7 @@ type Step = { title: string; detail: string; done: boolean; action: string; tab:
 
 /** Ordem de trabalho da plataforma, marcada sozinha a partir do que já foi cadastrado. */
 export function setupSteps(data: DashboardData): Step[] {
-  const others = data.users.filter((user) => user.email.toLowerCase() !== data.access.email.toLowerCase() && user.active);
+  const others = data.users.filter((user) => user.email.toLowerCase() !== data.access.email.toLowerCase() && user.active && !isPortalRole(user.role));
   const entered = others.filter((user) => user.hasPassword).length;
   const places = data.places ?? [];
   const hubs = places.filter((place) => place.placeType !== "Empresa").length;
@@ -72,6 +72,9 @@ const ROLE_WELCOME: Record<AccessView["role"], { what: string; steps: string[]; 
     steps: ["Use o botão “Mapear”: escolha a cidade e o local (empresa, escritório ou network, com tipo e setor).", "No mesmo passo a passo, cadastre as pessoas do local com o vínculo (sócio, colaborador, mentorado...).", "Em Vendas e relacionamento, siga cada lead com o roteiro do Método F.E.C.H.A."],
     tab: "mapear", start: "Mapear o primeiro local",
   },
+  // Portal: as boas-vindas ficam no próprio portal (client-portal.tsx); aqui só para completar o tipo.
+  Mentorado: { what: "Sua área de mentoria na Elite.", steps: [], tab: "visao", start: "Começar" },
+  Assinante: { what: "A área da sua empresa na Elite.", steps: [], tab: "visao", start: "Começar" },
   Embaixador: {
     what: "Você indica pessoas para a Elite e acompanha suas tarefas.",
     steps: ["Aceite as regras e conclua o treinamento.", "Use seu link de indicação.", "Cumpra as tarefas da semana."],

@@ -3,7 +3,7 @@ import "./zod-pt";
 import { TEMPERATURES } from "./commercial";
 
 /** Canais de origem aceitos no lead (os mesmos do cadastro de lead). */
-export const LEAD_CHANNELS = ["Mídia paga", "Embaixador", "Parceiro", "Evento", "Conteúdo", "Orgânico", "Outro"] as const;
+export const LEAD_CHANNELS = ["Mídia paga", "Embaixador", "Parceiro", "Evento", "Conteúdo", "Orgânico", "Indicação", "Outro"] as const;
 
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Informe a data no formato AAAA-MM-DD.");
 

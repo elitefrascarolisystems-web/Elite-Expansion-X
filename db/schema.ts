@@ -68,6 +68,13 @@ export const appUsers = sqliteTable("app_users", {
   mentorshipCycle: integer("mentorship_cycle").notNull().default(0),
   /** Quando a pessoa fechou a tela de boas-vindas nesta organização. */
   welcomedAt: text("welcomed_at"),
+  /** Portal (Mentorado/Assinante): a pessoa do mapa ou a empresa assinante ligada a este login. */
+  personId: text("person_id"),
+  businessId: text("business_id"),
+  /** Portal: quem da Elite acompanha esta pessoa ou empresa, e o próximo encontro combinado. */
+  portalOwnerEmail: text("portal_owner_email").notNull().default(""),
+  nextMeetingAt: text("next_meeting_at"),
+  nextMeetingNote: text("next_meeting_note").notNull().default(""),
   createdBy: text("created_by").notNull().default(""),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
@@ -171,6 +178,8 @@ export const contents = sqliteTable("contents", {
   url: text("url").notNull().default(""),
   instructions: text("instructions").notNull().default(""),
   expiresAt: text("expires_at"),
+  /** Para quem o material aparece: Embaixadores, Mentorados, Assinantes ou Todos. */
+  audience: text("audience").notNull().default("Embaixadores"),
   createdBy: text("created_by").notNull().default(""),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [index("contents_city_idx").on(table.cityId)]);
@@ -372,3 +381,15 @@ export const followupEvents = sqliteTable('followup_events', {
  actorEmail:text('actor_email').notNull(),requestJson:text('request_json').notNull(),
  action:text('action').notNull(),note:text('note').notNull(),beforeJson:text('before_json').notNull(),afterJson:text('after_json').notNull(),createdAt:text('created_at').notNull(),
 },t=>[index('followup_history').on(t.organizationId,t.opportunityId,t.createdAt)]);
+
+/** Portal: etapas da jornada de cada público (Mentorados ou Assinantes), definidas pela Elite. */
+export const portalSteps = sqliteTable('portal_steps', {
+ id:integer('id').primaryKey({autoIncrement:true}),organizationId:integer('organization_id').notNull(),audience:text('audience').notNull(),
+ title:text('title').notNull(),description:text('description').notNull().default(''),position:integer('position').notNull().default(0),
+ createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),
+},(table)=>[index('portal_steps_org_idx').on(table.organizationId,table.audience)]);
+/** Portal: etapas que cada membro já concluiu. */
+export const portalProgress = sqliteTable('portal_progress', {
+ userId:integer('user_id').notNull().references(()=>appUsers.id,{onDelete:'cascade'}),stepId:integer('step_id').notNull().references(()=>portalSteps.id,{onDelete:'cascade'}),
+ doneAt:text('done_at').notNull(),
+},(table)=>[uniqueIndex('portal_progress_unique').on(table.userId,table.stepId)]);

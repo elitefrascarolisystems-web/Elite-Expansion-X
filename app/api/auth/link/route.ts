@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getCurrentUser } from "@/app/auth";
-import { getUserAccess } from "@/db/access";
+import { getTeamAccess } from "@/db/access";
 import { AuthError, createPasswordLink, LINK_HOURS } from "@/db/auth";
 import { sameOrigin } from "@/lib/session-cookie";
 import { organizationFromRequest } from "@/lib/tenant-request";
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
     if (!user) return Response.json({ error: "Entre para acessar." }, { status: 401, headers });
-    const access = await getUserAccess(user.email, user.displayName, organizationFromRequest(request));
+    const access = await getTeamAccess(user.email, user.displayName, organizationFromRequest(request));
     if (!access) return Response.json({ error: "Acesso não autorizado." }, { status: 403, headers });
     const v = body.safeParse(await request.json().catch(() => null));
     if (!v.success) return Response.json({ error: "E-mail inválido." }, { status: 400, headers });

@@ -73,7 +73,17 @@ Correção feita na validação: o Executivo de Vendas não conseguia iniciar at
 
 Testes automáticos: 78 passando. Não verificável neste ambiente (sem internet): imagens do mapa de fundo, busca de endereço real e QR Code — conferir no primeiro uso.
 
-## 8. Pendências para depois do lançamento
+## 8. Portal de mentorados e assinantes
+
+Mentorados exclusivos e empresas assinantes têm um **portal só deles**: a jornada (etapas que marcam como concluídas), o próximo encontro, o contato na Elite, os materiais liberados e o botão **Indicar alguém**. Eles **não veem nada** da operação da equipe.
+
+1. **Convidar** — *Time e acessos* → *Convidar equipe*, com a função `Mentorado` ou `Assinante` (ex.: `Marina Souza; marina@...; Mentorada exclusiva; Esmeraldas; ; 2`). A mensagem do convite já fala do portal.
+2. **Montar a jornada** — aba *Portal* → *Jornada* de cada público. Dá para começar com a sugestão e ajustar ao método Elite.
+3. **Ligar cada membro** — aba *Portal* → *Editar*: contato na Elite, próximo encontro e, para assinantes, a empresa.
+4. **Materiais** — *Operação local* → *Material*, com *Para quem: Mentorados, Assinantes ou Todos* e situação *Aprovado*.
+5. **Indicações** — o que o membro indica entra como lead com origem *Indicação*, direto na agenda do contato dele na Elite.
+
+## 9. Pendências para depois do lançamento
 
 - E-mails da Flávia e do Fabricio para gerar os logins (ou convidar pela tela).
 - Decidir se este endereço de teste vira o oficial ou se criamos um endereço definitivo.

@@ -1,7 +1,7 @@
 import {organizationFromRequest} from '@/lib/tenant-request';
 import { env } from 'cloudflare:workers';
 import {getCurrentUser} from '@/app/auth';
-import { getUserAccess } from '@/db/access';
+import { getTeamAccess } from '@/db/access';
 import { canAccessCity } from '@/lib/expansion-permissions';
 import { database } from '@/db/runtime';
 export const dynamic='force-dynamic';
@@ -10,7 +10,7 @@ export async function POST(request:Request){
  try{
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Origem não permitida.'},{status:403,headers});
   const u=await getCurrentUser();if(!u)return Response.json({error:'Entre para acessar.'},{status:401,headers});
-  const a=await getUserAccess(u.email,u.displayName,organizationFromRequest(request));if(!a||!['Administrador','Coordenação','Líder','Comercial'].includes(a.role))return Response.json({error:'Acesso não autorizado.'},{status:403,headers});
+  const a=await getTeamAccess(u.email,u.displayName,organizationFromRequest(request));if(!a||!['Administrador','Coordenação','Líder','Comercial'].includes(a.role))return Response.json({error:'Acesso não autorizado.'},{status:403,headers});
   const body=await request.json();if(!Number.isInteger(body.cityId)||!canAccessCity(a,body.cityId))return Response.json({error:'Cidade fora do seu acesso.'},{status:403,headers});
   if(body.kind==='person')return Response.json({error:'Pessoas usam somente o centro da cidade. Não envie dados pessoais para geocodificação.'},{status:400,headers});
   const query=String(body.query??'').trim();if(query.length<3||query.length>160)return Response.json({error:'Informe um bairro ou local comercial de 3 a 160 caracteres.'},{status:400,headers});

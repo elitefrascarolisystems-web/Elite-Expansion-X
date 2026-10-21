@@ -1,6 +1,6 @@
 import {organizationFromRequest} from '@/lib/tenant-request';
 import {getCurrentUser} from '@/app/auth';
-import { getUserAccess } from "@/db/access";
+import { getTeamAccess } from "@/db/access";
 import { ActionError, executeAction } from "@/db/mutations";
 import { getDashboardData } from "@/db/queries";
 import { actionNameSchema, parseActionPayload } from "@/lib/expansion-validation";
@@ -19,7 +19,7 @@ export async function GET(request:Request) {
  try {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Acesso não autorizado." }, { status: 401, headers: responseHeaders });
-  const access = await getUserAccess(user.email, user.displayName,organizationFromRequest(request));
+  const access = await getTeamAccess(user.email, user.displayName,organizationFromRequest(request));
   if (!access) return Response.json({ error: "Seu perfil ainda não foi liberado dentro da plataforma." }, { status: 403, headers: responseHeaders });
   return Response.json({ data: await getDashboardData(access) }, { headers: responseHeaders });
  } catch { return Response.json({error:"Não foi possível carregar os dados. Tente novamente."},{status:503,headers:responseHeaders}); }
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   try {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Acesso não autorizado." }, { status: 401, headers: responseHeaders });
-  const access = await getUserAccess(user.email, user.displayName,organizationFromRequest(request));
+  const access = await getTeamAccess(user.email, user.displayName,organizationFromRequest(request));
   if (!access) return Response.json({ error: "Seu perfil ainda não foi liberado dentro da plataforma." }, { status: 403, headers: responseHeaders });
 
     const payload = (await request.json()) as { action?: unknown; data?: unknown };

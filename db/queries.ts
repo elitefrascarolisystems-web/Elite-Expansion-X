@@ -90,7 +90,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
       ? { where: "1 = 0", values: [] }
       : { where: scope.where.replaceAll("c.id", "t.city_id"), values: scope.values };
   const contentWhere = access.role === "Embaixador"
-    ? { where: `x.status = 'Aprovado' AND (x.city_id IS NULL OR ${scope.where})`, values: scope.values }
+    ? { where: `x.status = 'Aprovado' AND x.audience IN ('Embaixadores','Todos') AND (x.city_id IS NULL OR ${scope.where})`, values: scope.values }
     : { where: `x.city_id IS NULL OR ${scope.where}`, values: scope.values };
 
   const [

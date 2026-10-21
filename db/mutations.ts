@@ -451,11 +451,11 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     const status = access.role === "Líder" ? "Em revisão" : text(input, "status");
     const result = await db.prepare(`
       INSERT INTO contents
-        (organization_id, city_id, title, type, channel, version, status, url, instructions, expires_at, created_by, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (organization_id, city_id, title, type, channel, version, status, url, instructions, expires_at, audience, created_by, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       access.organizationId,cityId, text(input, "title"), text(input, "type"), text(input, "channel"), text(input, "version"), status,
-      text(input, "url"), text(input, "instructions"), text(input, "expiresAt") || null, access.email, timestamp,
+      text(input, "url"), text(input, "instructions"), text(input, "expiresAt") || null, text(input, "audience") || "Embaixadores", access.email, timestamp,
     ).run();
     await audit(db, access.organizationId, access.email, action, "content", asNumber(result.meta.last_row_id), `Conteúdo ${text(input, "title")} criado como ${status}.`);
     return;

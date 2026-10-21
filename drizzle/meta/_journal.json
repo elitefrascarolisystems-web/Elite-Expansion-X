@@ -120,6 +120,13 @@
       "when": 1792582175447,
       "tag": "0016_team_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1792596949678,
+      "tag": "0017_client_portal",
+      "breakpoints": true
     }
   ]
 }

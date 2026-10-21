@@ -25,17 +25,23 @@ Função Errada; errada@elite.invalid; Gerente`,cities);
   'Troque o e-mail de exemplo pelo e-mail real da pessoa.',
   'Embaixador precisa ser ligado ao cadastro dele: use "Adicionar pessoa".',
   'Cidade não cadastrada: "Contagem". Cadastre a cidade antes.',
-  'Função não reconhecida: "Gerente". Use Administrador, Coordenação, Líder ou Comercial (Executivo de Vendas).',
+  'Função não reconhecida: "Gerente". Use Administrador, Coordenação, Líder, Comercial (Executivo de Vendas), Mentorado ou Assinante.',
  ]);
  assert.equal(parseTeamLines('\n  \n',cities).length,0);
 });
 
 test('função, mentoria e mensagem de convite',()=>{
- assert.equal(roleFromText('Líder'),'Líder');assert.equal(roleFromText('lider'),'Líder');assert.equal(roleFromText('Executivo de vendas'),'Comercial');assert.equal(roleFromText('x'),null);
+ assert.equal(roleFromText('Líder'),'Líder');assert.equal(roleFromText('lider'),'Líder');assert.equal(roleFromText('Executivo de vendas'),'Comercial');assert.equal(roleFromText('Mentorada exclusiva'),'Mentorado');assert.equal(roleFromText('empresa assinante'),'Assinante');assert.equal(roleFromText('x'),null);
  assert.equal(mentorshipFromText(''),0);assert.equal(mentorshipFromText('não'),0);assert.equal(mentorshipFromText('sim'),1);assert.equal(mentorshipFromText('3'),3);assert.equal(mentorshipFromText('talvez'),null);assert.equal(mentorshipFromText('99'),null);
  assert.equal(mentorshipLabel(0),'');assert.equal(mentorshipLabel(2),'Mentoria · 2º ciclo');
  const msg=inviteMessage('Flávia Silva','https://elite.invalid/definir-senha#abc');
  assert.match(msg,/^Olá, Flávia! Seja bem-vindo\(a\) à Elite Expansion X/);
  assert.match(msg,/https:\/\/elite\.invalid\/entrar/);
  assert.match(inviteMessage('Ana','https://elite.invalid/definir-senha#abc',true),/novo link/);
+});
+
+test('convite de mentorado e assinante usa a mensagem do portal',()=>{
+ const msg=inviteMessage('Maria Souza','https://elite.invalid/definir-senha#abc',false,true);
+ assert.match(msg,/^Olá, Maria! Seu portal na Elite Frascaroli Academy está pronto/);
+ assert.match(msg,/https:\/\/elite\.invalid\/entrar/);
 });

@@ -5,6 +5,9 @@ import { getCurrentUser, SIGN_IN_PATH, signOutPath } from "@/app/auth";
 import { ExpansionDashboard } from "@/app/expansion-dashboard";
 import { getUserAccess } from "@/db/access";
 import { getDashboardData } from "@/db/queries";
+import { getPortalData } from "@/db/portal";
+import { ClientPortal } from "@/app/client-portal";
+import { isPortalRole } from "@/lib/expansion-types";
 import Image from "next/image";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +40,9 @@ export default async function Home() {
       </main>
     );
   }
+
+  // Mentorados e assinantes só têm o portal deles; nunca carregam os dados da equipe.
+  if (isPortalRole(access.role)) return <ClientPortal initialData={await getPortalData(access)} signOutPath={signOutPath()} />;
 
   const data = await getDashboardData(access);
 
