@@ -269,6 +269,8 @@ export const territoryPeople = sqliteTable("territory_people", {
   id: text("id").primaryKey(), cityId: integer("city_id").notNull().references(() => cities.id),
   name: text("name").notNull(), leader: integer("leader").notNull().default(0),
   referrerId: text("referrer_id"), createdBy: text("created_by").notNull(),
+  // Local (empresa, escritório, network) ao qual a pessoa se liga; no mapa ela aparece ali, nunca na residência.
+  placeId: text("place_id"), placeLink: text("place_link").notNull().default(""),
   createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
 }, t => [index("territory_people_city_idx").on(t.cityId), index("territory_people_referrer_idx").on(t.referrerId)]);
 export const territoryLocations = sqliteTable("territory_locations", {
@@ -296,6 +298,7 @@ export const territoryRoles = sqliteTable('territory_roles', {
 export const businesses = sqliteTable('businesses', {
  id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),cityId:integer('city_id').notNull().references(()=>cities.id),
  name:text('name').notNull(),segment:text('segment').notNull(),district:text('district').notNull().default(''),address:text('address').notNull().default(''),
+ placeType:text('place_type').notNull().default('Empresa'),sector:text('sector').notNull().default(''),
  source:text('source').notNull(),externalId:text('external_id'),identityKey:text('identity_key').notNull(),verifiedAt:text('verified_at'),
  ownerEmail:text('owner_email').notNull(),status:text('status').notNull(),nextAction:text('next_action').notNull().default(''),
  partnerId:integer('partner_id').references(()=>partners.id),version:integer('version').notNull().default(1),createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),

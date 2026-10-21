@@ -10,6 +10,8 @@ export type TerritoryRecord = {
   name: string; roles: string[]; status: string; responsible: string; lastActivity: string;
   nextAction: string; dueDate: string; location: TerritoryLocation | null;
   ambassadorId: number | null; leadId: number | null; referrerId: string | null;referrerName?:string;
+  /** Local (empresa, escritório, network) ao qual a pessoa se liga. */
+  place?: { id: string; name: string; type: string; link: string };
 };
 export type TerritoryPoint={latitude:number;longitude:number;count:number;people:number;key:string;kind:TerritoryKind;roles:string[];status:string};
 export type TerritoryResponse = {

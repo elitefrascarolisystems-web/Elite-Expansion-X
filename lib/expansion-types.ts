@@ -242,6 +242,8 @@ export type AuditRecord = {
 
 export type DashboardData = {
   people?: Array<{id: string; cityId: number; name: string}>;
+  /** Empresas, escritórios e networks para vincular pessoas a um local. */
+  places?: Array<{id: string; cityId: number; name: string; placeType: string}>;
   access: AccessView;
   settings: SettingsView;
   cities: CityRecord[];

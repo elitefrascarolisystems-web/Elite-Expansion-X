@@ -22,7 +22,7 @@ test("ships the territorial map and existing expansion identity", async () => {
 
   assert.match(clientFiles, /Mapa territorial/);
   assert.match(clientFiles, /elite-academy-official\.png/);
-  assert.match(mapSource, /Localização representativa da cidade/);
+  assert.match(mapSource, /nunca na residência/);
   assert.match(mapSource, /Não informe residência/);
   assert.match(layout, /elite-academy-official\.png/);
 });

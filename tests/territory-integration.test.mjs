@@ -349,3 +349,30 @@ test('mapa com mais de 100 pessoas respeita o limite de 100 parâmetros do D1',a
  const first=await m.getTerritory(m.access,new URLSearchParams('category=person'));
  assert.equal(first.people,150);assert.ok(first.records.length>=150);
 });
+
+test('locais com tipo e setor no mapa; pessoa aparece no local vinculado, nunca na residência',async()=>{
+ const m=await modules(),c=await vite.ssrLoadModule('/db/commercial.ts');
+ const business=(id,name,placeType,sector,cityId=1)=>c.saveCommercial(m.access,'business',{id,cityId,name,segment:'Atividade teste',source:'Cadastro manual',ownerEmail:m.access.email,status:'Assinante',placeType,sector,publicBusiness:true});
+ const office=crypto.randomUUID(),shop=crypto.randomUUID(),other=crypto.randomUUID();
+ await business(office,'Escritório Elite Centro','Escritório Elite','');
+ await business(shop,'Clínica Teste','Empresa','Saúde');
+ await business(other,'Empresa de outra cidade','Empresa','Tecnologia',2);
+ await assert.rejects(business(crypto.randomUUID(),'Sem setor válido','Empresa','Setor inventado'));
+ await m.mutateTerritory(m.access,'location',{key:'business:'+office,latitude:-19.76,longitude:-44.31,region:'Centro',precision:'Local comercial',source:'Pino conferido',validated:true,authorized:true,visibility:'Equipe'});
+ let map=await m.getTerritory(m.access,new URLSearchParams('category=business'));
+ assert.deepEqual(map.records.find(r=>r.id===office).roles,['Escritório Elite']);
+ assert.deepEqual(map.records.find(r=>r.id===shop).roles,['Empresa','Saúde']);
+ assert.equal((await m.getTerritory(m.access,new URLSearchParams('category=Saúde'))).records.length,1,'filtro por setor');
+ assert.equal((await m.getTerritory(m.access,new URLSearchParams('layers=Escritório Elite'))).records.length,1,'camada por tipo de local');
+ // Pessoa vinculada ao escritório aparece no ponto do escritório; sem local, no centro da cidade.
+ const linked=await m.mutateTerritory(m.access,'person',{...person('Mentorada do escritório'),placeId:office,placeLink:'Mentorado'});
+ const loose=await m.mutateTerritory(m.access,'person',person('Pessoa sem local'));
+ map=await m.getTerritory(m.access,new URLSearchParams('category=person'));
+ const a=map.records.find(r=>r.id===linked.id),b=map.records.find(r=>r.id===loose.id);
+ assert.equal(a.location.latitude,-19.76);assert.ok(a.roles.includes('Mentorado'),'vínculo Mentorado dá o papel e o ícone de mentorado');assert.deepEqual(a.place,{id:office,name:'Escritório Elite Centro',type:'Escritório Elite',link:'Mentorado'});
+ assert.notEqual(b.location.latitude,-19.76);assert.equal(b.place,undefined);
+ await assert.rejects(m.mutateTerritory(m.access,'person',{...person('Vínculo errado'),placeId:other,placeLink:'Colaborador'}),/mesma cidade/);
+ await assert.rejects(m.mutateTerritory(m.access,'person',{...person('Sem vínculo'),placeId:shop}),/vínculo/);
+ // Coordenada pessoal continua proibida.
+ await assert.rejects(m.mutateTerritory(m.access,'location',{key:'person:'+loose.id,latitude:-19.7,longitude:-44.3,region:'',precision:'Região aproximada',source:'Teste',validated:true,authorized:true,visibility:'Equipe'}));
+});

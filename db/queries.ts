@@ -328,8 +328,10 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
   const advisors = access.role === "Administrador" && access.organizationId !== 1 ? await listActiveAdvisors() : [];
 
   const people = ["Administrador", "Coordenação", "Líder"].includes(access.role) ? await rows(`SELECT id, city_id, name FROM territory_people WHERE (${tableScope.where}) AND (leader=1 OR EXISTS(SELECT 1 FROM ambassadors a WHERE a.person_id=territory_people.id) OR NOT EXISTS(SELECT 1 FROM leads l WHERE l.person_id=territory_people.id AND l.consent_revoked_at IS NOT NULL)) ORDER BY name LIMIT 200`, tableScope.values) : [];
+  const places = ["Administrador", "Coordenação", "Líder"].includes(access.role) ? await rows(`SELECT id, city_id, name, place_type FROM businesses WHERE organization_id = ? AND (${tableScope.where}) ORDER BY name LIMIT 1000`, [access.organizationId, ...tableScope.values]) : [];
   return {
     people: people.map(p => ({id: String(p.id), cityId: Number(p.city_id), name: String(p.name)})),
+    places: places.map(p => ({id: String(p.id), cityId: Number(p.city_id), name: String(p.name), placeType: String(p.place_type)})),
     access,
     settings,
     cities,

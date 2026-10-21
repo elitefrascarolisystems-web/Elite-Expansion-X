@@ -1,5 +1,6 @@
 import "./zod-pt";
 import { z } from 'zod';
+import { PERSON_ROLES, PLACE_LINKS } from './places';
 const text = z.string().trim().max(200);
 const id = z.number().int().positive();
 export const locationSchema = z.object({
@@ -18,8 +19,9 @@ export const locationSchema = z.object({
 export const personSchema = z.object({
   id: z.string().uuid().optional(), requestId: z.string().uuid().optional(), cityId: id, name: text.min(2),
   leader: z.boolean().default(false), referrerId: z.string().uuid().nullable().default(null),
+  placeId: z.string().uuid().nullable().default(null), placeLink: z.union([z.enum(PLACE_LINKS), z.literal('')]).default(''),
   authorized: z.literal(true),
-});
+}).refine(v => !v.placeId || v.placeLink !== '', { message: 'Informe o vínculo da pessoa com o local.', path: ['placeLink'] });
 export const activitySchema = z.object({
   id: z.string().uuid().optional(), requestId: z.string().uuid().optional(), cityId: id, personId: z.string().uuid().nullable().default(null),
   name: text.min(2), category: z.enum(['Ação','Visita','Follow-up','Interação','Missão']),
@@ -31,4 +33,4 @@ export function displayedCoordinates(kind: string, latitude: number | null, long
   // Personal coordinates are never accepted; reads resolve the city reference server-side.
   return kind === 'person' ? {latitude:null,longitude:null} : {latitude,longitude};
 }
-export const roleSchema=z.object({personId:z.string().uuid(),role:z.enum(['Mentor','Mentorado','Equipe','Parceiro','Vendedor']),status:z.enum(['Convidado','Em análise','Aprovado','Em treinamento','Ativo','Pausado','Inativo','Desligado']),responsible:text,source:text.min(3),authorized:z.literal(true)});
+export const roleSchema=z.object({personId:z.string().uuid(),role:z.enum(PERSON_ROLES),status:z.enum(['Convidado','Em análise','Aprovado','Em treinamento','Ativo','Pausado','Inativo','Desligado']),responsible:text,source:text.min(3),authorized:z.literal(true)});

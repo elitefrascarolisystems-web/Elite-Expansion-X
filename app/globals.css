@@ -332,6 +332,14 @@ button:disabled { cursor: not-allowed; }
 .territory-pin[data-kind=partner] { border-radius:9px; background:#235d48; color:white; }
 .territory-pin[data-kind=event],.territory-pin[data-kind=action] { border-radius:9px; background:#354884; color:white; }
 .territory-pin:focus-visible { outline:4px solid #d6b94f; outline-offset:3px; }
+/* Locais: forma quadrada e cor pelo tipo, para distinguir de pessoas (círculos) olhando de cima. */
+.territory-pin[data-kind=business] { border-radius:9px; background:#1d3f63; color:#fff; }
+.territory-pin[data-place="Escritório Elite"] { background:#c9a227; color:#111; border-color:#111; }
+.territory-pin[data-place="Network / comunidade"] { background:#5b3a8c; color:#fff; }
+.territory-pin[data-place="Instituição de ensino"] { background:#1f6f6a; color:#fff; }
+.territory-pin[data-place="Ponto de encontro"] { background:#8a4b14; color:#fff; }
+.territory-legend-group { margin-top:10px; }
+.territory-legend-group > p { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#a78624; margin-bottom:4px; }
 .territory-list { max-height:600px; overflow:auto; border-left:1px solid #36372c; }
 .territory-list button.record { display:block; width:100%; text-align:left; padding:15px 18px; border-bottom:1px solid #303126; }
 .territory-list button.record:hover,.territory-list button.record[aria-pressed=true] { background:#d6b94f16; }
