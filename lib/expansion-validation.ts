@@ -191,7 +191,7 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     url: webUrlOrEmpty.default(""),
     instructions: noteText,
     expiresAt: z.union([z.literal(""), date]).nullable().optional(),
-    audience: z.enum(["Embaixadores", "Mentorados", "Assinantes", "Todos"]).default("Embaixadores"),
+    audience: z.enum(["Embaixadores", "Mentorados", "Todos"]).default("Embaixadores"),
   }),
   create_task: z.object({
     cityId: optionalId,

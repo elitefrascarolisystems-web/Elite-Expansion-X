@@ -30,9 +30,8 @@ const ROLE_WORDS: [RegExp, UserRole][] = [
   [/^(embaixador|embaixadora)$/, "Embaixador"],
   [/^(comercial|vendas|vendedor|vendedora|(executivo|executiva) de vendas|consultor|consultora|sdr|closer)$/, "Comercial"],
   [/^(mentorado|mentorada|mentorado exclusivo|mentorada exclusiva)$/, "Mentorado"],
-  [/^(assinante|empresa assinante)$/, "Assinante"],
 ];
-const CANONICAL = new Set(["administrador", "coordenacao", "lider", "embaixador", "comercial", "mentorado", "assinante"]);
+const CANONICAL = new Set(["administrador", "coordenacao", "lider", "embaixador", "comercial", "mentorado"]);
 
 export function roleFromText(value: string): UserRole | null {
   const v = plain(value);
@@ -76,7 +75,7 @@ export function parseTeamLines(text: string, cities: { id: number; name: string 
     else if (!EMAIL.test(email)) row.error = "E-mail inválido.";
     else if (/@exemplo\.com$/.test(email)) row.error = "Troque o e-mail de exemplo pelo e-mail real da pessoa.";
     else if (seen.has(email)) row.error = "E-mail repetido na lista.";
-    else if (!role) row.error = `Função não reconhecida: "${roleText || "vazia"}". Use Administrador, Coordenação, Líder, Comercial (Executivo de Vendas), Mentorado ou Assinante.`;
+    else if (!role) row.error = `Função não reconhecida: "${roleText || "vazia"}". Use Administrador, Coordenação, Líder, Comercial (Executivo de Vendas) ou Mentorado.`;
     else if (role === "Embaixador") row.error = "Embaixador precisa ser ligado ao cadastro dele: use \"Adicionar pessoa\".";
     else if (plain(cityText) && !city && !["todas", "todas as cidades", "-"].includes(plain(cityText))) row.error = `Cidade não cadastrada: "${cityText}". Cadastre a cidade antes.`;
     else if (["Coordenação", "Líder"].includes(role) && !city) row.error = `${role} precisa de uma cidade.`;
@@ -93,12 +92,13 @@ export function firstName(name: string) {
 }
 
 /** Mensagem pronta para mandar o convite (WhatsApp ou e-mail). */
-export function inviteMessage(name: string, link: string, renewal = false, portal = false) {
-  if (portal && !renewal) return `Olá, ${firstName(name)}! Seu portal na Elite Frascaroli Academy está pronto: lá você acompanha sua jornada, o próximo encontro, os materiais e pode indicar pessoas. ` +
+export function inviteMessage(name: string, link: string, renewal = false, portal = false, organization = "") {
+  const org = organization || "Elite Expansion X";
+  if (portal && !renewal) return `Olá, ${firstName(name)}! Seu portal de mentoria na ${org} está pronto: lá você acompanha sua jornada, o próximo encontro, os materiais e pode indicar pessoas. ` +
     `Abra este link para criar sua senha (vale por 72 horas e só funciona uma vez): ${link}\n\nDepois, para entrar de novo, use ${new URL(link).origin}/entrar com seu e-mail e a senha que você criou.`;
   return renewal
     ? `Olá, ${firstName(name)}! Segue um novo link para você definir sua senha na Elite Expansion X. Ele vale por 72 horas e só funciona uma vez: ${link}`
-    : `Olá, ${firstName(name)}! Seja bem-vindo(a) à Elite Expansion X, a plataforma de expansão da Elite Frascaroli Academy. ` +
+    : `Olá, ${firstName(name)}! Seja bem-vindo(a) à Elite Expansion X, a plataforma de expansão${organization ? ` da ${organization}` : ""}. ` +
       `Abra este link para criar sua senha (vale por 72 horas e só funciona uma vez): ${link}\n\n` +
       `Depois, para entrar de novo, use ${new URL(link).origin}/entrar com seu e-mail e a senha que você criou.`;
 }

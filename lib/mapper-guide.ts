@@ -18,7 +18,7 @@ export const MAPPER_GUIDE: GuideSection[] = [
     ordered: true,
     items: [
       "Cidade: confira se a cidade já está cadastrada (aba Cidades). Se não estiver, peça ao administrador.",
-      "Local: use o botão “Mapear”, no topo. Escolha a cidade e depois o local: um já cadastrado ou um novo, com tipo (Empresa, Escritório Elite, Network / comunidade, Instituição de ensino ou Ponto de encontro), setor e endereço comercial.",
+      "Local: use o botão “Mapear”, no topo. Escolha a cidade e depois o local: um já cadastrado ou um novo, com tipo (Empresa, Escritório, Network / comunidade, Instituição de ensino ou Ponto de encontro), setor e endereço comercial.",
       "Ponto no mapa: busque o endereço e escolha o resultado certo. Se não achar, deixe pendente e valide depois em Mapa → local → “Validar localização”.",
       "Pessoas: no mesmo passo a passo, adicione as pessoas do local com o vínculo (sócio/dono, colaborador, mentorado, membro do network, responsável ou frequenta) e, se quiser, o papel (Mentorado, Mentor, Parceiro, Assinante, Network...).",
       "Nome repetido: se aparecer o aviso de que já existe alguém com esse nome na cidade, confira no mapa. Só salve se for mesmo outra pessoa.",
@@ -39,7 +39,7 @@ export const MAPPER_GUIDE: GuideSection[] = [
   {
     title: "Como ler o mapa",
     items: [
-      "Locais: dourado = Escritório Elite · roxo = Network / comunidade · azul = Empresa (o ícone mostra o setor) · verde-azulado = Instituição de ensino · marrom = Ponto de encontro.",
+      "Locais: dourado = Escritório · roxo = Network / comunidade · azul = Empresa (o ícone mostra o setor) · verde-azulado = Instituição de ensino · marrom = Ponto de encontro.",
       "Pessoas: o ícone mostra o papel principal (Líder, Embaixador, Mentorado, Assinante, Lead...).",
       "Use os filtros de categoria (Pessoas, Locais, Setores) para ver um grupo de cada vez.",
     ],

@@ -73,19 +73,31 @@ Correção feita na validação: o Executivo de Vendas não conseguia iniciar at
 
 Testes automáticos: 78 passando. Não verificável neste ambiente (sem internet): imagens do mapa de fundo, busca de endereço real e QR Code — conferir no primeiro uso.
 
-## 8. Portal de mentorados e assinantes
+## 8. Portal de mentorados
 
-Mentorados exclusivos e empresas assinantes têm um **portal só deles**: a jornada (etapas que marcam como concluídas), o próximo encontro, o contato na Elite, os materiais liberados e o botão **Indicar alguém**. Eles **não veem nada** da operação da equipe.
+Mentorados têm um **portal só deles**: a jornada (etapas que marcam como concluídas), o próximo encontro, o contato da equipe, os materiais liberados e o botão **Indicar alguém**. Eles **não veem nada** da operação da equipe.
 
-1. **Convidar** — *Time e acessos* → *Convidar equipe*, com a função `Mentorado` ou `Assinante` (ex.: `Marina Souza; marina@...; Mentorada exclusiva; Esmeraldas; ; 2`). A mensagem do convite já fala do portal.
-2. **Montar a jornada** — aba *Portal* → *Jornada* de cada público. Dá para começar com a sugestão e ajustar ao método Elite.
-3. **Ligar cada membro** — aba *Portal* → *Editar*: contato na Elite, próximo encontro e, para assinantes, a empresa.
-4. **Materiais** — *Operação local* → *Material*, com *Para quem: Mentorados, Assinantes ou Todos* e situação *Aprovado*.
-5. **Indicações** — o que o membro indica entra como lead com origem *Indicação*, direto na agenda do contato dele na Elite.
+1. **Convidar** — *Time e acessos* → *Convidar equipe*, com a função `Mentorado` (ex.: `Marina Souza; marina@...; Mentorada exclusiva; Esmeraldas; ; 2`). A mensagem do convite já fala do portal.
+2. **Montar a jornada** — aba *Portal* → *Jornada*. Dá para começar com a sugestão e ajustar ao método Elite.
+3. **Ligar cada mentorado** — aba *Portal* → *Editar*: contato da equipe e próximo encontro.
+4. **Materiais** — *Operação local* → *Material*, com *Para quem: Mentorados ou Todos* e situação *Aprovado*.
+5. **Indicações** — o que o mentorado indica entra como lead com origem *Indicação*, direto na agenda do contato dele.
 
-## 9. Pendências para depois do lançamento
+## 9. Empresas assinantes (a plataforma para outras empresas)
+
+A Elite Expansion X é independente de qualquer outra plataforma da Elite (como a Elite Map X). Uma **empresa assinante** usa a plataforma inteira, como a Elite usa, mas **em um ambiente só dela**: cidades, mapa, equipe, vendas, portal de mentorados e indicadores próprios, sem ver nada da Elite nem de outros assinantes.
+
+1. **Criar** — no topo, *Nova organização* (só os donos da plataforma veem): nome da empresa, nome e e-mail do responsável. A empresa começa vazia, com todos os recursos.
+2. **Liberar o acesso** — você entra no ambiente dela pela *Assessoria Elite* (aparece um aviso para o cliente) → *Time e acessos* → *Gerar link* do responsável. A mensagem fala da plataforma de expansão **da empresa**, não da Elite.
+3. **O responsável assume** — cria a senha, convida o próprio time e segue os *Primeiros passos* dele.
+4. **Acompanhar** — pela *Assessoria Elite*, a Elite pode ver e apoiar o cliente; cada alteração fica marcada no histórico dele, e a aba *Configurações* do cliente mostra quem da Elite tem acesso.
+5. **Cobrança** — a assinatura é cobrada fora da plataforma. Ainda não há botão para suspender um cliente que deixou de pagar (está nas pendências).
+
+## 10. Pendências para depois do lançamento
 
 - E-mails da Flávia e do Fabricio para gerar os logins (ou convidar pela tela).
 - Decidir se este endereço de teste vira o oficial ou se criamos um endereço definitivo.
 - Sistema de Prospecção Elite 1.0 / Banco de Ganchos (aguardando material).
-- Mapas impressos (A3/PDF) e logins para empresas assinantes e mentorados exclusivos.
+- Mapas impressos (A3/PDF).
+- Gestão das assinaturas na tela: suspender/reativar empresa, plano e limites (o servidor já tem a base).
+- Cobrança automática da assinatura e logo de cada empresa assinante (opcional).

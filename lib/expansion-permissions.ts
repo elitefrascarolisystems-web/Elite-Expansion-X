@@ -46,7 +46,6 @@ const roleActions: Record<AccessView["role"], readonly ActionName[]> = {
   Comercial: ["create_lead", "update_lead", "record_sale"],
   // Portal: nenhuma ação da equipe.
   Mentorado: [],
-  Assinante: [],
 };
 
 export function canPerform(access: AccessView, action: ActionName) {

@@ -2,9 +2,9 @@ import { z } from "zod";
 import "./zod-pt";
 
 /** Públicos do portal e de materiais. */
-export const PORTAL_AUDIENCES = ["Mentorados", "Assinantes"] as const;
-export const CONTENT_AUDIENCES = ["Embaixadores", "Mentorados", "Assinantes", "Todos"] as const;
-export const audienceOf = (role: string) => (role === "Assinante" ? "Assinantes" : "Mentorados");
+export const PORTAL_AUDIENCES = ["Mentorados"] as const;
+export const CONTENT_AUDIENCES = ["Embaixadores", "Mentorados", "Todos"] as const;
+export const audienceOf = (_role: string) => "Mentorados" as const;
 export const MAX_REFERRALS_PER_DAY = 20;
 
 const day = (value: string) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value);
@@ -16,7 +16,7 @@ export const referSchema = z.object({
   email: z.union([z.string().trim().toLowerCase().email().max(254), z.literal("")]).default(""),
   cityId: z.number().int().positive(),
   note: z.string().trim().max(500).default(""),
-  consent: z.literal(true, { message: "Confirme que a pessoa autorizou o contato da Elite." }),
+  consent: z.literal(true, { message: "Confirme que a pessoa autorizou o contato." }),
 }).refine((v) => Boolean(v.whatsapp.replace(/\D/g, "") || v.email), { message: "Informe o WhatsApp ou o e-mail de quem você está indicando.", path: ["whatsapp"] });
 
 export const stepSchema = z.object({
@@ -28,7 +28,6 @@ export const stepSchema = z.object({
 export const memberSchema = z.object({
   userId: z.number().int().positive(),
   personId: z.string().uuid().nullable().default(null),
-  businessId: z.string().uuid().nullable().default(null),
   ownerEmail: z.union([z.string().trim().toLowerCase().email(), z.literal("")]).default(""),
   nextMeetingAt: z.union([z.string().refine(day, "Informe data e hora do encontro."), z.literal(""), z.null()]).default(null),
   nextMeetingNote: z.string().trim().max(300).default(""),
@@ -36,10 +35,9 @@ export const memberSchema = z.object({
 
 export type PortalStep = { id: number; title: string; description: string; doneAt: string | null };
 export type PortalData = {
-  member: { name: string; email: string; role: "Mentorado" | "Assinante"; title: string; mentorshipCycle: number; cityName: string; welcomed: boolean; organizationName: string };
+  member: { name: string; email: string; role: "Mentorado"; title: string; mentorshipCycle: number; cityName: string; welcomed: boolean; organizationName: string };
   owner: { name: string; email: string; title: string } | null;
   nextMeeting: { at: string; note: string } | null;
-  company: { name: string; sector: string; placeType: string; district: string } | null;
   place: { name: string; link: string } | null;
   steps: PortalStep[];
   materials: { id: number; title: string; type: string; url: string; instructions: string }[];
@@ -48,5 +46,5 @@ export type PortalData = {
 };
 export type PortalAdminData = {
   steps: (Omit<PortalStep, "doneAt"> & { audience: string; position: number })[];
-  members: { userId: number; name: string; email: string; role: string; cityId: number | null; cityName: string; personId: string | null; personName: string; businessId: string | null; businessName: string; ownerEmail: string; nextMeetingAt: string | null; nextMeetingNote: string; done: number; total: number; referrals: number; hasPassword: boolean }[];
+  members: { userId: number; name: string; email: string; role: string; cityId: number | null; cityName: string; personId: string | null; personName: string; ownerEmail: string; nextMeetingAt: string | null; nextMeetingNote: string; done: number; total: number; referrals: number; hasPassword: boolean }[];
 };

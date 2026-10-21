@@ -11,7 +11,7 @@ const str = (v: unknown) => String(v ?? "");
 export class PortalError extends Error { constructor(message: string, public status = 400) { super(message); } }
 
 function member(access: AccessView) {
-  if (!access.active || !isPortalRole(access.role) || access.isAdvisory) throw new PortalError("Área exclusiva de mentorados e assinantes.", 403);
+  if (!access.active || !isPortalRole(access.role) || access.isAdvisory) throw new PortalError("Área exclusiva de mentorados.", 403);
   return access;
 }
 function admin(access: AccessView) {
@@ -22,7 +22,7 @@ const spDay = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Pa
 
 /* ---------- Portal do membro ---------- */
 
-/** Tudo o que o mentorado ou a empresa assinante vê: só os próprios dados, nada da operação da equipe. */
+/** Tudo o que o mentorado vê: só os próprios dados, nada da operação da equipe. */
 export async function getPortalData(access: AccessView): Promise<PortalData> {
   const a = member(access);
   const audience = audienceOf(a.role);
@@ -30,9 +30,8 @@ export async function getPortalData(access: AccessView): Promise<PortalData> {
     FROM app_users u JOIN organizations o ON o.id=u.organization_id LEFT JOIN cities c ON c.id=u.city_id WHERE u.id=? AND u.organization_id=?`, [a.id, a.organizationId]);
   if (!user) throw new PortalError("Perfil não encontrado.", 404);
   const ownerEmail = str(user.portal_owner_email);
-  const [owner, company, place, steps, materials, referrals, cities] = await Promise.all([
+  const [owner, place, steps, materials, referrals, cities] = await Promise.all([
     ownerEmail ? first("SELECT name,email,title FROM app_users WHERE organization_id=? AND lower(email)=lower(?) AND active=1", [a.organizationId, ownerEmail]) : Promise.resolve(undefined),
-    a.role === "Assinante" && user.business_id ? first("SELECT name,sector,place_type,district FROM businesses WHERE id=? AND organization_id=?", [str(user.business_id), a.organizationId]) : Promise.resolve(undefined),
     user.person_id ? first("SELECT b.name,p.place_link FROM territory_people p JOIN businesses b ON b.id=p.place_id WHERE p.id=? AND b.organization_id=?", [str(user.person_id), a.organizationId]) : Promise.resolve(undefined),
     rows(`SELECT s.id,s.title,s.description,pp.done_at FROM portal_steps s LEFT JOIN portal_progress pp ON pp.step_id=s.id AND pp.user_id=?
       WHERE s.organization_id=? AND s.audience=? ORDER BY s.position,s.id`, [a.id, a.organizationId, audience]),
@@ -46,10 +45,9 @@ export async function getPortalData(access: AccessView): Promise<PortalData> {
   ]);
   const meetingAt = user.next_meeting_at ? str(user.next_meeting_at) : "";
   return {
-    member: { name: str(user.name) || a.email, email: str(user.email), role: a.role as "Mentorado" | "Assinante", title: str(user.title), mentorshipCycle: Number(user.mentorship_cycle ?? 0), cityName: str(user.city_name), welcomed: Boolean(user.welcomed_at), organizationName: str(user.organization_name) },
+    member: { name: str(user.name) || a.email, email: str(user.email), role: "Mentorado", title: str(user.title), mentorshipCycle: Number(user.mentorship_cycle ?? 0), cityName: str(user.city_name), welcomed: Boolean(user.welcomed_at), organizationName: str(user.organization_name) },
     owner: owner ? { name: str(owner.name) || str(owner.email), email: str(owner.email), title: str(owner.title) } : null,
     nextMeeting: meetingAt ? { at: meetingAt, note: str(user.next_meeting_note) } : null,
-    company: company ? { name: str(company.name), sector: str(company.sector), placeType: str(company.place_type), district: str(company.district) } : null,
     place: place ? { name: str(place.name), link: str(place.place_link) } : null,
     steps: steps.map((s) => ({ id: Number(s.id), title: str(s.title), description: str(s.description), doneAt: s.done_at ? str(s.done_at) : null })),
     materials: materials.map((m) => ({ id: Number(m.id), title: str(m.title), type: str(m.type), url: str(m.url), instructions: str(m.instructions) })),
@@ -84,7 +82,7 @@ export async function portalAction(access: AccessView, action: string, input: un
     const normalizedEmail = v.email || null, normalizedWhatsapp = v.whatsapp.replace(/\D/g, "") || null;
     const conditions = [normalizedEmail && "normalized_email=?", normalizedWhatsapp && "normalized_whatsapp=?"].filter(Boolean).join(" OR ");
     const duplicate = await first(`SELECT id FROM leads WHERE city_id IN (SELECT id FROM cities WHERE organization_id=?) AND status<>'Cancelado' AND (${conditions}) LIMIT 1`, [a.organizationId, ...[normalizedEmail, normalizedWhatsapp].filter((x): x is string => Boolean(x))]);
-    if (duplicate) throw new PortalError("Essa pessoa já está em contato com a Elite. Obrigado pela indicação!", 409);
+    if (duplicate) throw new PortalError(`Essa pessoa já está em contato com a ${a.organizationName}. Obrigado pela indicação!`, 409);
     const user = await first("SELECT name,person_id,portal_owner_email FROM app_users WHERE id=?", [a.id]);
     // Quem indicou fica registrado na rede de indicações quando a pessoa dele está na mesma cidade.
     const referrer = user?.person_id ? await first("SELECT id FROM territory_people WHERE id=? AND city_id=?", [str(user.person_id), v.cityId]) : null;
@@ -96,8 +94,8 @@ export async function portalAction(access: AccessView, action: string, input: un
       db.prepare("INSERT INTO territory_people(id,city_id,name,referrer_id,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?)").bind(personId, v.cityId, v.name, referrer ? str(referrer.id) : null, a.email, now, now),
       db.prepare(`INSERT INTO leads(person_id,city_id,name,email,whatsapp,normalized_email,normalized_whatsapp,status,channel,source_label,campaign,utm_source,utm_medium,utm_campaign,consent_at,consent_source,consent_purpose,assigned_to_email,updated_at,created_by,created_at)
         VALUES(?,?,?,?,?,?,?,'Lead informado','Indicação',?,'','','','',?,?,?,?,?,?,?)`).bind(personId, v.cityId, v.name, v.email, v.whatsapp, normalizedEmail, normalizedWhatsapp,
-        `Indicação de ${str(user?.name) || a.email}${a.role === "Assinante" ? " (empresa assinante)" : " (mentorado)"}`, now,
-        `Indicação pelo portal; ${firstName} confirmou a autorização de contato`, "Contato da Elite Frascaroli Academy", owner ? str(owner.email).toLowerCase() : "", now, a.email, now),
+        `Indicação de ${str(user?.name) || a.email} (mentorado)`, now,
+        `Indicação pelo portal; ${firstName} confirmou a autorização de contato`, `Contato da ${a.organizationName}`, owner ? str(owner.email).toLowerCase() : "", now, a.email, now),
     ];
     await db.batch(statements);
     const lead = await first("SELECT id FROM leads WHERE person_id=?", [personId]);
@@ -123,18 +121,18 @@ export async function getPortalAdmin(access: AccessView): Promise<PortalAdminDat
   const a = admin(access);
   const [steps, members] = await Promise.all([
     rows("SELECT id,audience,title,description,position FROM portal_steps WHERE organization_id=? ORDER BY audience,position,id", [a.organizationId]),
-    rows(`SELECT u.id,u.name,u.email,u.role,u.city_id,COALESCE(c.name,'') AS city_name,u.person_id,COALESCE(p.name,'') AS person_name,u.business_id,COALESCE(b.name,'') AS business_name,
+    rows(`SELECT u.id,u.name,u.email,u.role,u.city_id,COALESCE(c.name,'') AS city_name,u.person_id,COALESCE(p.name,'') AS person_name,
         u.portal_owner_email,u.next_meeting_at,u.next_meeting_note,
         (SELECT COUNT(*) FROM portal_progress pp JOIN portal_steps s ON s.id=pp.step_id WHERE pp.user_id=u.id) AS done,
-        (SELECT COUNT(*) FROM portal_steps s WHERE s.organization_id=u.organization_id AND s.audience=CASE u.role WHEN 'Assinante' THEN 'Assinantes' ELSE 'Mentorados' END) AS total,
+        (SELECT COUNT(*) FROM portal_steps s WHERE s.organization_id=u.organization_id AND s.audience='Mentorados') AS total,
         (SELECT COUNT(*) FROM leads l WHERE lower(l.created_by)=lower(u.email) AND l.channel='Indicação') AS referrals,
         EXISTS(SELECT 1 FROM user_credentials cr WHERE cr.email=lower(u.email)) AS has_password
-      FROM app_users u LEFT JOIN cities c ON c.id=u.city_id LEFT JOIN territory_people p ON p.id=u.person_id LEFT JOIN businesses b ON b.id=u.business_id
-      WHERE u.organization_id=? AND u.role IN ('Mentorado','Assinante') AND u.active=1 ORDER BY u.role,u.name`, [a.organizationId]),
+      FROM app_users u LEFT JOIN cities c ON c.id=u.city_id LEFT JOIN territory_people p ON p.id=u.person_id
+      WHERE u.organization_id=? AND u.role='Mentorado' AND u.active=1 ORDER BY u.name`, [a.organizationId]),
   ]);
   return {
     steps: steps.map((s) => ({ id: Number(s.id), audience: str(s.audience), title: str(s.title), description: str(s.description), position: Number(s.position) })),
-    members: members.map((m) => ({ userId: Number(m.id), name: str(m.name), email: str(m.email), role: str(m.role), cityId: m.city_id === null ? null : Number(m.city_id), cityName: str(m.city_name), personId: m.person_id ? str(m.person_id) : null, personName: str(m.person_name), businessId: m.business_id ? str(m.business_id) : null, businessName: str(m.business_name), ownerEmail: str(m.portal_owner_email), nextMeetingAt: m.next_meeting_at ? str(m.next_meeting_at) : null, nextMeetingNote: str(m.next_meeting_note), done: Number(m.done), total: Number(m.total), referrals: Number(m.referrals), hasPassword: Number(m.has_password) === 1 })),
+    members: members.map((m) => ({ userId: Number(m.id), name: str(m.name), email: str(m.email), role: str(m.role), cityId: m.city_id === null ? null : Number(m.city_id), cityName: str(m.city_name), personId: m.person_id ? str(m.person_id) : null, personName: str(m.person_name), ownerEmail: str(m.portal_owner_email), nextMeetingAt: m.next_meeting_at ? str(m.next_meeting_at) : null, nextMeetingNote: str(m.next_meeting_note), done: Number(m.done), total: Number(m.total), referrals: Number(m.referrals), hasPassword: Number(m.has_password) === 1 })),
   };
 }
 
@@ -167,13 +165,12 @@ export async function portalAdminAction(access: AccessView, action: string, inpu
   }
   if (action === "set_member") {
     const v = memberSchema.parse(input);
-    const user = await first("SELECT id,role,city_id FROM app_users WHERE id=? AND organization_id=? AND role IN ('Mentorado','Assinante')", [v.userId, a.organizationId]);
+    const user = await first("SELECT id,role,city_id FROM app_users WHERE id=? AND organization_id=? AND role='Mentorado'", [v.userId, a.organizationId]);
     if (!user) throw new PortalError("Membro do portal não encontrado.", 404);
     if (v.personId && !(await first("SELECT p.id FROM territory_people p JOIN cities c ON c.id=p.city_id WHERE p.id=? AND c.organization_id=?", [v.personId, a.organizationId]))) throw new PortalError("Pessoa do mapa não encontrada.", 404);
-    if (v.businessId && !(await first("SELECT id FROM businesses WHERE id=? AND organization_id=?", [v.businessId, a.organizationId]))) throw new PortalError("Empresa não encontrada.", 404);
     if (v.ownerEmail && !(await first("SELECT id FROM app_users WHERE organization_id=? AND lower(email)=? AND active=1 AND role IN ('Administrador','Coordenação','Líder','Comercial')", [a.organizationId, v.ownerEmail]))) throw new PortalError("O responsável precisa ser da equipe Elite.", 400);
-    await db.prepare("UPDATE app_users SET person_id=?,business_id=?,portal_owner_email=?,next_meeting_at=?,next_meeting_note=? WHERE id=?")
-      .bind(v.personId, str(user.role) === "Assinante" ? v.businessId : null, v.ownerEmail, v.nextMeetingAt || null, v.nextMeetingNote, v.userId).run();
+    await db.prepare("UPDATE app_users SET person_id=?,portal_owner_email=?,next_meeting_at=?,next_meeting_note=? WHERE id=?")
+      .bind(v.personId, v.ownerEmail, v.nextMeetingAt || null, v.nextMeetingNote, v.userId).run();
     await audit(db, a.organizationId, a.email, "portal_member", "app_user", v.userId, "Vínculos e próximo encontro do portal atualizados.");
     return {};
   }

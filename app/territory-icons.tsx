@@ -5,7 +5,7 @@ import {placeIconLabel} from '@/lib/places';
 /** Pessoas: ícone pelo papel principal. */
 export const personIcons={Líder:Flag,Embaixador:Shield,Mentor:Compass,Mentorado:GraduationCap,Assinante:Gem,Equipe:Users,Vendedor:UserRound,Parceiro:Handshake,Network:Waypoints,Cliente:BadgeCheck,Lead:UserPlus,Pessoa:UserRound};
 /** Locais que não são empresa: ícone pelo tipo. */
-export const placeTypeIcons={'Escritório Elite':Crown,'Network / comunidade':Network,'Instituição de ensino':School,'Ponto de encontro':MapPinned};
+export const placeTypeIcons={'Escritório':Crown,'Network / comunidade':Network,'Instituição de ensino':School,'Ponto de encontro':MapPinned};
 /** Empresas: ícone pelo setor. */
 export const sectorIcons={'Comércio e varejo':ShoppingBag,Alimentação:UtensilsCrossed,Saúde:HeartPulse,'Beleza e estética':Sparkles,Educação:BookOpen,Tecnologia:Cpu,Indústria:Factory,Construção:HardHat,Imobiliário:House,'Finanças e seguros':Landmark,Agronegócio:Wheat,'Serviços profissionais':Briefcase,'Transporte e logística':Truck,Automotivo:Car,'Turismo e eventos':Ticket,'Esporte e lazer':Dumbbell,Religioso:Church,'Associação / entidade':Building,'Governo / público':Scale,Outro:Store,Empresa:Store};
 /** Demais registros do mapa. */

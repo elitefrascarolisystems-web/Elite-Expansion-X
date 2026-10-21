@@ -1,6 +1,9 @@
-export const USER_ROLES = ["Administrador", "Coordenação", "Líder", "Embaixador", "Comercial", "Mentorado", "Assinante"] as const;
-/** Clientes da Elite com área própria: nunca acessam os dados da equipe. */
-export const PORTAL_ROLES = ["Mentorado", "Assinante"] as const;
+export const USER_ROLES = ["Administrador", "Coordenação", "Líder", "Embaixador", "Comercial", "Mentorado"] as const;
+/**
+ * Mentorados têm só o portal deles e nunca acessam os dados da equipe. (Empresas
+ * assinantes não usam o portal: recebem uma organização própria, com a plataforma inteira.)
+ */
+export const PORTAL_ROLES = ["Mentorado"] as const;
 export function isPortalRole(role: string): role is (typeof PORTAL_ROLES)[number] { return (PORTAL_ROLES as readonly string[]).includes(role); }
 export type UserRole = (typeof USER_ROLES)[number];
 

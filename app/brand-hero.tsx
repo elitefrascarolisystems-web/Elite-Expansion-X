@@ -89,7 +89,7 @@ export function BrandHero() {
           <h2 className="text-[2.6rem] font-semibold leading-[1.05] tracking-[-0.035em] text-white xl:text-[3.3rem] 2xl:text-[4rem]">
             Expansão com estratégia.<br /><span className="elite-gold-text">Cidade por cidade.</span>
           </h2>
-          <p className="mt-6 max-w-lg text-base leading-7 text-zinc-400">Território, rede de embaixadores, funil comercial e follow-up com o Método F.E.C.H.A. A operação inteira da expansão Elite, num só lugar, do primeiro contato ao resultado.</p>
+          <p className="mt-6 max-w-lg text-base leading-7 text-zinc-400">Território, rede de embaixadores, funil comercial e follow-up com o Método F.E.C.H.A. A operação inteira da sua expansão, num só lugar, do primeiro contato ao resultado.</p>
           <ul className="mt-8 flex flex-wrap gap-2">
             {PILLARS.map(({ icon: Icon, label }) => <li key={label} className="flex items-center gap-2 rounded-full border border-[#c9a227]/20 bg-[#c9a227]/[0.04] px-3 py-1.5 text-xs font-medium text-zinc-300"><Icon className="size-3.5 text-[#d6b94f]" aria-hidden />{label}</li>)}
           </ul>

@@ -366,22 +366,22 @@ test('locais com tipo e setor no mapa; pessoa aparece no local vinculado, nunca 
  const m=await modules(),c=await vite.ssrLoadModule('/db/commercial.ts');
  const business=(id,name,placeType,sector,cityId=1)=>c.saveCommercial(m.access,'business',{id,cityId,name,segment:'Atividade teste',source:'Cadastro manual',ownerEmail:m.access.email,status:'Assinante',placeType,sector,publicBusiness:true});
  const office=crypto.randomUUID(),shop=crypto.randomUUID(),other=crypto.randomUUID();
- await business(office,'Escritório Elite Centro','Escritório Elite','');
+ await business(office,'Escritório Centro','Escritório','');
  await business(shop,'Clínica Teste','Empresa','Saúde');
  await business(other,'Empresa de outra cidade','Empresa','Tecnologia',2);
  await assert.rejects(business(crypto.randomUUID(),'Sem setor válido','Empresa','Setor inventado'));
  await m.mutateTerritory(m.access,'location',{key:'business:'+office,latitude:-19.76,longitude:-44.31,region:'Centro',precision:'Local comercial',source:'Pino conferido',validated:true,authorized:true,visibility:'Equipe'});
  let map=await m.getTerritory(m.access,new URLSearchParams('category=business'));
- assert.deepEqual(map.records.find(r=>r.id===office).roles,['Escritório Elite']);
+ assert.deepEqual(map.records.find(r=>r.id===office).roles,['Escritório']);
  assert.deepEqual(map.records.find(r=>r.id===shop).roles,['Empresa','Saúde']);
  assert.equal((await m.getTerritory(m.access,new URLSearchParams('category=Saúde'))).records.length,1,'filtro por setor');
- assert.equal((await m.getTerritory(m.access,new URLSearchParams('layers=Escritório Elite'))).records.length,1,'camada por tipo de local');
+ assert.equal((await m.getTerritory(m.access,new URLSearchParams('layers=Escritório'))).records.length,1,'camada por tipo de local');
  // Pessoa vinculada ao escritório aparece no ponto do escritório; sem local, no centro da cidade.
  const linked=await m.mutateTerritory(m.access,'person',{...person('Mentorada do escritório'),placeId:office,placeLink:'Mentorado'});
  const loose=await m.mutateTerritory(m.access,'person',person('Pessoa sem local'));
  map=await m.getTerritory(m.access,new URLSearchParams('category=person'));
  const a=map.records.find(r=>r.id===linked.id),b=map.records.find(r=>r.id===loose.id);
- assert.equal(a.location.latitude,-19.76);assert.ok(a.roles.includes('Mentorado'),'vínculo Mentorado dá o papel e o ícone de mentorado');assert.deepEqual(a.place,{id:office,name:'Escritório Elite Centro',type:'Escritório Elite',link:'Mentorado'});
+ assert.equal(a.location.latitude,-19.76);assert.ok(a.roles.includes('Mentorado'),'vínculo Mentorado dá o papel e o ícone de mentorado');assert.deepEqual(a.place,{id:office,name:'Escritório Centro',type:'Escritório',link:'Mentorado'});
  assert.notEqual(b.location.latitude,-19.76);assert.equal(b.place,undefined);
  await assert.rejects(m.mutateTerritory(m.access,'person',{...person('Vínculo errado'),placeId:other,placeLink:'Colaborador'}),/mesma cidade/);
  await assert.rejects(m.mutateTerritory(m.access,'person',{...person('Sem vínculo'),placeId:shop}),/vínculo/);
@@ -456,7 +456,7 @@ test('indicadores do mapeamento por cidade e por mapeador',async()=>{
  sqlite.prepare("INSERT INTO app_users(organization_id,email,name,role,active,created_by,created_at) VALUES(1,'sales@example.invalid','Vendedora Teste','Comercial',1,'teste','2026-01-01')").run();
  const sales=await (await vite.ssrLoadModule('/db/access.ts')).getUserAccess('sales@example.invalid','Vendedora',1);
  const office=crypto.randomUUID(),shop=crypto.randomUUID();
- await c.saveCommercial(m.access,'business',{id:office,cityId:1,name:'Escritório',segment:'Escritório',source:'Cadastro manual',ownerEmail:m.access.email,status:'Identificada',placeType:'Escritório Elite',sector:'',publicBusiness:true});
+ await c.saveCommercial(m.access,'business',{id:office,cityId:1,name:'Escritório',segment:'Escritório',source:'Cadastro manual',ownerEmail:m.access.email,status:'Identificada',placeType:'Escritório',sector:'',publicBusiness:true});
  await c.saveCommercial(sales,'business',{id:shop,cityId:1,name:'Loja',segment:'Loja',source:'Cadastro manual',ownerEmail:'sales@example.invalid',status:'Identificada',placeType:'Empresa',sector:'Comércio e varejo',publicBusiness:true});
  await m.mutateTerritory(m.access,'location',{key:'business:'+office,latitude:-19.76,longitude:-44.31,region:'Centro',precision:'Local comercial',source:'Pino conferido',validated:true,authorized:true,visibility:'Equipe'});
  await m.mutateTerritory(sales,'person',{...person('Ligada'),placeId:shop,placeLink:'Colaborador'});

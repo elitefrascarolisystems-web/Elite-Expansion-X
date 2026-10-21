@@ -3,7 +3,7 @@
  * encontro. Cada local tem um tipo e, se for empresa, um setor; o ícone no mapa vem
  * do tipo (ou do setor, para empresas), para identificar o que é olhando de cima.
  */
-export const PLACE_TYPES = ["Empresa", "Escritório Elite", "Network / comunidade", "Instituição de ensino", "Ponto de encontro"] as const;
+export const PLACE_TYPES = ["Empresa", "Escritório", "Network / comunidade", "Instituição de ensino", "Ponto de encontro"] as const;
 export type PlaceType = (typeof PLACE_TYPES)[number];
 
 export const SECTORS = [
@@ -43,7 +43,7 @@ function fromList<T extends string>(list: readonly T[], value: string, aliases: 
 
 /** Valores escritos na planilha → opções da plataforma (aceita sem acento e formas curtas). */
 export const placeTypeFromText = (value: string) => fromList(PLACE_TYPES, value, {
-  escritorio: "Escritório Elite", "escritorio elite": "Escritório Elite", network: "Network / comunidade", comunidade: "Network / comunidade",
+  escritorio: "Escritório", "escritorio elite": "Escritório", "escritorio proprio": "Escritório", network: "Network / comunidade", comunidade: "Network / comunidade",
   instituicao: "Instituição de ensino", escola: "Instituição de ensino", faculdade: "Instituição de ensino", "ponto de encontro": "Ponto de encontro",
 });
 export const sectorFromText = (value: string) => fromList(SECTORS, value, {

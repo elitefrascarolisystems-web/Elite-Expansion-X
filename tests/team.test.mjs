@@ -25,13 +25,13 @@ Função Errada; errada@elite.invalid; Gerente`,cities);
   'Troque o e-mail de exemplo pelo e-mail real da pessoa.',
   'Embaixador precisa ser ligado ao cadastro dele: use "Adicionar pessoa".',
   'Cidade não cadastrada: "Contagem". Cadastre a cidade antes.',
-  'Função não reconhecida: "Gerente". Use Administrador, Coordenação, Líder, Comercial (Executivo de Vendas), Mentorado ou Assinante.',
+  'Função não reconhecida: "Gerente". Use Administrador, Coordenação, Líder, Comercial (Executivo de Vendas) ou Mentorado.',
  ]);
  assert.equal(parseTeamLines('\n  \n',cities).length,0);
 });
 
 test('função, mentoria e mensagem de convite',()=>{
- assert.equal(roleFromText('Líder'),'Líder');assert.equal(roleFromText('lider'),'Líder');assert.equal(roleFromText('Executivo de vendas'),'Comercial');assert.equal(roleFromText('Mentorada exclusiva'),'Mentorado');assert.equal(roleFromText('empresa assinante'),'Assinante');assert.equal(roleFromText('x'),null);
+ assert.equal(roleFromText('Líder'),'Líder');assert.equal(roleFromText('lider'),'Líder');assert.equal(roleFromText('Executivo de vendas'),'Comercial');assert.equal(roleFromText('Mentorada exclusiva'),'Mentorado');assert.equal(roleFromText('empresa assinante'),null,'assinante ganha organização própria, não login de portal');assert.equal(roleFromText('x'),null);
  assert.equal(mentorshipFromText(''),0);assert.equal(mentorshipFromText('não'),0);assert.equal(mentorshipFromText('sim'),1);assert.equal(mentorshipFromText('3'),3);assert.equal(mentorshipFromText('talvez'),null);assert.equal(mentorshipFromText('99'),null);
  assert.equal(mentorshipLabel(0),'');assert.equal(mentorshipLabel(2),'Mentoria · 2º ciclo');
  const msg=inviteMessage('Flávia Silva','https://elite.invalid/definir-senha#abc');
@@ -41,7 +41,12 @@ test('função, mentoria e mensagem de convite',()=>{
 });
 
 test('convite de mentorado e assinante usa a mensagem do portal',()=>{
- const msg=inviteMessage('Maria Souza','https://elite.invalid/definir-senha#abc',false,true);
- assert.match(msg,/^Olá, Maria! Seu portal na Elite Frascaroli Academy está pronto/);
+ const msg=inviteMessage('Maria Souza','https://elite.invalid/definir-senha#abc',false,true,'Loja Modelo');
+ assert.match(msg,/^Olá, Maria! Seu portal de mentoria na Loja Modelo está pronto/);
  assert.match(msg,/https:\/\/elite\.invalid\/entrar/);
+});
+
+test('convite de empresa assinante fala da organização dela, não da Elite',()=>{
+ const msg=inviteMessage('Paulo Lima','https://elite.invalid/definir-senha#abc',false,false,'Loja Modelo');
+ assert.match(msg,/plataforma de expansão da Loja Modelo/);assert.ok(!/Elite Frascaroli/.test(msg));
 });

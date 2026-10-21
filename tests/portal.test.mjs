@@ -22,13 +22,13 @@ async function setup(){
  const admin=await access(ADMIN);
  const seller=addUser('vendas@elite.invalid','Comercial',{name:'Vendedora Elite'});
  const mentee=addUser('mentorado@cliente.invalid','Mentorado',{name:'Maria Mentorada',cityId:1});
- const company=addUser('empresa@cliente.invalid','Assinante',{name:'João da Loja',cityId:1});
+ const company=addUser('outro@cliente.invalid','Mentorado',{name:'João Mentorado',cityId:1});
  return {admin,seller,mentee,company};
 }
 
 test('portal: mentorado e assinante não acessam nenhuma API da equipe',async()=>{
  await setup();
- for(const email of ['mentorado@cliente.invalid','empresa@cliente.invalid']){
+ for(const email of ['mentorado@cliente.invalid','outro@cliente.invalid']){
   globalThis.__eliteTestUser={email,displayName:'Cliente'};
   const a=await access(email);assert.ok(a,'tem login');assert.equal((await (await vite.ssrLoadModule('/db/access.ts')).getTeamAccess(email,'Cliente',1)),null);
   const calls=[['dashboard','GET'],['dashboard','POST',{action:'create_city',data:{}}],['territory','GET'],['territory','POST',{action:'person',data:{}}],['commercial','GET'],['commercial','POST',{action:'business',data:{}}],['followup','GET'],['journey','POST',{action:'start',data:{}}],['team','POST',{action:'invite',rows:[]}],['auth/link','POST',{email}],['territory/geocode','POST',{query:'Centro',cityId:1}],['map-config','GET'],['organizations','GET']];
@@ -40,31 +40,25 @@ test('portal: mentorado e assinante não acessam nenhuma API da equipe',async()=
  }
 });
 
-test('portal do membro: jornada do próprio público, materiais certos e dados só dele',async()=>{
- const {admin,seller,mentee,company}=await setup();const p=await portal();const c=await vite.ssrLoadModule('/db/commercial.ts');
- for(const [audience,title] of [['Mentorados','Diagnóstico'],['Mentorados','Plano'],['Assinantes','Ativação']]) await p.portalAdminAction(admin,'save_step',{audience,title});
- const shop=crypto.randomUUID();await c.saveCommercial(admin,'business',{id:shop,cityId:1,name:'Loja do João',segment:'Loja',source:'Cadastro manual',ownerEmail:ADMIN,status:'Assinante',placeType:'Empresa',sector:'Comércio e varejo',publicBusiness:true});
- await p.portalAdminAction(admin,'set_member',{userId:company,businessId:shop,ownerEmail:'vendas@elite.invalid',nextMeetingAt:'2026-11-05T10:00',nextMeetingNote:'Revisão do plano'});
+test('portal do mentorado: jornada, materiais certos, contato e dados só dele',async()=>{
+ const {admin,mentee,company}=await setup();const p=await portal();
+ for(const title of ['Diagnóstico','Plano']) await p.portalAdminAction(admin,'save_step',{audience:'Mentorados',title});
+ await assert.rejects(p.portalAdminAction(admin,'save_step',{audience:'Assinantes',title:'Não existe mais'}),e=>e.name==='ZodError','empresa assinante não usa o portal');
+ await p.portalAdminAction(admin,'set_member',{userId:mentee,ownerEmail:'vendas@elite.invalid',nextMeetingAt:'2026-11-05T10:00',nextMeetingNote:'Revisão do plano'});
  const insert=sqlite.prepare("INSERT INTO contents(organization_id,title,type,channel,version,status,instructions,audience,created_by) VALUES(1,?,'Mensagem','WhatsApp','1.0',?,'x',?,'teste')");
- insert.run('Para mentorados','Aprovado','Mentorados');insert.run('Para todos','Aprovado','Todos');insert.run('Só embaixadores','Aprovado','Embaixadores');insert.run('Em revisão','Em revisão','Mentorados');insert.run('Para assinantes','Aprovado','Assinantes');
+ insert.run('Para mentorados','Aprovado','Mentorados');insert.run('Para todos','Aprovado','Todos');insert.run('Só embaixadores','Aprovado','Embaixadores');insert.run('Em revisão','Em revisão','Mentorados');insert.run('Antigo de assinantes','Aprovado','Assinantes');
  const md=await p.getPortalData(await access('mentorado@cliente.invalid'));
  assert.deepEqual(md.steps.map(s=>s.title),['Diagnóstico','Plano']);
  assert.deepEqual(md.materials.map(m=>m.title).sort(),['Para mentorados','Para todos']);
- assert.equal(md.company,null);assert.equal(md.owner,null);
- const cd=await p.getPortalData(await access('empresa@cliente.invalid'));
- assert.deepEqual(cd.steps.map(s=>s.title),['Ativação']);assert.deepEqual(cd.materials.map(m=>m.title).sort(),['Para assinantes','Para todos']);
- assert.equal(cd.company.name,'Loja do João');assert.equal(cd.owner.name,'Vendedora Elite');assert.equal(cd.nextMeeting.note,'Revisão do plano');
- // Marca e desmarca só etapas do próprio público.
+ assert.equal(md.owner.name,'Vendedora Elite');assert.equal(md.nextMeeting.note,'Revisão do plano');assert.equal(md.member.organizationName,'Elite Frascaroli Academy');
+ const other=await p.getPortalData(await access('outro@cliente.invalid'));assert.equal(other.owner,null,'cada um vê só o próprio contato');assert.equal(other.nextMeeting,null);
  const ma=await access('mentorado@cliente.invalid');
  await p.portalAction(ma,'step',{stepId:md.steps[0].id,done:true});
- assert.ok((await p.getPortalData(ma)).steps[0].doneAt);
- await assert.rejects(p.portalAction(ma,'step',{stepId:cd.steps[0].id,done:true}),/não encontrada/);
+ assert.ok((await p.getPortalData(ma)).steps[0].doneAt);assert.equal((await p.getPortalData(await access('outro@cliente.invalid'))).steps[0].doneAt,null,'progresso é de cada um');
  await p.portalAction(ma,'step',{stepId:md.steps[0].id,done:false});assert.equal((await p.getPortalData(ma)).steps[0].doneAt,null);
- // A equipe não usa o portal do membro; o membro não usa a gestão.
  await assert.rejects(p.getPortalData(admin),/exclusiva/);
  await assert.rejects(p.portalAdminAction(ma,'save_step',{audience:'Mentorados',title:'Hack'}),/administradores/);
  await assert.rejects(p.getPortalAdmin(await access('vendas@elite.invalid')),/administradores/);
- // Embaixador não recebe material de mentorado no painel dele.
  const {getDashboardData}=await vite.ssrLoadModule('/db/queries.ts');
  sqlite.prepare("INSERT INTO ambassadors(city_id,name,code,status,level,created_by,created_at,updated_at) VALUES(1,'Emb','EMB9','Ativo','Indicador','t','2026-01-01','2026-01-01')").run();
  const amb={...admin,role:'Embaixador',cityId:1,ambassadorId:Number(sqlite.prepare('SELECT max(id) i FROM ambassadors').get().i)};
@@ -89,7 +83,7 @@ test('indicação pelo portal vira lead "Indicação" na agenda do responsável,
  await assert.rejects(p.portalAction(ma,'refer',{name:'Carlos de novo',whatsapp:'31 91111 2222',cityId:1,consent:true}),/já está em contato/);
  const data=await p.getPortalData(ma);assert.deepEqual(data.referrals.map(r=>[r.name,r.status]),[['Carlos Indicado','Recebida']]);
  // Sem responsável: o lead entra sem dono e sem oportunidade (a gestão distribui).
- const ca=await access('empresa@cliente.invalid');await p.portalAction(ca,'refer',{name:'Ana Sem Dono',email:'ana@x.invalid',cityId:1,consent:true});
+ const ca=await access('outro@cliente.invalid');await p.portalAction(ca,'refer',{name:'Ana Sem Dono',email:'ana@x.invalid',cityId:1,consent:true});
  const ana=sqlite.prepare("SELECT id,assigned_to_email FROM leads WHERE name='Ana Sem Dono'").get();assert.equal(ana.assigned_to_email,'');assert.equal(sqlite.prepare('SELECT count(*) n FROM opportunities WHERE lead_id=?').get(ana.id).n,0);
  // Rota: mesma origem e limite diário.
  globalThis.__eliteTestUser={email:'mentorado@cliente.invalid',displayName:'M'};const route=await api('portal');
@@ -107,8 +101,8 @@ test('gestão do portal: etapas em ordem, responsável só da equipe, vínculos 
  await p.portalAdminAction(admin,'save_step',{id:steps[0].id,audience:'Mentorados',title:'Etapa um editada'});
  await p.portalAdminAction(admin,'delete_step',{id:steps[1].id});
  assert.deepEqual((await p.getPortalAdmin(admin)).steps.map(s=>s.title),['Etapa um editada','Etapa três']);
- await assert.rejects(p.portalAdminAction(admin,'set_member',{userId:mentee,ownerEmail:'empresa@cliente.invalid'}),/equipe Elite/);
+ await assert.rejects(p.portalAdminAction(admin,'set_member',{userId:mentee,ownerEmail:'outro@cliente.invalid'}),/equipe Elite/);
  await assert.rejects(p.portalAdminAction(admin,'set_member',{userId:mentee,personId:crypto.randomUUID()}),/não encontrada/);
  const sellerAccess=await access('vendas@elite.invalid');await assert.rejects(p.portalAdminAction(sellerAccess,'set_member',{userId:mentee}),/administradores/);
- const members=(await p.getPortalAdmin(admin)).members;assert.deepEqual(members.map(m=>m.role).sort(),['Assinante','Mentorado']);assert.equal(members.find(m=>m.role==='Mentorado').total,2);
+ const members=(await p.getPortalAdmin(admin)).members;assert.deepEqual(members.map(m=>m.role),['Mentorado','Mentorado']);assert.equal(members.find(m=>m.role==='Mentorado').total,2);
 });

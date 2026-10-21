@@ -63,15 +63,15 @@ export function OrganizationSwitcher({access}:{access:AccessView}){
   <Dialog open={dialog==='create'} onOpenChange={closeDialog}>
    <DialogContent className="bg-zinc-950 text-white">
     <DialogHeader>
-     <DialogTitle>Criar organização de cliente</DialogTitle>
-     <DialogDescription>O ambiente começa vazio. O responsável indicado vira o dono e administrador da empresa. O time Elite não entra como membro: acompanha pela Assessoria Elite, de forma visível para o cliente. Nenhum convite, assinatura ou cobrança é ativado.</DialogDescription>
+     <DialogTitle>Nova empresa assinante</DialogTitle>
+     <DialogDescription>A empresa ganha a plataforma inteira, separada da Elite: começa vazia, com todos os recursos. O responsável vira o administrador dela. Depois de criar, você entra pela Assessoria Elite (visível para o cliente) e gera o link de acesso dele em Time e acessos. A cobrança da assinatura é feita fora da plataforma.</DialogDescription>
     </DialogHeader>
     <form className="grid gap-4" onSubmit={async e=>{e.preventDefault();const result=await act({action:'create',data:{...form,requestId:requestId.current}});if(result){setDialog(null);openOrganization(result.id);}}}>
      <label className="grid gap-2">Nome da empresa<input required minLength={2} maxLength={120} className={inputClass} value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label>
      <label className="grid gap-2">Nome do responsável<input required minLength={2} maxLength={120} className={inputClass} value={form.ownerName} onChange={e=>setForm({...form,ownerName:e.target.value})}/></label>
      <label className="grid gap-2">E-mail do responsável<input required type="email" maxLength={254} className={inputClass} value={form.ownerEmail} onChange={e=>setForm({...form,ownerEmail:e.target.value})}/></label>
      {error&&<p role="alert" className="text-sm text-amber-200">{error}</p>}
-     <Button disabled={busy} type="submit">{busy?'Criando…':'Criar ambiente do cliente'}</Button>
+     <Button disabled={busy} type="submit">{busy?'Criando…':'Criar plataforma da empresa'}</Button>
     </form>
    </DialogContent>
   </Dialog>

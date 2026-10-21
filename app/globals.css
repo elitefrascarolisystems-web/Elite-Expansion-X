@@ -334,7 +334,7 @@ button:disabled { cursor: not-allowed; }
 .territory-pin:focus-visible { outline:4px solid #d6b94f; outline-offset:3px; }
 /* Locais: forma quadrada e cor pelo tipo, para distinguir de pessoas (círculos) olhando de cima. */
 .territory-pin[data-kind=business] { border-radius:9px; background:#1d3f63; color:#fff; }
-.territory-pin[data-place="Escritório Elite"] { background:#c9a227; color:#111; border-color:#111; }
+.territory-pin[data-place="Escritório"] { background:#c9a227; color:#111; border-color:#111; }
 .territory-pin[data-place="Network / comunidade"] { background:#5b3a8c; color:#fff; }
 .territory-pin[data-place="Instituição de ensino"] { background:#1f6f6a; color:#fff; }
 .territory-pin[data-place="Ponto de encontro"] { background:#8a4b14; color:#fff; }

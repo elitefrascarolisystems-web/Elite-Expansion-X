@@ -22,9 +22,9 @@ export function setupSteps(data: DashboardData): Step[] {
   const people = data.mapping?.people ?? 0, linked = data.mapping?.linked ?? 0;
   const ambassadors = data.ambassadors.filter((item) => item.status === "Ativo").length;
   const steps: Step[] = [
-    { title: "Cidades", detail: data.cities.length ? `${data.cities.length} cidade(s) cadastrada(s).` : "Cadastre as cidades onde a Elite vai atuar.", done: data.cities.length > 0, action: "Abrir cidades", tab: "cidades" },
+    { title: "Cidades", detail: data.cities.length ? `${data.cities.length} cidade(s) cadastrada(s).` : "Cadastre as cidades onde a operação vai atuar.", done: data.cities.length > 0, action: "Abrir cidades", tab: "cidades" },
     { title: "Equipe com acesso", detail: others.length ? `${entered} de ${others.length} pessoa(s) já entraram.` : "Convide quem vai mapear e vender com você.", done: entered > 0, action: "Convidar equipe", tab: "time" },
-    { title: "Escritórios e networks", detail: hubs ? `${hubs} local(is) de referência no mapa.` : "Marque os escritórios Elite, networks e pontos de encontro.", done: hubs > 0, action: "Mapear local", tab: "mapear" },
+    { title: "Escritórios e networks", detail: hubs ? `${hubs} local(is) de referência no mapa.` : "Marque os escritórios, networks e pontos de encontro.", done: hubs > 0, action: "Mapear local", tab: "mapear" },
     { title: "Empresas", detail: companies ? `${companies} empresa(s) com tipo e setor.` : "Cadastre as empresas com o setor de cada uma.", done: companies > 0, action: "Mapear empresa", tab: "mapear" },
     { title: "Pessoas ligadas a locais", detail: people ? `${people} pessoa(s) no mapa, ${linked} ligada(s) a um local.` : "Cadastre mentorados, parceiros e contatos, cada um no seu local.", done: linked > 0, action: "Mapear pessoas", tab: "mapear" },
     { title: "Embaixadores ativos", detail: ambassadors ? `${ambassadors} embaixador(es) ativo(s).` : "Ative os primeiros embaixadores de cada cidade.", done: ambassadors > 0, action: "Abrir embaixadores", tab: "embaixadores" },
@@ -73,10 +73,9 @@ const ROLE_WELCOME: Record<AccessView["role"], { what: string; steps: string[]; 
     tab: "mapear", start: "Mapear o primeiro local",
   },
   // Portal: as boas-vindas ficam no próprio portal (client-portal.tsx); aqui só para completar o tipo.
-  Mentorado: { what: "Sua área de mentoria na Elite.", steps: [], tab: "visao", start: "Começar" },
-  Assinante: { what: "A área da sua empresa na Elite.", steps: [], tab: "visao", start: "Começar" },
+  Mentorado: { what: "Sua área de mentoria.", steps: [], tab: "visao", start: "Começar" },
   Embaixador: {
-    what: "Você indica pessoas para a Elite e acompanha suas tarefas.",
+    what: "Você indica pessoas e acompanha suas tarefas.",
     steps: ["Aceite as regras e conclua o treinamento.", "Use seu link de indicação.", "Cumpra as tarefas da semana."],
     tab: "visao", start: "Começar",
   },
