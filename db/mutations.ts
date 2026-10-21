@@ -311,7 +311,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     const entityId = asNumber(result.meta.last_row_id);
     if (ambassadorId !== null) await refreshAmbassadorActivation(ambassadorId, timestamp);
     await audit(db, access.organizationId, access.email, action, "lead", entityId, `Lead autorizado registrado pelo canal ${channel}.`);
-    return;
+    return entityId;
   }
 
   if (action === "update_lead") {
