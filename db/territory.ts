@@ -1,13 +1,14 @@
-import {PERSON_ROLES,PLACE_TYPES,SECTORS} from '@/lib/places';
+import {nameKey,PERSON_ROLES,PLACE_LINKS,PLACE_TYPES,personRoleFromText,placeLinkFromText,SECTORS} from '@/lib/places';
+import { ZodError } from 'zod';
 import {rowDue,type Followup} from '@/lib/followup';
 import { database, brazilTimestamp } from '@/db/runtime';
 import { canAccessCity } from '@/lib/expansion-permissions';
 import { cityReference } from '@/lib/territorial-map';
-import { locationSchema, personSchema, activitySchema, roleSchema, displayedCoordinates } from '@/lib/territory-validation';
+import { locationSchema, personSchema, activitySchema, roleSchema, displayedCoordinates, importPersonSchema } from '@/lib/territory-validation';
 import type { AccessView } from '@/lib/expansion-types';
 import type { TerritoryRecord, TerritoryResponse } from '@/lib/territory-types';
 
-export class TerritoryError extends Error { constructor(message: string, public status = 400) { super(message); } }
+export class TerritoryError extends Error { constructor(message: string, public status = 400, public duplicate = false) { super(message); } }
 const dbRows = async (sql:string, args:(string|number|null)[] = []) => (await database().prepare(sql).bind(...args).all()).results;
 const n = (v:unknown) => v === null || v === undefined ? null : Number(v);
 const str = (v:unknown) => String(v ?? '');
@@ -118,8 +119,48 @@ async function entity(a:AccessView,key:string) {
 function auditStatement(a:AccessView,action:string,key:string) {
   return database().prepare('INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,summary,created_at) VALUES(?,?,?,?,?,?)').bind(a.organizationId,a.email,action,'territory',`Registro territorial ${key}.`,brazilTimestamp());
 }
+/** Pessoas da cidade com o mesmo nome (sem acento, caixa ou espaços extras). */
+async function samePeople(cityId:number,name:string){
+  const key=nameKey(name);if(!key)return [];
+  const rows=await dbRows("SELECT p.id,p.name,COALESCE(b.name,'') AS place FROM territory_people p LEFT JOIN businesses b ON b.id=p.place_id WHERE p.city_id=? AND length(p.name) BETWEEN ? AND ? LIMIT 5000",[cityId,Math.max(1,name.length-6),name.length+6]);
+  return rows.filter(r=>nameKey(str(r.name))===key).map(r=>({id:str(r.id),name:str(r.name),place:str(r.place)}));
+}
+function duplicateError(a:AccessView,same:{name:string;place:string}[]){
+  // Quem só mapeia não vê o cadastro dos outros: recebe o aviso sem os detalhes.
+  const detail=management(a)?`: ${same.slice(0,3).map(p=>p.name+(p.place?` (${p.place})`:'')).join(', ')}`:'';
+  return new TerritoryError(`Já existe ${same.length===1?'uma pessoa':`${same.length} pessoas`} com esse nome nesta cidade${detail}. Confira antes de cadastrar de novo.`,409,true);
+}
+async function importPeople(a:AccessView,input:unknown){
+  const body=input as {rows?:unknown[];commit?:boolean};
+  if(!Array.isArray(body?.rows)||body.rows.length<1||body.rows.length>50) throw new TerritoryError('Importe de 1 a 50 pessoas por lote.');
+  const output:{line:number;ok:boolean;status:string}[]=[];const seen=new Set<string>();const places=new Map<number,{id:string;key:string}[]>();
+  for(const [index,item] of body.rows.entries()){
+    try{
+      const r=importPersonSchema.parse(item);await allowedCity(a,r.cityId);
+      const key=r.cityId+'|'+nameKey(r.name);if(seen.has(key))throw new TerritoryError('Pessoa repetida no arquivo.');seen.add(key);
+      if((await samePeople(r.cityId,r.name)).length)throw new TerritoryError('Já existe uma pessoa com esse nome nesta cidade.');
+      let placeId:string|null=null,placeLink='';
+      if(r.place){
+        if(!places.has(r.cityId))places.set(r.cityId,(await dbRows('SELECT id,name FROM businesses WHERE organization_id=? AND city_id=? LIMIT 5000',[a.organizationId,r.cityId])).map(p=>({id:str(p.id),key:nameKey(str(p.name))})));
+        const found=places.get(r.cityId)!.filter(p=>p.key===nameKey(r.place));
+        if(!found.length)throw new TerritoryError(`Local "${r.place}" não encontrado nesta cidade. Cadastre o local antes.`);
+        if(found.length>1)throw new TerritoryError(`Há mais de um local chamado "${r.place}" nesta cidade. Ligue esta pessoa pelo mapa.`);
+        const link=placeLinkFromText(r.link);if(!link)throw new TerritoryError(r.link?`Vínculo "${r.link}" não reconhecido. Use: ${PLACE_LINKS.join(', ')}.`:'Informe o vínculo com o local.');
+        placeId=found[0].id;placeLink=link;
+      }
+      const role=r.role?personRoleFromText(r.role):null;if(r.role&&!role)throw new TerritoryError(`Papel "${r.role}" não reconhecido. Use: ${PERSON_ROLES.join(', ')}.`);
+      if(body.commit===true){
+        const saved=await mutateTerritory(a,'person',{requestId:crypto.randomUUID(),cityId:r.cityId,name:r.name,placeId,placeLink,authorized:true,confirmDuplicate:true}) as {id:string};
+        if(role)await mutateTerritory(a,'role',{personId:saved.id,role,status:'Ativo',responsible:a.name||a.email,source:'Importação de planilha',authorized:true});
+      }
+      output.push({line:index+2,ok:true,status:body.commit===true?'Salvo':'Válido'});
+    }catch(e){output.push({line:index+2,ok:false,status:e instanceof TerritoryError?e.message:e instanceof ZodError?(e.issues[0]?.message??'Linha inválida.'):'Não foi possível salvar esta linha.'});}
+  }
+  return {rows:output};
+}
 export async function mutateTerritory(a:AccessView,action:string,input:unknown) {
   if(!mapper(a)||(!management(a)&&action==='event_status')) throw new TerritoryError('Seu perfil não pode alterar o território.',403);
+  if(action==='import_people') return importPeople(a,input);
   const db=database(),now=brazilTimestamp();
   if(action==='location') {
     const v=locationSchema.parse(input);if(v.key.startsWith('person:'))throw new TerritoryError('Pessoas usam somente o centro da cidade. Valide a referência da cidade.');const row=await entity(a,v.key);await allowedCity(a,Number(row.city_id));
@@ -139,6 +180,7 @@ export async function mutateTerritory(a:AccessView,action:string,input:unknown) 
     if(!management(a)){if(v.leader&&!(v.id&&(await dbRows('SELECT leader FROM territory_people WHERE id=?',[id]))[0]?.leader))throw new TerritoryError('Só a gestão define o líder da cidade.',403);v.leader=Boolean(v.id&&(await dbRows('SELECT leader FROM territory_people WHERE id=?',[id]))[0]?.leader);}
     if(!v.id&&v.requestId){const existing=await dbRows('SELECT created_by,city_id FROM '+'territory_people'+' WHERE id=?',[id]);if(existing[0]){if(existing[0].created_by!==a.email||Number(existing[0].city_id)!==v.cityId)throw new TerritoryError('Identificador já utilizado.',409);return {id};}}
     if(v.id){const old=await entity(a,`person:${id}`);if(Number(old.city_id)!==v.cityId) throw new TerritoryError('A mudança de cidade exige revisão dos vínculos existentes.');}
+    if(!v.id&&!v.confirmDuplicate){const same=await samePeople(v.cityId,v.name);if(same.length)throw duplicateError(a,same);}
     if(v.referrerId){const ref=await entity(a,`person:${v.referrerId}`);if(Number(ref.city_id)!==v.cityId) throw new TerritoryError('A indicação deve pertencer à cidade autorizada.');
       const seen=new Set([id]);let current:string|null=v.referrerId;
       while(current){if(seen.has(current)) throw new TerritoryError('A indicação criaria um ciclo.');seen.add(current);const p=await dbRows('SELECT referrer_id FROM territory_people WHERE id=?',[current]);current=p[0]?.referrer_id?str(p[0].referrer_id):null;}}

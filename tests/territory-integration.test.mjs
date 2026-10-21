@@ -406,3 +406,69 @@ test('executivo de vendas (Comercial) mapeia pessoas, vê o que cadastrou e não
  assert.equal(sqlite.prepare('SELECT leader FROM territory_people WHERE id=?').get(id).leader,1,'vendedor não tira o líder definido pela gestão');
  await assert.rejects(m.mutateTerritory({...sales,cityId:2},'person',person('Fora da cidade',1)),/fora do seu acesso/);
 });
+
+test('pessoa duplicada: avisa (sem acento/caixa), gestão vê onde está, vendedor só o aviso; confirmação salva',async()=>{
+ const m=await modules();const api=await vite.ssrLoadModule('/app/api/territory/route.ts');
+ await m.mutateTerritory(m.access,'person',person('Flávia  Silva'));
+ await assert.rejects(m.mutateTerritory(m.access,'person',person('flavia silva')),e=>e.status===409&&e.duplicate===true&&/Flávia  Silva/.test(e.message));
+ const sales={...m.access,role:'Comercial',email:'sales@example.invalid',cityId:null};
+ await assert.rejects(m.mutateTerritory(sales,'person',person('FLÁVIA SILVA')),e=>e.duplicate===true&&!/Flávia/.test(e.message),'vendedor não vê dados de quem não é dele');
+ await m.mutateTerritory(m.access,'person',person('Flávia Silva',2),'outra cidade não conta');
+ const {id}=await m.mutateTerritory(m.access,'person',{...person('Flavia Silva'),confirmDuplicate:true});
+ assert.ok(id);
+ await m.mutateTerritory(m.access,'person',{...person('Flávia Silva'),id},'editar não dispara o aviso');
+ const r=await api.POST(request('person',person('flávia silva')));assert.equal(r.status,409);assert.equal((await r.json()).duplicate,true);
+});
+
+test('importação de pessoas: liga ao local pelo nome, valida vínculo e papel, não duplica e salva o papel',async()=>{
+ const m=await modules(),c=await vite.ssrLoadModule('/db/commercial.ts');
+ const shop=crypto.randomUUID();
+ await c.saveCommercial(m.access,'business',{id:shop,cityId:1,name:'Padaria Pão Dourado',segment:'Padaria',source:'Cadastro manual',ownerEmail:m.access.email,status:'Identificada',placeType:'Empresa',sector:'Alimentação',publicBusiness:true});
+ await m.mutateTerritory(m.access,'person',person('Já Existe'));
+ const rows=[
+  {cityId:1,name:'Maria Souza',place:'padaria pao dourado',link:'sócio',role:'mentorada'},
+  {cityId:1,name:'João Lima',place:'',link:'',role:''},
+  {cityId:1,name:'Sem Vínculo',place:'Padaria Pão Dourado',link:'',role:''},
+  {cityId:1,name:'Local Errado',place:'Padaria Inexistente',link:'Colaborador',role:''},
+  {cityId:1,name:'Papel Errado',place:'',link:'',role:'Gerente'},
+  {cityId:1,name:'ja existe',place:'',link:'',role:''},
+  {cityId:1,name:'Maria  Souza',place:'',link:'',role:''},
+ ];
+ const preview=await m.mutateTerritory(m.access,'import_people',{rows});
+ assert.deepEqual(preview.rows.map(r=>r.ok),[true,true,false,false,false,false,false]);
+ assert.match(preview.rows[2].status,/vínculo/);assert.match(preview.rows[3].status,/não encontrado/);assert.match(preview.rows[4].status,/Papel "Gerente"/);assert.match(preview.rows[5].status,/Já existe/);assert.match(preview.rows[6].status,/repetida/);
+ assert.equal(sqlite.prepare("SELECT count(*) n FROM territory_people WHERE name='Maria Souza'").get().n,0,'prévia não grava');
+ const saved=await m.mutateTerritory(m.access,'import_people',{rows:rows.slice(0,2),commit:true});
+ assert.deepEqual(saved.rows.map(r=>r.status),['Salvo','Salvo']);
+ const maria=sqlite.prepare("SELECT id,place_id,place_link FROM territory_people WHERE name='Maria Souza'").get();
+ assert.equal(maria.place_id,shop);assert.equal(maria.place_link,'Sócio / dono');
+ assert.equal(sqlite.prepare('SELECT role,source FROM territory_roles WHERE person_id=?').get(maria.id).role,'Mentorado');
+ const again=await m.mutateTerritory(m.access,'import_people',{rows:rows.slice(0,1),commit:true});
+ assert.equal(again.rows[0].ok,false,'reimportar não duplica');
+ const sales={...m.access,role:'Comercial',email:'sales@example.invalid',cityId:null};
+ const mine=await m.mutateTerritory(sales,'import_people',{rows:[{cityId:1,name:'Do Vendedor',place:'Padaria Pão Dourado',link:'Colaborador',role:''}],commit:true});
+ assert.equal(mine.rows[0].ok,true,'vendedor importa e liga a qualquer local da cidade');
+ await assert.rejects(m.mutateTerritory(m.access,'import_people',{rows:[]}),/1 a 50/);
+});
+
+test('indicadores do mapeamento por cidade e por mapeador',async()=>{
+ const m=await modules(),c=await vite.ssrLoadModule('/db/commercial.ts'),{getDashboardData}=await vite.ssrLoadModule('/db/queries.ts');
+ sqlite.prepare("INSERT INTO app_users(organization_id,email,name,role,active,created_by,created_at) VALUES(1,'sales@example.invalid','Vendedora Teste','Comercial',1,'teste','2026-01-01')").run();
+ const sales=await (await vite.ssrLoadModule('/db/access.ts')).getUserAccess('sales@example.invalid','Vendedora',1);
+ const office=crypto.randomUUID(),shop=crypto.randomUUID();
+ await c.saveCommercial(m.access,'business',{id:office,cityId:1,name:'Escritório',segment:'Escritório',source:'Cadastro manual',ownerEmail:m.access.email,status:'Identificada',placeType:'Escritório Elite',sector:'',publicBusiness:true});
+ await c.saveCommercial(sales,'business',{id:shop,cityId:1,name:'Loja',segment:'Loja',source:'Cadastro manual',ownerEmail:'sales@example.invalid',status:'Identificada',placeType:'Empresa',sector:'Comércio e varejo',publicBusiness:true});
+ await m.mutateTerritory(m.access,'location',{key:'business:'+office,latitude:-19.76,longitude:-44.31,region:'Centro',precision:'Local comercial',source:'Pino conferido',validated:true,authorized:true,visibility:'Equipe'});
+ await m.mutateTerritory(sales,'person',{...person('Ligada'),placeId:shop,placeLink:'Colaborador'});
+ await m.mutateTerritory(sales,'person',person('Solta'));
+ await m.mutateTerritory(m.access,'person',person('Outra cidade',2));
+ const stats=(await getDashboardData(m.access)).mappingStats;
+ const city1=stats.cities.find(x=>x.cityId===1);
+ assert.deepEqual({...city1,cityName:undefined},{cityId:1,cityName:undefined,hubs:1,companies:1,validated:1,people:2,linked:1});
+ const seller=stats.mappers.find(x=>x.email==='sales@example.invalid');
+ assert.deepEqual({name:seller.name,people:seller.people,places:seller.places,lastWeek:seller.lastWeek},{name:'Vendedora Teste',people:2,places:1,lastWeek:3});
+ assert.ok(seller.lastAt);
+ assert.equal((await getDashboardData(sales)).mappingStats,undefined,'vendedor não vê a produção da equipe');
+ const coord=await getDashboardData({...m.access,role:'Coordenação',cityId:2,canManageGlobal:false});
+ assert.deepEqual(coord.mappingStats.cities.map(x=>x.cityId),[2],'coordenação vê só a própria cidade');
+});

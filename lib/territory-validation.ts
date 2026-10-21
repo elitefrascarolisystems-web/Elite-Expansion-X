@@ -21,6 +21,8 @@ export const personSchema = z.object({
   leader: z.boolean().default(false), referrerId: z.string().uuid().nullable().default(null),
   placeId: z.string().uuid().nullable().default(null), placeLink: z.union([z.enum(PLACE_LINKS), z.literal('')]).default(''),
   authorized: z.literal(true),
+  /** A pessoa já foi avisada de que existe alguém com o mesmo nome na cidade e confirmou que é outra. */
+  confirmDuplicate: z.boolean().default(false),
 }).refine(v => !v.placeId || v.placeLink !== '', { message: 'Informe o vínculo da pessoa com o local.', path: ['placeLink'] });
 export const activitySchema = z.object({
   id: z.string().uuid().optional(), requestId: z.string().uuid().optional(), cityId: id, personId: z.string().uuid().nullable().default(null),
@@ -34,3 +36,9 @@ export function displayedCoordinates(kind: string, latitude: number | null, long
   return kind === 'person' ? {latitude:null,longitude:null} : {latitude,longitude};
 }
 export const roleSchema=z.object({personId:z.string().uuid(),role:z.enum(PERSON_ROLES),status:z.enum(['Convidado','Em análise','Aprovado','Em treinamento','Ativo','Pausado','Inativo','Desligado']),responsible:text,source:text.min(3),authorized:z.literal(true)});
+
+/** Linha da planilha de pessoas: o local é procurado pelo nome dentro da cidade. */
+export const importPersonSchema = z.object({
+  cityId: id, name: text.min(2),
+  place: z.string().trim().max(200).default(''), link: z.string().trim().max(80).default(''), role: z.string().trim().max(80).default(''),
+});

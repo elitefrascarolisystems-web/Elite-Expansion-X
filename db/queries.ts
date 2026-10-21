@@ -17,6 +17,7 @@ import type {
   UserRole,
 } from "@/lib/expansion-types";
 import { getSettings, listActiveAdvisors } from "@/db/access";
+import { getMappingStats } from "@/db/mapping-stats";
 import { asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runtime";
 
 type Scope = { where: string; values: Array<string | number> };
@@ -346,6 +347,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     people: people.map(p => ({id: String(p.id), cityId: Number(p.city_id), name: String(p.name)})),
     places: places.map(p => ({id: String(p.id), cityId: Number(p.city_id), name: String(p.name), placeType: String(p.place_type)})),
     mapping: mapping ? { people: asNumber(mapping.people), linked: asNumber(mapping.linked) } : undefined,
+    mappingStats: await getMappingStats(access),
     access,
     settings,
     cities,

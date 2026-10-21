@@ -256,6 +256,8 @@ export type DashboardData = {
   places?: Array<{id: string; cityId: number; name: string; placeType: string}>;
   /** Pessoas no mapa e quantas estão ligadas a um local (para os Primeiros passos). */
   mapping?: { people: number; linked: number };
+  /** Indicadores do mapeamento por cidade e por pessoa da equipe (só para a gestão). */
+  mappingStats?: MappingStats;
   access: AccessView;
   settings: SettingsView;
   cities: CityRecord[];
@@ -378,4 +380,9 @@ export type DashboardView = {
   filteredLeads: LeadRecord[];
   filteredSales: SaleRecord[];
   filteredCosts: CostRecord[];
+};
+
+export type MappingStats = {
+  cities: { cityId: number; cityName: string; hubs: number; companies: number; validated: number; people: number; linked: number }[];
+  mappers: { email: string; name: string; people: number; places: number; lastWeek: number; lastAt: string | null }[];
 };

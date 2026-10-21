@@ -11,11 +11,12 @@ O que fazer, em que ordem e as regras do mapeamento. A mesma versão fica na pla
 ## A ordem do mapeamento
 
 1. Cidade: confira se a cidade já está cadastrada (aba Cidades). Se não estiver, peça ao administrador.
-2. Local: em “Empresas e locais”, use “Cadastrar empresa ou local”. Escolha o tipo (Empresa, Escritório Elite, Network / comunidade, Instituição de ensino ou Ponto de encontro) e, se for empresa, o setor. Use sempre o endereço comercial.
-3. Localização: no Mapa, abra o local e use “Validar localização”. Só local validado aparece no ponto certo.
-4. Pessoa: no Mapa, use “+ Pessoa”, escolha a cidade, o local vinculado e o vínculo (sócio/dono, colaborador, mentorado, membro do network, responsável ou frequenta).
-5. Papel: na ficha da pessoa, use “Papéis e responsáveis” para registrar Mentorado, Mentor, Parceiro, Assinante, Network...
-6. Lead: só se a pessoa autorizou o contato. Depois acompanhe em “Vendas e relacionamento” com o roteiro do Método F.E.C.H.A.
+2. Local: use o botão “Mapear”, no topo. Escolha a cidade e depois o local: um já cadastrado ou um novo, com tipo (Empresa, Escritório Elite, Network / comunidade, Instituição de ensino ou Ponto de encontro), setor e endereço comercial.
+3. Ponto no mapa: busque o endereço e escolha o resultado certo. Se não achar, deixe pendente e valide depois em Mapa → local → “Validar localização”.
+4. Pessoas: no mesmo passo a passo, adicione as pessoas do local com o vínculo (sócio/dono, colaborador, mentorado, membro do network, responsável ou frequenta) e, se quiser, o papel (Mentorado, Mentor, Parceiro, Assinante, Network...).
+5. Nome repetido: se aparecer o aviso de que já existe alguém com esse nome na cidade, confira no mapa. Só salve se for mesmo outra pessoa.
+6. Muitos de uma vez: use as planilhas “Importar empresas e locais” (aba Empresas e locais) e “Importar pessoas” (aba Mapa). Importe os locais antes das pessoas.
+7. Lead: só se a pessoa autorizou o contato. Depois acompanhe em “Vendas e relacionamento” com o roteiro do Método F.E.C.H.A.
 
 ## Regras que não mudam (LGPD)
 

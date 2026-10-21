@@ -24,9 +24,9 @@ export function setupSteps(data: DashboardData): Step[] {
   const steps: Step[] = [
     { title: "Cidades", detail: data.cities.length ? `${data.cities.length} cidade(s) cadastrada(s).` : "Cadastre as cidades onde a Elite vai atuar.", done: data.cities.length > 0, action: "Abrir cidades", tab: "cidades" },
     { title: "Equipe com acesso", detail: others.length ? `${entered} de ${others.length} pessoa(s) já entraram.` : "Convide quem vai mapear e vender com você.", done: entered > 0, action: "Convidar equipe", tab: "time" },
-    { title: "Escritórios e networks", detail: hubs ? `${hubs} local(is) de referência no mapa.` : "Marque os escritórios Elite, networks e pontos de encontro.", done: hubs > 0, action: "Cadastrar local", tab: "empresas" },
-    { title: "Empresas", detail: companies ? `${companies} empresa(s) com tipo e setor.` : "Cadastre as empresas com o setor de cada uma.", done: companies > 0, action: "Cadastrar empresa", tab: "empresas" },
-    { title: "Pessoas ligadas a locais", detail: people ? `${people} pessoa(s) no mapa, ${linked} ligada(s) a um local.` : "Cadastre mentorados, parceiros e contatos, cada um no seu local.", done: linked > 0, action: "Abrir mapa", tab: "mapa" },
+    { title: "Escritórios e networks", detail: hubs ? `${hubs} local(is) de referência no mapa.` : "Marque os escritórios Elite, networks e pontos de encontro.", done: hubs > 0, action: "Mapear local", tab: "mapear" },
+    { title: "Empresas", detail: companies ? `${companies} empresa(s) com tipo e setor.` : "Cadastre as empresas com o setor de cada uma.", done: companies > 0, action: "Mapear empresa", tab: "mapear" },
+    { title: "Pessoas ligadas a locais", detail: people ? `${people} pessoa(s) no mapa, ${linked} ligada(s) a um local.` : "Cadastre mentorados, parceiros e contatos, cada um no seu local.", done: linked > 0, action: "Mapear pessoas", tab: "mapear" },
     { title: "Embaixadores ativos", detail: ambassadors ? `${ambassadors} embaixador(es) ativo(s).` : "Ative os primeiros embaixadores de cada cidade.", done: ambassadors > 0, action: "Abrir embaixadores", tab: "embaixadores" },
     { title: "Leads e follow-up", detail: data.leads.length ? `${data.leads.length} lead(s) no acompanhamento.` : "Registre os primeiros leads e siga o Método F.E.C.H.A.", done: data.leads.length > 0, action: "Abrir vendas", tab: "followup" },
   ];
@@ -46,7 +46,7 @@ export function GettingStarted({ data, onGo }: { data: DashboardData; onGo: (tab
     {open && <ol className="grid gap-px border-t border-white/8 bg-white/8 sm:grid-cols-2 xl:grid-cols-4">{steps.map((step, index) => <li key={step.title} className="flex flex-col gap-2 bg-[#0d0d0b] p-4">
       <div className="flex items-center gap-2"><span className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold ${step.done ? "bg-emerald-400/15 text-emerald-300" : step === next ? "bg-[#c9a227] text-black" : "bg-white/8 text-zinc-400"}`}>{step.done ? <Check className="size-3.5" /> : index + 1}</span><h3 className="font-medium text-white">{step.title}</h3></div>
       <p className="flex-1 text-xs leading-5 text-zinc-400">{step.detail}</p>
-      <Button size="sm" variant="ghost" onClick={() => onGo(step.tab)} className="h-7 justify-start px-0 text-xs text-[#d6b94f] hover:bg-transparent hover:text-[#e8c766]">{step.done ? "Ver" : step.action} <ArrowRight className="size-3" /></Button>
+      <Button size="sm" variant="ghost" onClick={() => onGo(step.tab)} className="h-7 justify-start px-0 text-xs text-[#d6b94f] hover:bg-transparent hover:text-[#e8c766]">{step.done ? (step.tab === "mapear" ? "Mapear mais" : "Ver") : step.action} <ArrowRight className="size-3" /></Button>
     </li>)}</ol>}
   </section>;
 }
@@ -69,8 +69,8 @@ const ROLE_WELCOME: Record<AccessView["role"], { what: string; steps: string[]; 
   },
   Comercial: {
     what: "Você mapeia pessoas e locais e cuida dos seus leads até a venda.",
-    steps: ["Em Empresas e locais, cadastre a empresa, escritório ou network com tipo e setor.", "No Mapa, use “+ Pessoa” e ligue cada pessoa ao local dela (sócio, colaborador, mentorado...).", "Em Vendas e relacionamento, siga cada lead com o roteiro do Método F.E.C.H.A."],
-    tab: "empresas", start: "Cadastrar o primeiro local",
+    steps: ["Use o botão “Mapear”: escolha a cidade e o local (empresa, escritório ou network, com tipo e setor).", "No mesmo passo a passo, cadastre as pessoas do local com o vínculo (sócio, colaborador, mentorado...).", "Em Vendas e relacionamento, siga cada lead com o roteiro do Método F.E.C.H.A."],
+    tab: "mapear", start: "Mapear o primeiro local",
   },
   Embaixador: {
     what: "Você indica pessoas para a Elite e acompanha suas tarefas.",

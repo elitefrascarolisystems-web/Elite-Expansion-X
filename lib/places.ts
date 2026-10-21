@@ -29,3 +29,31 @@ export function placeIconLabel(roles: string[]): string {
   if (type && type !== "Empresa" && (PLACE_TYPES as readonly string[]).includes(type)) return type;
   return roles.find((r) => (SECTORS as readonly string[]).includes(r)) ?? "Empresa";
 }
+
+/** Chave para comparar nomes sem acento, caixa ou espaços repetidos ("Flávia  Silva" = "flavia silva"). */
+export function nameKey(value: string): string {
+  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function fromList<T extends string>(list: readonly T[], value: string, aliases: Record<string, T> = {}): T | null {
+  const key = nameKey(value);
+  if (!key) return null;
+  return list.find((item) => nameKey(item) === key) ?? aliases[key] ?? list.find((item) => nameKey(item).startsWith(key) && key.length >= 4) ?? null;
+}
+
+/** Valores escritos na planilha → opções da plataforma (aceita sem acento e formas curtas). */
+export const placeTypeFromText = (value: string) => fromList(PLACE_TYPES, value, {
+  escritorio: "Escritório Elite", "escritorio elite": "Escritório Elite", network: "Network / comunidade", comunidade: "Network / comunidade",
+  instituicao: "Instituição de ensino", escola: "Instituição de ensino", faculdade: "Instituição de ensino", "ponto de encontro": "Ponto de encontro",
+});
+export const sectorFromText = (value: string) => fromList(SECTORS, value, {
+  comercio: "Comércio e varejo", varejo: "Comércio e varejo", beleza: "Beleza e estética", estetica: "Beleza e estética",
+  financas: "Finanças e seguros", seguros: "Finanças e seguros", transporte: "Transporte e logística", logistica: "Transporte e logística",
+  turismo: "Turismo e eventos", eventos: "Turismo e eventos", esporte: "Esporte e lazer", lazer: "Esporte e lazer",
+  associacao: "Associação / entidade", entidade: "Associação / entidade", governo: "Governo / público", publico: "Governo / público",
+  servicos: "Serviços profissionais", agro: "Agronegócio",
+});
+export const placeLinkFromText = (value: string) => fromList(PLACE_LINKS, value, {
+  socio: "Sócio / dono", dono: "Sócio / dono", proprietario: "Sócio / dono", funcionario: "Colaborador", membro: "Membro do network",
+});
+export const personRoleFromText = (value: string) => fromList(PERSON_ROLES, value, { mentorada: "Mentorado", assinante: "Assinante" });
