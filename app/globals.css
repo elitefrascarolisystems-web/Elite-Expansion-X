@@ -677,3 +677,12 @@ button:disabled { cursor: not-allowed; }
   .elite-area-body, .elite-area-body > * { animation: none !important; }
   .elite-card, .elite-nav-item, [data-slot="button"] { transition: none !important; }
 }
+
+/* ---------- Mapa para imprimir (A3 deitado) ---------- */
+@media print {
+  @page { size: A3 landscape; margin: 10mm; }
+  body { background: #fff !important; }
+  .print-hide { display: none !important; }
+  .elite-print { min-height: 0; }
+  .print-sheet { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

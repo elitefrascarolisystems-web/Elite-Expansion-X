@@ -41,6 +41,7 @@ import {
   MapPin,
   Megaphone,
   Plus,
+  Printer,
   RefreshCcw,
   Settings,
   ShieldCheck,
@@ -470,7 +471,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
 
         {location.area === "hoje" && <TodayPanel data={data} view={fullView} onGo={go} onFollowup={openFollowup} shortcuts={actions.filter((action) => action.group === "dia" && action.id !== "atendimento-mapa")} />}
 
-        {here === "territorio/mapa" && <>{canMap && <ActionBar hint="Locais e pessoas de cada cidade. Pessoas aparecem no local ligado a elas, nunca na residência."><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-gold text-black"><MapPin /> Mapear local e pessoas</Button></ActionBar>}<TerritorialMap key={mapFocusKey || mapPersonId || mapLeadId || "map"} focusKey={mapFocusKey} focusPersonId={mapPersonId} focusLeadId={mapLeadId} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canImport && <PeopleImport data={data} onSaved={refreshDashboard} />}</>}
+        {here === "territorio/mapa" && <>{canMap && <ActionBar hint="Locais e pessoas de cada cidade. Pessoas aparecem no local ligado a elas, nunca na residência."><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-gold text-black"><MapPin /> Mapear local e pessoas</Button><Button asChild variant="outline" className={outline}><a href={`/imprimir/mapa?org=${data.access.organizationId}`} target="_blank" rel="noopener"><Printer /> Imprimir mapa (A3/PDF)</a></Button></ActionBar>}<TerritorialMap key={mapFocusKey || mapPersonId || mapLeadId || "map"} focusKey={mapFocusKey} focusPersonId={mapPersonId} focusLeadId={mapLeadId} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canImport && <PeopleImport data={data} onSaved={refreshDashboard} />}</>}
         {here === "territorio/cidades" && <><ActionBar hint="Saúde de cada cidade, decisão registrada e fechamentos consolidados.">{canPerform(data.access, "record_city") && <Button onClick={() => setDialog({ name: "city-result" })} variant="outline" className={outline}><Activity /> Fechamento consolidado</Button>}{canCity && <Button onClick={() => setDialog({ name: "city" })} className="bg-gold text-black">Cadastrar cidade</Button>}</ActionBar><CityTable cities={view.cities} onCreate={canCity ? () => setDialog({ name: "city" }) : undefined} onEdit={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} /><TerritoryDecisions data={data} /></>}
         {here === "territorio/locais" && <CommercialWorkspace data={data} mode="businesses" onRefresh={refreshDashboard} />}
 
