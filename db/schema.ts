@@ -399,3 +399,9 @@ export const organizationSubscriptions = sqliteTable('organization_subscriptions
  priceCents:integer('price_cents').notNull().default(0),paidUntil:text('paid_until'),notes:text('notes').notNull().default(''),
  updatedBy:text('updated_by').notNull(),updatedAt:text('updated_at').notNull(),
 });
+/** Banco de Ganchos (Sistema de Prospecção): frases de abordagem por situação, canal e setor. */
+export const prospectHooks = sqliteTable('prospect_hooks', {
+ id:integer('id').primaryKey({autoIncrement:true}),organizationId:integer('organization_id').notNull().references(()=>organizations.id),
+ title:text('title').notNull(),situation:text('situation').notNull(),channel:text('channel').notNull().default('WhatsApp'),sector:text('sector').notNull().default(''),
+ body:text('body').notNull(),status:text('status').notNull().default('Rascunho'),createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
+},(t)=>[index('prospect_hooks_org_status_idx').on(t.organizationId,t.status,t.situation)]);

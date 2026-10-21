@@ -41,6 +41,7 @@ jobs:
             tests/expansion-domain.test.mjs \
             tests/fecha-guide.test.mjs \
             tests/followup-integration.test.mjs \
+            tests/hooks.test.mjs \
             tests/navigation.test.mjs \
             tests/password-login.test.mjs \
             tests/places.test.mjs \

@@ -8,6 +8,8 @@ import { AppShell, type NewAction } from "@/app/app-shell";
 import { AdvisorsPanel } from "@/app/advisors-panel";
 import { QuickSearch } from "@/app/quick-search";
 import { IdentityPanel, logoUrl } from "@/app/identity-panel";
+import { HookPicker, HooksBank } from "@/app/hooks-bank";
+import type { HookContext } from "@/lib/hooks";
 import { OpportunityDialog, type OpportunityEdit } from "@/app/opportunity-dialog";
 import { copyText } from "@/lib/copy-text";
 import { GettingStarted, WelcomeDialog } from "@/app/getting-started";
@@ -370,6 +372,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const [mappingOpen, setMappingOpen] = useState(false);
   // Ficha do atendimento → dados da oportunidade ou nova atividade.
   const [opportunityEdit, setOpportunityEdit] = useState<OpportunityEdit | null>(null);
+  // "Usar gancho" na ficha: dados do atendimento para preencher a mensagem.
+  const [hookContext, setHookContext] = useState<HookContext | null>(null);
   // Muda a cada "+ Novo → Convidar equipe": reabre Time e acessos com o convite aberto.
   const [inviteRequest, setInviteRequest] = useState(0);
   const areas = useMemo(() => navigationFor(data.access, { hasAdvisors: data.advisors.length > 0 }), [data.access, data.advisors.length]);
@@ -477,7 +481,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
         {here === "territorio/locais" && <CommercialWorkspace data={data} mode="businesses" onRefresh={refreshDashboard} />}
 
         {here === "vendas/atendimentos" && <PendingAttendances data={data} onDone={refreshDashboard} />}
-        {followupView && <FollowupWorkspace key={followupLeadId ?? "all"} view={followupView} data={data} focusLeadId={followupLeadId} onRefresh={refreshDashboard} onMap={openMapPerson} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} onNewLead={() => setDialog({ name: "lead" })} onEditOpportunity={(mode, row) => setOpportunityEdit({ mode, row })} onCRM={() => navigate({ area: "vendas", view: "atendimentos" })} />}
+        {followupView && <FollowupWorkspace key={followupLeadId ?? "all"} view={followupView} data={data} focusLeadId={followupLeadId} onRefresh={refreshDashboard} onMap={openMapPerson} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} onNewLead={() => setDialog({ name: "lead" })} onEditOpportunity={(mode, row) => setOpportunityEdit({ mode, row })} onHook={(row) => setHookContext({ name: row.lead_name, city: row.city_name, owner: row.owner_name || row.owner_email, organization: data.access.organizationName })} onCRM={() => navigate({ area: "vendas", view: "atendimentos" })} />}
+        {here === "vendas/ganchos" && <HooksBank />}
         {here === "vendas/pagamentos" && <><ActionBar hint="Cada atendimento com a etapa, a venda e o valor. A receita só conta depois do pagamento confirmado.">{canSale && <Button disabled={!eligibleLeads.length} title={!eligibleLeads.length ? "Comece um atendimento antes de registrar uma venda." : undefined} onClick={() => setDialog({ name: "sale" })} className="bg-gold text-black"><Banknote /> Registrar venda e pagamento</Button>}</ActionBar><Pipeline view={view} onCreate={canPipeline ? () => setDialog({ name: "lead" }) : undefined} onMap={openMapLead} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} canEdit={canPerform(data.access, "update_lead") || canSale} /></>}
 
         {here === "rede/embaixadores" && <><ActionBar hint="Etapa, treinamento, atividade e resultado de cada embaixador, e as missões da semana.">{canPerform(data.access, "record_ambassador") && <Button disabled={!data.ambassadors.length} title={!data.ambassadors.length ? "Cadastre um embaixador antes de registrar atividade." : undefined} onClick={() => setDialog({ name: "ambassador-activity" })} variant="outline" className={outline}><Activity /> Registrar atividade</Button>}{canTask && <Button disabled={!data.ambassadors.length} onClick={() => setDialog({ name: "task" })} variant="outline" className={outline}><ClipboardCheck /> Criar tarefa</Button>}{canAmbassador && <Button onClick={() => setDialog({ name: "ambassador" })} className="bg-gold text-black">Cadastrar embaixador</Button>}</ActionBar><AmbassadorTable ambassadors={view.ambassadors} onCreate={canAmbassador ? () => setDialog({ name: "ambassador" }) : undefined} onEdit={canPerform(data.access, "update_ambassador") ? (id) => setDialog({ name: "ambassador-edit", entityId: id }) : undefined} /><Missions data={data} onCompleteTask={(id) => save("complete_task", { taskId: id })} saving={saving} onCreate={canTask && data.ambassadors.length ? () => setDialog({ name: "task" }) : undefined} /></>}
@@ -504,6 +509,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
     </AppShell>
     <ExpansionDialog dialog={dialog} data={data} saving={saving} onClose={() => setDialog(null)} onSave={save} />
     <OpportunityDialog edit={opportunityEdit} data={data} onClose={() => setOpportunityEdit(null)} onSaved={() => { refreshDashboard().catch(() => toast.error("Salvo. Atualize a página para ver a lista atualizada.")); }} />
+    <HookPicker context={hookContext} onClose={() => setHookContext(null)} />
     <WelcomeDialog access={data.access} onStart={go} />
     {canMap && <MappingWizard open={mappingOpen} data={data} onClose={() => setMappingOpen(false)} onSaved={refreshDashboard} />}
   </>;

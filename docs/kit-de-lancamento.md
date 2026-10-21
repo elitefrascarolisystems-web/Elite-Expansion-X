@@ -112,10 +112,17 @@ Em *Hoje* ficam também os atalhos do dia: *Mapear local e pessoas*, *Novo atend
 
 Cada função abre onde mais trabalha: Comercial em *Vendas → Agenda*, Coordenação em *Território*, os demais em *Hoje*. O endereço guarda a área e a seção (`?area=vendas&ver=agenda`), então dá para mandar o link direto de uma tela.
 
-## 11. Pendências para depois do lançamento
+## 11. Recursos para o dia a dia
+
+- **Busca rápida** — botão *Buscar* no topo ou **Ctrl+K** (⌘K no Mac): cidade, pessoa, local ou atendimento. Cada pessoa só encontra o que já pode ver. Pessoa e local abrem no mapa com a ficha; atendimento abre na agenda.
+- **Atendimentos** (*Vendas → Atendimentos*) — uma lista só. Na ficha: *Dados da oportunidade* (etapa, temperatura, local, próximo passo, motivo da perda), *Registrar atividade* e *Usar gancho*. Quem entrou por *Novo atendimento · contato novo* aparece em **Sem acompanhamento**, com o botão *Abrir acompanhamento*.
+- **Banco de Ganchos** (*Vendas → Ganchos*) — frases de abordagem do Sistema de Prospecção por situação (primeiro contato, retomada, indicação, evento, objeção, pós-venda), canal e setor. A gestão cadastra ou importa (uma por linha: `Título | Situação | Texto`), revisa e aprova; a equipe usa os aprovados. Variáveis: `{nome}`, `{primeiro_nome}`, `{cidade}`, `{responsavel}`, `{empresa}`.
+- **Mapa para imprimir** — *Território → Mapa → Imprimir mapa (A3/PDF)*: folha A3 da cidade com os locais numerados, legenda e lista (pessoas ligadas e próximo passo). No diálogo de impressão, *Salvar como PDF* gera o arquivo.
+- **Identidade da empresa assinante** — *Gestão → Identidade*: nome e logo (PNG, JPEG ou WebP, até 150 KB). A logo aparece na barra lateral e no mapa impresso.
+
+## 12. Pendências para depois do lançamento
 
 - E-mails da Flávia e do Fabricio para gerar os logins (ou convidar pela tela).
 - Decidir se este endereço de teste vira o oficial ou se criamos um endereço definitivo.
-- Sistema de Prospecção Elite 1.0 / Banco de Ganchos (aguardando material).
-- Mapas impressos (A3/PDF).
-- Cobrança automática da assinatura (boleto/Pix/cartão) e logo de cada empresa assinante (opcional).
+- Conteúdo do Sistema de Prospecção Elite 1.0: cadastrar os ganchos no Banco de Ganchos (a estrutura está pronta).
+- Cobrança automática da assinatura (boleto/Pix/cartão): depende da escolha do provedor de pagamento.

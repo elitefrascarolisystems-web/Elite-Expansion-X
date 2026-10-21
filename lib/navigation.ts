@@ -27,7 +27,7 @@ export function navigationFor(access: AccessView, { hasAdvisors }: NavOptions): 
     {
       id: "vendas", label: "Vendas", description: "Do primeiro contato ao pagamento, e o cuidado depois da venda.",
       views: [
-        { id: "agenda", label: "Agenda" }, { id: "atendimentos", label: "Atendimentos" }, { id: "fecha", label: "Método F.E.C.H.A." },
+        { id: "agenda", label: "Agenda" }, { id: "atendimentos", label: "Atendimentos" }, { id: "ganchos", label: "Ganchos" }, { id: "fecha", label: "Método F.E.C.H.A." },
         { id: "pagamentos", label: "Pagamentos" }, { id: "posvenda", label: "Pós-venda" },
       ],
     },

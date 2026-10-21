@@ -11,7 +11,7 @@ const shape=(a,opts={hasAdvisors:false})=>Object.fromEntries(nav.navigationFor(a
 
 test('navegação: cada função vê só as áreas dela',()=>{
  assert.deepEqual(shape(access('Administrador',{isPlatformOwner:true})),{
-  hoje:[],territorio:['mapa','cidades','locais'],vendas:['agenda','atendimentos','fecha','pagamentos','posvenda'],
+  hoje:[],territorio:['mapa','cidades','locais'],vendas:['agenda','atendimentos','ganchos','fecha','pagamentos','posvenda'],
   rede:['embaixadores','indicacoes','mentorados','parceiros','materiais'],resultados:['visao','metas','mapeamento','custos'],
   gestao:['time','regras','historico'],plataforma:['assinaturas','assessores'],
  });
@@ -23,7 +23,7 @@ test('navegação: cada função vê só as áreas dela',()=>{
   assert.deepEqual(Object.keys(s),['hoje','territorio','vendas','rede','resultados'],role);
   assert.ok(!s.rede.includes('mentorados'),'portal de mentorados é do administrador');
  }
- assert.deepEqual(shape(access('Comercial')),{hoje:[],territorio:['mapa','locais'],vendas:['agenda','atendimentos','fecha','pagamentos','posvenda'],rede:['indicacoes'],resultados:['metas']});
+ assert.deepEqual(shape(access('Comercial')),{hoje:[],territorio:['mapa','locais'],vendas:['agenda','atendimentos','ganchos','fecha','pagamentos','posvenda'],rede:['indicacoes'],resultados:['metas']});
 });
 
 test('navegação: área inicial e endereços inválidos',()=>{
