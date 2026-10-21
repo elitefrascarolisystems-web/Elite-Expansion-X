@@ -66,7 +66,19 @@ test('duplicate CRM linkage and referral cycles are rejected without extra peopl
  const child=await m.mutateTerritory(m.access,'person',{...person('Segundo'),referrerId:p.id});await assert.rejects(m.mutateTerritory(m.access,'person',{...person(),id:p.id,referrerId:child.id}),/ciclo/);assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM territory_people').get().n,2);
 });
 test('geocoding outage preserves an actionable response, no key exposure',async()=>{
- await modules();const api=await vite.ssrLoadModule('/app/api/territory/geocode/route.ts');const r=await api.POST(new Request('https://test.invalid/api/territory/geocode',{method:'POST',headers:{origin:'https://test.invalid',...ORG()},body:JSON.stringify({query:'Centro',cityId:1,kind:'partner'})}));assert.equal(r.status,503);assert.match((await r.json()).error,/pendente/);
+ await modules();const api=await vite.ssrLoadModule('/app/api/territory/geocode/route.ts');
+ const req=()=>new Request('https://test.invalid/api/territory/geocode',{method:'POST',headers:{origin:'https://test.invalid',...ORG()},body:JSON.stringify({query:'Centro',cityId:1,kind:'partner'})});
+ // A busca gratuita (sem chave) é simulada: o teste não depende de internet.
+ const realFetch=globalThis.fetch,calls=[];
+ try{
+  globalThis.fetch=async(url,init)=>{calls.push({url:String(url),init});throw new Error('fora do ar');};
+  const r=await api.POST(req());assert.equal(r.status,503);assert.match((await r.json()).error,/pendente/);
+  globalThis.fetch=async(url,init)=>{calls.push({url:String(url),init});return Response.json([{display_name:'Centro, Esmeraldas',lat:'-19.7628',lon:'-44.3131'}]);};
+  const ok=await api.POST(req());assert.equal(ok.status,200);const body=await ok.json();
+  assert.deepEqual(body.results,[{name:'Centro, Esmeraldas',latitude:-19.7628,longitude:-44.3131}]);
+  assert.match(calls.at(-1).url,/^https:\/\/nominatim\.openstreetmap\.org\/search\?/);assert.match(calls.at(-1).init.headers['User-Agent'],/EliteExpansionX/);
+  assert.ok(!calls.some(c=>/key=/.test(c.url)),'sem chave na consulta');
+ }finally{globalThis.fetch=realFetch;}
 });
 test('new schema preserves original rows and foreign keys; isolated migration rollback',async()=>{
  const m=await modules();assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM cities').get().n,4);assert.deepEqual(sqlite.prepare('PRAGMA foreign_key_check').all(),[]);
