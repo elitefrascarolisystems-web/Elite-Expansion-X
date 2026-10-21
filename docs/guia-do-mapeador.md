@@ -16,7 +16,8 @@ O que fazer, em que ordem e as regras do mapeamento. A mesma versão fica na pla
 4. Pessoas: no mesmo passo a passo, adicione as pessoas do local com o vínculo (sócio/dono, colaborador, mentorado, membro do network, responsável ou frequenta) e, se quiser, o papel (Mentorado, Mentor, Parceiro, Assinante, Network...).
 5. Nome repetido: se aparecer o aviso de que já existe alguém com esse nome na cidade, confira no mapa. Só salve se for mesmo outra pessoa.
 6. Muitos de uma vez: use as planilhas “Importar empresas e locais” (aba Empresas e locais) e “Importar pessoas” (aba Mapa). Importe os locais antes das pessoas.
-7. Lead: só se a pessoa autorizou o contato. Depois acompanhe em “Vendas e relacionamento” com o roteiro do Método F.E.C.H.A.
+7. Atendimento: se a pessoa autorizou o contato, use “Iniciar atendimento” (na ficha do mapa ou logo depois de cadastrá-la). Ela vira lead e oportunidade de uma vez, com o primeiro retorno marcado. Depois siga em “Vendas e relacionamento” com o roteiro do Método F.E.C.H.A.; ao confirmar o pagamento, a oportunidade fecha sozinha como Ganho.
+8. Agenda: ao entrar, “Sua agenda” mostra seus retornos atrasados e os de hoje. Comece por eles.
 
 ## Regras que não mudam (LGPD)
 

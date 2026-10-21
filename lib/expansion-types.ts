@@ -258,6 +258,8 @@ export type DashboardData = {
   mapping?: { people: number; linked: number };
   /** Indicadores do mapeamento por cidade e por pessoa da equipe (só para a gestão). */
   mappingStats?: MappingStats;
+  /** Retornos atrasados e de hoje de quem está conectado. */
+  agenda?: AgendaView;
   access: AccessView;
   settings: SettingsView;
   cities: CityRecord[];
@@ -385,4 +387,11 @@ export type DashboardView = {
 export type MappingStats = {
   cities: { cityId: number; cityName: string; hubs: number; companies: number; validated: number; people: number; linked: number }[];
   mappers: { email: string; name: string; people: number; places: number; lastWeek: number; lastAt: string | null }[];
+};
+
+export type AgendaView = {
+  late: number;
+  today: number;
+  upcoming: number;
+  items: { opportunityId: string; leadId: number; leadName: string; cityName: string; nextAction: string; stage: string; temperature: string; dueAt: string; late: boolean }[];
 };

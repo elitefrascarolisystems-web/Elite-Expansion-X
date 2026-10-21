@@ -472,3 +472,63 @@ test('indicadores do mapeamento por cidade e por mapeador',async()=>{
  const coord=await getDashboardData({...m.access,role:'Coordenação',cityId:2,canManageGlobal:false});
  assert.deepEqual(coord.mappingStats.cities.map(x=>x.cityId),[2],'coordenação vê só a própria cidade');
 });
+
+test('do mapa à venda: iniciar atendimento cria lead e oportunidade ligados à pessoa e ao local, sem duplicar',async()=>{
+ const m=await modules(),c=await vite.ssrLoadModule('/db/commercial.ts'),j=await vite.ssrLoadModule('/db/journey.ts');
+ const api=await vite.ssrLoadModule('/app/api/journey/route.ts');
+ const shop=crypto.randomUUID();
+ await c.saveCommercial(m.access,'business',{id:shop,cityId:1,name:'Padaria Central',segment:'Padaria',source:'Cadastro manual',ownerEmail:m.access.email,status:'Identificada',placeType:'Empresa',sector:'Alimentação',publicBusiness:true});
+ const {id:personId}=await m.mutateTerritory(m.access,'person',{...person('Maria Mapeada'),placeId:shop,placeLink:'Sócio / dono'});
+ const base={personId,whatsapp:'(31) 99999-0001',email:'',channel:'Orgânico',consentAccepted:true,consentSource:'Conversa no mapeamento',consentPurpose:'Contato comercial',ownerEmail:m.access.email,temperature:'Quente',nextAction:'Primeiro contato',dueDate:'2026-10-22'};
+ await assert.rejects(j.startAttendance(m.access,{...base,whatsapp:''}),/WhatsApp ou o e-mail/);
+ await assert.rejects(j.startAttendance(m.access,{...base,consentAccepted:false}),e=>e.issues?.[0]?.message==='Marque a confirmação para continuar.');
+ assert.equal(sqlite.prepare('SELECT count(*) n FROM leads').get().n,0,'validação antes de gravar');
+ const {leadId,opportunityId}=await j.startAttendance(m.access,base);
+ const lead=sqlite.prepare('SELECT * FROM leads WHERE id=?').get(leadId);
+ assert.equal(lead.person_id,personId);assert.equal(lead.name,'Maria Mapeada');assert.equal(lead.city_id,1);assert.equal(lead.source_label,'Mapeamento · Padaria Central');assert.equal(lead.assigned_to_email,m.access.email);
+ const opp=sqlite.prepare('SELECT * FROM opportunities WHERE id=?').get(opportunityId);
+ assert.equal(opp.lead_id,leadId);assert.equal(opp.business_id,shop);assert.equal(opp.stage,'Novo');assert.equal(opp.temperature,'Quente');assert.equal(opp.next_action,'Primeiro contato');assert.equal(opp.due_date,'2026-10-22');
+ await assert.rejects(j.startAttendance(m.access,base),e=>e.status===409&&e.leadId===leadId,'segunda vez aponta o atendimento existente');
+ assert.equal(sqlite.prepare('SELECT count(*) n FROM territory_people WHERE name=?').get('Maria Mapeada').n,1,'não cria outra pessoa');
+ // Falha no meio: lead salvo, oportunidade não; repetir completa sem duplicar o lead.
+ const {id:other}=await m.mutateTerritory(m.access,'person',person('João Meio'));
+ await assert.rejects(j.startAttendance(m.access,{...base,personId:other,whatsapp:'31999990002',ownerEmail:'ninguem@example.invalid'}),/Lead salvo, mas a oportunidade não/);
+ const again=await j.startAttendance(m.access,{...base,personId:other,whatsapp:'31999990002'});
+ assert.equal(sqlite.prepare('SELECT count(*) n FROM leads WHERE person_id=?').get(other).n,1);assert.ok(again.opportunityId);
+ // Rota: mesma origem e mensagem de quem já está em atendimento.
+ const post=(data,origin='https://test.invalid')=>api.POST(new Request('https://test.invalid/api/journey',{method:'POST',headers:{origin,'content-type':'application/json',...ORG()},body:JSON.stringify({action:'start',data})}));
+ assert.equal((await post(base,'https://evil.invalid')).status,403);
+ const dup=await post(base);assert.equal(dup.status,409);assert.equal((await dup.json()).leadId,leadId);
+});
+
+test('executivo de vendas inicia atendimento só de quem mapeou; venda paga fecha a oportunidade como Ganho',async()=>{
+ const m=await modules(),j=await vite.ssrLoadModule('/db/journey.ts');
+ sqlite.prepare("INSERT INTO app_users(organization_id,email,name,role,active,created_by,created_at) VALUES(1,'sales@example.invalid','Vendedora','Comercial',1,'teste','2026-01-01')").run();
+ const sales=await (await vite.ssrLoadModule('/db/access.ts')).getUserAccess('sales@example.invalid','Vendedora',1);
+ const {id:mine}=await m.mutateTerritory(sales,'person',person('Mapeada pela vendedora'));
+ const {id:others}=await m.mutateTerritory(m.access,'person',person('Mapeada pela gestão'));
+ const base={whatsapp:'31988887777',consentAccepted:true,consentSource:'Conversa',consentPurpose:'Contato',ownerEmail:'sales@example.invalid',temperature:'Morno',nextAction:'Ligar amanhã',dueDate:'2026-10-22'};
+ await assert.rejects(j.startAttendance(sales,{...base,personId:others}),/que mapeou/);
+ const {leadId,opportunityId}=await j.startAttendance(sales,{...base,personId:mine});
+ assert.equal(sqlite.prepare('SELECT assigned_to_email a FROM leads WHERE id=?').get(leadId).a,'sales@example.invalid');
+ await assert.rejects(j.startAttendance(sales,{...base,personId:crypto.randomUUID(),whatsapp:'31977776666'}),/fora do seu acesso/);
+ await m.executeAction('record_sale',m.parseActionPayload('record_sale',{leadId,product:'Mentoria',amountCents:500000,status:'Pagamento confirmado'}),sales);
+ assert.equal(sqlite.prepare('SELECT stage FROM opportunities WHERE id=?').get(opportunityId).stage,'Ganho');
+ assert.equal(sqlite.prepare("SELECT count(*) n FROM commercial_activities WHERE opportunity_id=? AND note='Novo → Ganho (pagamento confirmado)'").get(opportunityId).n,1,'histórico registra o fechamento');
+});
+
+test('agenda de quem entrou: atrasados, de hoje e próximos, só os próprios',async()=>{
+ const m=await modules(),j=await vite.ssrLoadModule('/db/journey.ts'),{getAgenda}=await vite.ssrLoadModule('/db/agenda.ts');
+ const day=(offset)=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo'}).format(new Date(Date.now()+offset*86400000));
+ const start=async(name,phone,dueDate,ownerEmail=m.access.email)=>{const {id}=await m.mutateTerritory(m.access,'person',person(name));return j.startAttendance(m.access,{personId:id,whatsapp:phone,consentAccepted:true,consentSource:'Conversa',consentPurpose:'Contato',ownerEmail,temperature:'Morno',nextAction:'Retornar '+name,dueDate});};
+ await start('Atrasada','31900000001',day(-2));
+ await start('Hoje','31900000002',day(0));
+ await start('Amanhã','31900000003',day(1));
+ const paid=await start('Já pagou','31900000004',day(-3));
+ await m.executeAction('record_sale',m.parseActionPayload('record_sale',{leadId:paid.leadId,product:'Mentoria',amountCents:100,status:'Pagamento confirmado'}),m.access);
+ const agenda=await getAgenda(m.access);
+ assert.deepEqual({late:agenda.late,today:agenda.today,upcoming:agenda.upcoming},{late:1,today:1,upcoming:1});
+ assert.deepEqual(agenda.items.map(i=>[i.leadName,i.late]),[['Atrasada',true],['Hoje',false]]);
+ assert.equal((await getAgenda({...m.access,email:'outra@example.invalid'})).late,0,'só os próprios');
+ assert.equal(await getAgenda({...m.access,role:'Embaixador'}),undefined);
+});

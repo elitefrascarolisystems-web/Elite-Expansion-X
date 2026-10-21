@@ -5,12 +5,13 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { StartAttendanceDialog, type AttendancePerson } from "@/app/start-attendance";
 import type { DashboardData } from "@/lib/expansion-types";
 import { nameKey, PERSON_ROLES, PLACE_LINKS, PLACE_TYPES, SECTORS } from "@/lib/places";
 import { tenantFetch } from "@/lib/tenant-request";
 
 type Place = { id: string; name: string; placeType: string };
-type Added = { id: string; name: string; link: string; role: string };
+type Added = { id: string; name: string; link: string; role: string; attending?: boolean };
 type Found = { name: string; latitude: number; longitude: number };
 
 async function post(url: string, body: unknown) {
@@ -41,6 +42,7 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
   const [form, setForm] = useState({ placeType: "Empresa", name: "", sector: "", segment: "", district: "", address: "", confirm: false });
   const [personForm, setPersonForm] = useState({ name: "", link: "", role: "" });
   const [authorized, setAuthorized] = useState(false);
+  const [attend, setAttend] = useState<AttendancePerson | null>(null);
 
   const city = data.cities.find((item) => item.id === cityId);
   const places = useMemo(() => {
@@ -169,8 +171,9 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
       </div>
       {duplicate && <div role="alert" className="grid gap-2 rounded-lg border border-amber-300/30 bg-amber-300/10 p-3 text-sm text-amber-100"><p>{duplicate.message}</p><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" className="border-white/10 bg-white/5 text-white" disabled={busy} onClick={() => savePerson(true, duplicate)}>É outra pessoa: salvar mesmo assim</Button><Button size="sm" variant="ghost" onClick={() => setDuplicate(null)}>Não salvar</Button></div></div>}
       <div className="flex justify-end"><Button disabled={busy || !personReady} onClick={() => savePerson()} className="bg-[#c9a227] text-black">{busy ? <LoaderCircle className="animate-spin" /> : <UserPlus />} Adicionar pessoa</Button></div>
-      {added.length > 0 && <ul className="grid gap-1 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-3 text-sm" aria-label="Pessoas cadastradas agora">{added.map((item) => <li key={item.id} className="flex items-center gap-2"><Check className="size-4 text-emerald-300" />{item.name}<span className="text-xs text-zinc-400">{[item.link, item.role].filter(Boolean).join(" · ")}</span></li>)}</ul>}
+      {added.length > 0 && <ul className="grid gap-1 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-3 text-sm" aria-label="Pessoas cadastradas agora">{added.map((item) => <li key={item.id} className="flex flex-wrap items-center gap-2"><Check className="size-4 text-emerald-300" />{item.name}<span className="text-xs text-zinc-400">{[item.link, item.role].filter(Boolean).join(" · ")}</span>{data.access.canManagePipeline && (item.attending ? <span className="ml-auto text-xs text-emerald-300">Em atendimento</span> : <Button size="sm" variant="ghost" className="ml-auto h-7 px-2 text-xs text-[#d6b94f]" onClick={() => setAttend({ id: item.id, name: item.name, cityId: cityId!, cityName: city?.name, placeName: place?.name })}>Iniciar atendimento</Button>)}</li>)}</ul>}
       <div className="flex flex-wrap justify-between gap-2 border-t border-white/8 pt-3"><Button variant="ghost" onClick={() => { setStep(1); setPlace(null); setMode("existing"); setAdded([]); }}><MapPin /> Mapear outro local</Button><Button onClick={close} className="bg-[#c9a227] text-black">Concluir</Button></div>
     </div>}
+    <StartAttendanceDialog person={attend} data={data} onClose={() => setAttend(null)} onStarted={() => { const id = attend?.id; setAttend(null); setAdded((list) => list.map((item) => item.id === id ? { ...item, attending: true } : item)); }} />
   </DialogContent></Dialog>;
 }

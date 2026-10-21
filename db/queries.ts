@@ -18,6 +18,7 @@ import type {
 } from "@/lib/expansion-types";
 import { getSettings, listActiveAdvisors } from "@/db/access";
 import { getMappingStats } from "@/db/mapping-stats";
+import { getAgenda } from "@/db/agenda";
 import { asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runtime";
 
 type Scope = { where: string; values: Array<string | number> };
@@ -348,6 +349,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     places: places.map(p => ({id: String(p.id), cityId: Number(p.city_id), name: String(p.name), placeType: String(p.place_type)})),
     mapping: mapping ? { people: asNumber(mapping.people), linked: asNumber(mapping.linked) } : undefined,
     mappingStats: await getMappingStats(access),
+    agenda: await getAgenda(access),
     access,
     settings,
     cities,

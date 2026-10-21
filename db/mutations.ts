@@ -114,8 +114,10 @@ async function resolvePerson(input: Input, access: AccessView, cityId: number, t
   const id = typeof input.personId === "string" ? input.personId : crypto.randomUUID();
   const db = database();
   if (input.personId) {
-    if (!["Administrador", "Coordenação", "Líder"].includes(access.role)) throw new ActionError("Seu perfil não possui permissão para vincular pessoas existentes.");
-    const p = (await db.prepare("SELECT name, city_id FROM territory_people WHERE id=?").bind(id).all()).results[0];
+    const p = (await db.prepare("SELECT name, city_id, created_by FROM territory_people WHERE id=?").bind(id).all()).results[0];
+    // Comercial liga só as pessoas que ele mesmo mapeou.
+    const ownMapped = access.role === "Comercial" && Boolean(p) && String(p.created_by).toLowerCase() === access.email.toLowerCase();
+    if (!["Administrador", "Coordenação", "Líder"].includes(access.role) && !ownMapped) throw new ActionError("Seu perfil não possui permissão para vincular pessoas existentes.");
     if (!p || Number(p.city_id) !== cityId) throw new ActionError("Pessoa fora do seu acesso.");
     const duplicate = (await db.prepare(`SELECT id FROM ${table} WHERE person_id=?`).bind(id).all()).results[0];
     if (duplicate) throw new ActionError("Esta pessoa já possui este cadastro. Abra a ficha existente.");
@@ -361,6 +363,15 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     }
     await db.prepare("UPDATE leads SET status = 'Oportunidade', updated_at = ? WHERE id = ?")
       .bind(timestamp, leadId).run();
+    if (status === "Pagamento confirmado") {
+      // Pagamento confirmado fecha a oportunidade: ninguém precisa voltar ao CRM para marcar "Ganho".
+      await db.batch([
+        db.prepare(`INSERT INTO commercial_activities(id,organization_id,city_id,opportunity_id,owner_email,kind,note,activity_date,created_at)
+          SELECT lower(hex(randomblob(16))),organization_id,city_id,id,owner_email,'Etapa',stage||' → Ganho (pagamento confirmado)',?,?
+          FROM opportunities WHERE lead_id=? AND stage NOT IN ('Ganho','Perdido')`).bind(timestamp.slice(0, 10), timestamp, leadId),
+        db.prepare("UPDATE opportunities SET stage='Ganho', updated_at=?, version=version+1 WHERE lead_id=? AND stage NOT IN ('Ganho','Perdido')").bind(timestamp, leadId),
+      ]);
+    }
     await audit(db, access.organizationId, access.email, action, "sale", entityId, `Venda atualizada para ${status}.`);
     return;
   }

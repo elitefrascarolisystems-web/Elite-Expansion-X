@@ -70,9 +70,11 @@ test('existing payment drives FECHA and post-sale; no duplicate sale or person',
  await m.saveFollowup(m.access,cmd(m,'start',1,{unpaid:true}));
  await m.executeAction('record_sale',m.parseActionPayload('record_sale',{leadId:1,product:'Formação',amountCents:150000,status:'Pagamento confirmado'}),m.access);
  assert.equal((await read(m)).records[0].fechaStatus,'paid');assert.equal((await read(m)).records[0].dueAt,null);
- await m.saveFollowup(m.access,cmd(m,'aftercare',2,{aftercare:'Boas-vindas'}));
- await m.saveFollowup(m.access,cmd(m,'aftercare',3,{aftercare:'Concluído'}));assert.equal((await read(m)).records[0].dueAt,null);
- await m.saveFollowup(m.access,cmd(m,'contact',4));assert.equal((await read(m)).records[0].followup.aftercare,'Acompanhamento');
+ // Pagamento confirmado fecha a oportunidade (nova versão do registro).
+ assert.equal((await read(m)).records[0].stage,'Ganho');assert.equal((await read(m)).records[0].version,3);
+ await m.saveFollowup(m.access,cmd(m,'aftercare',3,{aftercare:'Boas-vindas'}));
+ await m.saveFollowup(m.access,cmd(m,'aftercare',4,{aftercare:'Concluído'}));assert.equal((await read(m)).records[0].dueAt,null);
+ await m.saveFollowup(m.access,cmd(m,'contact',5));assert.equal((await read(m)).records[0].followup.aftercare,'Acompanhamento');
  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM sales').get().n,1);
 });
 test('seller, city and organization scopes apply to reads and direct writes',async()=>{
