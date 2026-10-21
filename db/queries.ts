@@ -145,7 +145,8 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
         COALESCE(a.name, '') AS ambassador_name, l.partner_id, l.event_id, l.content_id,
         l.name, l.email, l.whatsapp, l.status, l.channel, l.source_label, l.campaign,
         l.consent_at, l.consent_source, l.consent_purpose, l.consent_revoked_at,
-        l.consent_revocation_reason, l.assigned_to_email, l.created_at
+        l.consent_revocation_reason, l.assigned_to_email, l.created_at,
+        (SELECT o.id FROM opportunities o WHERE o.lead_id = l.id LIMIT 1) AS opportunity_id
       FROM leads l
       JOIN cities c ON c.id = l.city_id
       LEFT JOIN ambassadors a ON a.id = l.ambassador_id
@@ -276,6 +277,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     consentRevokedAt: nullableText(row.consent_revoked_at),
     consentRevocationReason: access.role === "Embaixador" ? "" : String(row.consent_revocation_reason ?? ""),
     assignedToEmail: access.role === "Embaixador" ? "" : String(row.assigned_to_email ?? ""),
+    opportunityId: row.opportunity_id ? String(row.opportunity_id) : null,
     createdAt: String(row.created_at),
   }));
 

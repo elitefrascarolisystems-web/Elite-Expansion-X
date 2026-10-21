@@ -7,6 +7,7 @@ import {CommercialWorkspace} from '@/app/commercial-workspace';
 import { AppShell, type NewAction } from "@/app/app-shell";
 import { AdvisorsPanel } from "@/app/advisors-panel";
 import { QuickSearch } from "@/app/quick-search";
+import { OpportunityDialog, type OpportunityEdit } from "@/app/opportunity-dialog";
 import { copyText } from "@/lib/copy-text";
 import { GettingStarted, WelcomeDialog } from "@/app/getting-started";
 import { TeamPanel } from "@/app/team-panel";
@@ -205,6 +206,29 @@ function TodayPanel({ data, view, onGo, onFollowup, shortcuts }: { data: Dashboa
   </div>;
 }
 
+/** Atendimentos que ainda não têm acompanhamento (oportunidade): não aparecem na agenda até abrir. */
+function PendingAttendances({ data, onDone }: { data: DashboardData; onDone: () => Promise<void> }) {
+  const [busy, setBusy] = useState<number | null>(null);
+  const pending = data.leads.filter((lead) => !lead.opportunityId && lead.status !== "Cancelado" && !lead.consentRevokedAt);
+  if (!pending.length) return null;
+  async function start(lead: DashboardData["leads"][number]) {
+    setBusy(lead.id);
+    try {
+      const day = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo" }).format(new Date());
+      const response = await tenantFetch("/api/commercial", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "opportunity", data: { id: crypto.randomUUID(), leadId: lead.id, businessId: null, ownerEmail: lead.assignedToEmail || data.access.email, temperature: "Morno", stage: "Novo", nextAction: "Primeiro contato pelo WhatsApp", dueDate: day, lostReason: "" } }) });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.ok) throw new Error(body.error || "Não foi possível abrir o acompanhamento. Tente de novo.");
+      toast.success(`Acompanhamento de ${lead.name.split(" ")[0]} aberto. O primeiro retorno já está na agenda de hoje.`);
+      await onDone();
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível abrir o acompanhamento. Tente de novo."); }
+    finally { setBusy(null); }
+  }
+  return <article className="elite-card overflow-hidden border-gold/25"><div className="border-b border-white/8 px-5 py-4"><p className="section-kicker">Sem acompanhamento</p><h3 className="text-lg font-semibold text-white">{pending.length === 1 ? "1 atendimento ainda não está na agenda" : `${pending.length} atendimentos ainda não estão na agenda`}</h3><p className="mt-1 text-sm text-subtle">Abra o acompanhamento para marcar o primeiro retorno. Depois, ajuste etapa e temperatura em “Dados da oportunidade”, na ficha.</p></div>
+    <ul className="divide-y divide-white/7">{pending.slice(0, 8).map((lead) => <li key={lead.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"><div className="min-w-0"><p className="font-medium text-white">{lead.name}</p><p className="text-xs text-subtle">{[lead.cityName, lead.channel, lead.assignedToEmail].filter(Boolean).join(" · ")}</p></div><Button size="sm" disabled={busy !== null} onClick={() => start(lead)} className="bg-gold text-black">{busy === lead.id ? "Abrindo…" : "Abrir acompanhamento"}</Button></li>)}</ul>
+    {pending.length > 8 && <p className="px-5 py-3 text-xs text-subtle">Mostrando 8 de {pending.length}. Os demais aparecem aqui conforme você abrir os primeiros.</p>}
+  </article>;
+}
+
 function ResultsOverview({ view, canExport }: { view: DashboardView; canExport: boolean }) {
   const summary = view.summary;
   return <div className="space-y-5">
@@ -342,8 +366,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   // Registro do mapa aberto pela busca (cidade, pessoa, local, parceiro, evento).
   const [mapFocusKey, setMapFocusKey] = useState<string | undefined>();
   const [mappingOpen, setMappingOpen] = useState(false);
-  // Atendimentos: lista de acompanhamento ou dados das oportunidades (etapa, temperatura, empresa).
-  const [salesMode, setSalesMode] = useState<"lista" | "dados">("lista");
+  // Ficha do atendimento → dados da oportunidade ou nova atividade.
+  const [opportunityEdit, setOpportunityEdit] = useState<OpportunityEdit | null>(null);
   // Muda a cada "+ Novo → Convidar equipe": reabre Time e acessos com o convite aberto.
   const [inviteRequest, setInviteRequest] = useState(0);
   const areas = useMemo(() => navigationFor(data.access, { hasAdvisors: data.advisors.length > 0 }), [data.access, data.advisors.length]);
@@ -376,7 +400,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
     const { area, view: sub } = parseTarget(target);
     navigate(resolveLocation(areas, data.access, area, sub));
   };
-  const openFollowup = (leadId: number) => { setFollowupLeadId(leadId); setSalesMode("lista"); navigate({ area: "vendas", view: "agenda" }); };
+  const openFollowup = (leadId: number) => { setFollowupLeadId(leadId); navigate({ area: "vendas", view: "agenda" }); };
   const openMapPerson = (personId: string) => { setMapPersonId(personId); setMapLeadId(undefined); setMapFocusKey(undefined); navigate({ area: "territorio", view: "mapa" }); };
   const openMapLead = (leadId: number) => { setMapPersonId(undefined); setMapLeadId(leadId); setMapFocusKey(undefined); navigate({ area: "territorio", view: "mapa" }); };
   const openMapKey = (key: string) => { setMapPersonId(undefined); setMapLeadId(undefined); setMapFocusKey(key); navigate({ area: "territorio", view: "mapa" }); };
@@ -392,6 +416,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
       const result = await response.json() as { data?: DashboardData; error?: string };
       if (!response.ok || !result.data) throw new Error(result.error || "Não foi possível salvar. Confira a conexão e tente de novo.");
       setData(result.data); setDialog(null); toast.success(successMessage[action] ?? "Registro salvo e indicadores atualizados.");
+      // Contato novo: leva para Atendimentos, onde ele aparece em "Sem acompanhamento".
+      if (action === "create_lead" && data.access.role !== "Embaixador") navigate({ area: "vendas", view: "atendimentos" });
     } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível salvar. Confira a conexão e tente de novo."); }
     finally { savingLock.current = false; setSaving(false); }
   }
@@ -433,7 +459,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const here = `${location.area}/${location.view}`;
   const showFilters = data.access.role !== "Comercial" && FILTERED.includes(here);
   const attributionWarning = showFilters && (filters.channel || filters.ambassadorId !== null) && view.cities.some((city) => city.dataSource === "Consolidado");
-  const followupView = location.area === "vendas" && !(location.view === "atendimentos" && salesMode === "dados") ? FOLLOWUP_VIEWS[location.view as keyof typeof FOLLOWUP_VIEWS] : undefined;
+  const followupView = location.area === "vendas" ? FOLLOWUP_VIEWS[location.view as keyof typeof FOLLOWUP_VIEWS] : undefined;
   const outline = "border-white/10 bg-white/5 text-white";
 
   return <>
@@ -448,9 +474,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
         {here === "territorio/cidades" && <><ActionBar hint="Saúde de cada cidade, decisão registrada e fechamentos consolidados.">{canPerform(data.access, "record_city") && <Button onClick={() => setDialog({ name: "city-result" })} variant="outline" className={outline}><Activity /> Fechamento consolidado</Button>}{canCity && <Button onClick={() => setDialog({ name: "city" })} className="bg-gold text-black">Cadastrar cidade</Button>}</ActionBar><CityTable cities={view.cities} onCreate={canCity ? () => setDialog({ name: "city" }) : undefined} onEdit={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} /><TerritoryDecisions data={data} /></>}
         {here === "territorio/locais" && <CommercialWorkspace data={data} mode="businesses" onRefresh={refreshDashboard} />}
 
-        {location.area === "vendas" && location.view === "atendimentos" && <div className="elite-segmented" role="group" aria-label="Como ver os atendimentos"><button type="button" aria-pressed={salesMode === "lista"} onClick={() => setSalesMode("lista")}>Acompanhamento</button><button type="button" aria-pressed={salesMode === "dados"} onClick={() => setSalesMode("dados")}>Dados das oportunidades</button></div>}
-        {followupView && <FollowupWorkspace key={followupLeadId ?? "all"} view={followupView} data={data} focusLeadId={followupLeadId} onRefresh={refreshDashboard} onMap={openMapPerson} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} onNewLead={() => setDialog({ name: "lead" })} onCRM={() => { setSalesMode("dados"); navigate({ area: "vendas", view: "atendimentos" }); }} />}
-        {here === "vendas/atendimentos" && salesMode === "dados" && <CommercialWorkspace data={data} mode="pipeline" onFollowup={openFollowup} onRefresh={refreshDashboard} />}
+        {here === "vendas/atendimentos" && <PendingAttendances data={data} onDone={refreshDashboard} />}
+        {followupView && <FollowupWorkspace key={followupLeadId ?? "all"} view={followupView} data={data} focusLeadId={followupLeadId} onRefresh={refreshDashboard} onMap={openMapPerson} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} onNewLead={() => setDialog({ name: "lead" })} onEditOpportunity={(mode, row) => setOpportunityEdit({ mode, row })} onCRM={() => navigate({ area: "vendas", view: "atendimentos" })} />}
         {here === "vendas/pagamentos" && <><ActionBar hint="Cada atendimento com a etapa, a venda e o valor. A receita só conta depois do pagamento confirmado.">{canSale && <Button disabled={!eligibleLeads.length} title={!eligibleLeads.length ? "Comece um atendimento antes de registrar uma venda." : undefined} onClick={() => setDialog({ name: "sale" })} className="bg-gold text-black"><Banknote /> Registrar venda e pagamento</Button>}</ActionBar><Pipeline view={view} onCreate={canPipeline ? () => setDialog({ name: "lead" }) : undefined} onMap={openMapLead} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} canEdit={canPerform(data.access, "update_lead") || canSale} /></>}
 
         {here === "rede/embaixadores" && <><ActionBar hint="Etapa, treinamento, atividade e resultado de cada embaixador, e as missões da semana.">{canPerform(data.access, "record_ambassador") && <Button disabled={!data.ambassadors.length} title={!data.ambassadors.length ? "Cadastre um embaixador antes de registrar atividade." : undefined} onClick={() => setDialog({ name: "ambassador-activity" })} variant="outline" className={outline}><Activity /> Registrar atividade</Button>}{canTask && <Button disabled={!data.ambassadors.length} onClick={() => setDialog({ name: "task" })} variant="outline" className={outline}><ClipboardCheck /> Criar tarefa</Button>}{canAmbassador && <Button onClick={() => setDialog({ name: "ambassador" })} className="bg-gold text-black">Cadastrar embaixador</Button>}</ActionBar><AmbassadorTable ambassadors={view.ambassadors} onCreate={canAmbassador ? () => setDialog({ name: "ambassador" }) : undefined} onEdit={canPerform(data.access, "update_ambassador") ? (id) => setDialog({ name: "ambassador-edit", entityId: id }) : undefined} /><Missions data={data} onCompleteTask={(id) => save("complete_task", { taskId: id })} saving={saving} onCreate={canTask && data.ambassadors.length ? () => setDialog({ name: "task" }) : undefined} /></>}
@@ -475,6 +500,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
       </div>
     </AppShell>
     <ExpansionDialog dialog={dialog} data={data} saving={saving} onClose={() => setDialog(null)} onSave={save} />
+    <OpportunityDialog edit={opportunityEdit} data={data} onClose={() => setOpportunityEdit(null)} onSaved={() => { refreshDashboard().catch(() => toast.error("Salvo. Atualize a página para ver a lista atualizada.")); }} />
     <WelcomeDialog access={data.access} onStart={go} />
     {canMap && <MappingWizard open={mappingOpen} data={data} onClose={() => setMappingOpen(false)} onSaved={refreshDashboard} />}
   </>;

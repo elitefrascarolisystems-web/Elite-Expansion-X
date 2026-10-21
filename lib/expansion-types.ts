@@ -141,6 +141,8 @@ export type LeadRecord = {
   consentRevocationReason: string;
   assignedToEmail: string;
   createdAt: string;
+  /** Oportunidade do atendimento; sem ela, ele ainda não aparece na agenda de Vendas. */
+  opportunityId?: string | null;
 };
 
 export type SaleRecord = {
