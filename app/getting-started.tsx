@@ -59,12 +59,12 @@ const ROLE_WELCOME: Record<AccessView["role"], { what: string; steps: string[]; 
   },
   Coordenação: {
     what: "Você coordena uma cidade: mapa, embaixadores, leads, vendas e tarefas dela.",
-    steps: ["Cadastre os locais da cidade (escritórios, networks, empresas) em Empresas e locais.", "No Mapa, cadastre as pessoas ligadas a cada local.", "Ative os embaixadores e acompanhe os leads em Vendas e relacionamento."],
-    tab: "visao", start: "Começar",
+    steps: ["Use o botão “Mapear” para cadastrar os locais da cidade (escritórios, networks, empresas) e as pessoas de cada um.", "Quem autorizou contato: “Iniciar atendimento” e siga em Vendas e relacionamento com o Método F.E.C.H.A.", "Ative os embaixadores e acompanhe a cobertura da cidade na aba Início."],
+    tab: "mapear", start: "Mapear o primeiro local",
   },
   Líder: {
     what: "Você lidera uma cidade: acompanha a equipe local e os resultados dela.",
-    steps: ["Confira o mapa da sua cidade.", "Cadastre pessoas e locais que você conhece.", "Acompanhe embaixadores e leads."],
+    steps: ["Confira o mapa da sua cidade e a cobertura na aba Início.", "Use “Mapear” para cadastrar locais e pessoas que você conhece.", "Acompanhe embaixadores e os atendimentos em Vendas e relacionamento."],
     tab: "visao", start: "Começar",
   },
   Comercial: {

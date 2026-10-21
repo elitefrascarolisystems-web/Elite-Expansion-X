@@ -509,6 +509,12 @@ test('executivo de vendas inicia atendimento só de quem mapeou; venda paga fech
  const {id:others}=await m.mutateTerritory(m.access,'person',person('Mapeada pela gestão'));
  const base={whatsapp:'31988887777',consentAccepted:true,consentSource:'Conversa',consentPurpose:'Contato',ownerEmail:'sales@example.invalid',temperature:'Morno',nextAction:'Ligar amanhã',dueDate:'2026-10-22'};
  await assert.rejects(j.startAttendance(sales,{...base,personId:others}),/que mapeou/);
+ // Pessoa da vendedora ligada a um local cadastrado pela gestão: a oportunidade nasce sem o vínculo de CRM.
+ const c=await vite.ssrLoadModule('/db/commercial.ts'),adminShop=crypto.randomUUID();
+ await c.saveCommercial(m.access,'business',{id:adminShop,cityId:1,name:'Loja da Gestão',segment:'Loja',source:'Cadastro manual',ownerEmail:m.access.email,status:'Identificada',placeType:'Empresa',sector:'Comércio e varejo',publicBusiness:true});
+ const {id:linked}=await m.mutateTerritory(sales,'person',{...person('Ligada à loja da gestão'),placeId:adminShop,placeLink:'Colaborador'});
+ const viaShop=await j.startAttendance(sales,{...base,personId:linked,whatsapp:'31955554444'});
+ assert.equal(sqlite.prepare('SELECT business_id b FROM opportunities WHERE id=?').get(viaShop.opportunityId).b,null);
  const {leadId,opportunityId}=await j.startAttendance(sales,{...base,personId:mine});
  assert.equal(sqlite.prepare('SELECT assigned_to_email a FROM leads WHERE id=?').get(leadId).a,'sales@example.invalid');
  await assert.rejects(j.startAttendance(sales,{...base,personId:crypto.randomUUID(),whatsapp:'31977776666'}),/fora do seu acesso/);

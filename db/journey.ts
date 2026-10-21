@@ -52,7 +52,9 @@ export async function startAttendance(access: AccessView, input: unknown) {
     if (!lead) throw new JourneyError("Não foi possível criar o lead. Tente de novo.", 503);
   }
   const leadId = Number(lead.id);
-  const business = person.place_id ? await first("SELECT id FROM businesses WHERE id=? AND organization_id=? AND city_id=?", [String(person.place_id), access.organizationId, cityId]) : null;
+  // No CRM o vendedor só enxerga os locais pelos quais responde; se o local da pessoa é de outro
+  // responsável, a oportunidade nasce sem esse vínculo (a ligação pessoa → local continua no mapa).
+  const business = person.place_id ? await first(`SELECT id FROM businesses WHERE id=? AND organization_id=? AND city_id=?${access.role === "Comercial" ? " AND lower(owner_email)=lower(?)" : ""}`, [String(person.place_id), access.organizationId, cityId, ...(access.role === "Comercial" ? [access.email] : [])]) : null;
   const opportunityId = crypto.randomUUID();
   try {
     await saveCommercial(access, "opportunity", { id: opportunityId, leadId, businessId: business ? String(business.id) : null, ownerEmail: v.ownerEmail, temperature: v.temperature, stage: "Novo", nextAction: v.nextAction, dueDate: v.dueDate, lostReason: "" });
