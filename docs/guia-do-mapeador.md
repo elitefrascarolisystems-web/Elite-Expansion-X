@@ -11,7 +11,7 @@ O que fazer, em que ordem e as regras do mapeamento. A mesma versão fica na pla
 ## A ordem do mapeamento
 
 1. Cidade: confira se a cidade já está cadastrada (aba Cidades). Se não estiver, peça ao administrador.
-2. Local: use o botão “Mapear”, no topo. Escolha a cidade e depois o local: um já cadastrado ou um novo, com tipo (Empresa, Escritório Elite, Network / comunidade, Instituição de ensino ou Ponto de encontro), setor e endereço comercial.
+2. Local: use o botão “Mapear”, no topo. Escolha a cidade e depois o local: um já cadastrado ou um novo, com tipo (Empresa, Escritório, Network / comunidade, Instituição de ensino ou Ponto de encontro), setor e endereço comercial.
 3. Ponto no mapa: busque o endereço e escolha o resultado certo. Se não achar, deixe pendente e valide depois em Mapa → local → “Validar localização”.
 4. Pessoas: no mesmo passo a passo, adicione as pessoas do local com o vínculo (sócio/dono, colaborador, mentorado, membro do network, responsável ou frequenta) e, se quiser, o papel (Mentorado, Mentor, Parceiro, Assinante, Network...).
 5. Nome repetido: se aparecer o aviso de que já existe alguém com esse nome na cidade, confira no mapa. Só salve se for mesmo outra pessoa.
@@ -28,7 +28,7 @@ O que fazer, em que ordem e as regras do mapeamento. A mesma versão fica na pla
 
 ## Como ler o mapa
 
-- Locais: dourado = Escritório Elite · roxo = Network / comunidade · azul = Empresa (o ícone mostra o setor) · verde-azulado = Instituição de ensino · marrom = Ponto de encontro.
+- Locais: dourado = Escritório · roxo = Network / comunidade · azul = Empresa (o ícone mostra o setor) · verde-azulado = Instituição de ensino · marrom = Ponto de encontro.
 - Pessoas: o ícone mostra o papel principal (Líder, Embaixador, Mentorado, Assinante, Lead...).
 - Use os filtros de categoria (Pessoas, Locais, Setores) para ver um grupo de cada vez.
 
