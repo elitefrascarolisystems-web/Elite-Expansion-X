@@ -1,35 +1,31 @@
 import type { ReactNode } from "react";
-import Image from "next/image";
+import { LockKeyhole } from "lucide-react";
+import { BrandHero, OrbitalEmblem, Wordmark } from "@/app/brand-hero";
 
-/** Moldura das telas de entrada: marca à esquerda (no celular, em cima) e o formulário ao lado. */
+/** Moldura das telas de entrada: a marca em órbita à esquerda (no celular, em cima) e o formulário ao lado. */
 export function AuthShell({ kicker, title, description, children }: { kicker: string; title: string; description: ReactNode; children: ReactNode }) {
   return (
-    <main className="elite-grid min-h-screen bg-[#080807] text-zinc-100 lg:grid lg:grid-cols-[1.05fr_1fr]">
-      <section className="relative hidden overflow-hidden border-r border-white/8 lg:flex lg:flex-col lg:justify-between lg:p-14">
-        <div aria-hidden className="pointer-events-none absolute -left-40 -top-40 h-[34rem] w-[34rem] rounded-full bg-[#c9a227]/10 blur-3xl" />
-        <div className="relative flex items-center gap-4">
-          <Image src="/elite-academy-official.png" alt="Elite Frascaroli Academy — logo oficial" width={1080} height={1080} className="elite-brand-logo" />
-          <div><p className="text-lg font-semibold tracking-tight text-white">Elite Expansion X</p><p className="text-sm text-zinc-500">Elite Frascaroli Academy</p></div>
-        </div>
-        <div className="relative max-w-lg">
-          <p className="section-kicker">Operação privada</p>
-          <h2 className="text-4xl font-semibold leading-tight tracking-tight text-white xl:text-5xl">Expansão cidade por cidade.</h2>
-          <p className="mt-5 text-base leading-7 text-zinc-400">Pessoas, embaixadores, leads, vendas e custos de cada cidade num só lugar, com cada organização vendo apenas os próprios dados.</p>
-        </div>
-        <p className="relative text-xs text-zinc-600">Acesso restrito a pessoas autorizadas. Cada entrada e alteração fica registrada.</p>
-      </section>
-      <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
-        <div className="w-full max-w-md">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <Image src="/elite-academy-official.png" alt="Elite Frascaroli Academy — logo oficial" width={1080} height={1080} className="h-14 w-14 rounded-xl bg-black object-contain" />
-            <div><p className="font-semibold tracking-tight text-white">Elite Expansion X</p><p className="text-xs text-zinc-500">Elite Frascaroli Academy</p></div>
+    <main className="elite-auth min-h-screen text-zinc-100 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(26rem,32rem)]">
+      <BrandHero />
+      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-10 sm:px-8">
+        <div aria-hidden className="pointer-events-none absolute -right-32 top-1/4 h-[30rem] w-[30rem] rounded-full bg-[#c9a227]/[0.07] blur-3xl" />
+        <div className="relative w-full max-w-md">
+          {/* No celular a marca vem em cima, compacta. */}
+          <div className="mb-8 flex flex-col items-center gap-4 lg:hidden">
+            <OrbitalEmblem size="sm" />
+            <Wordmark compact />
+            <p className="max-w-xs text-center text-sm leading-6 text-zinc-400">Expansão com estratégia. <span className="elite-gold-text font-medium">Cidade por cidade.</span></p>
           </div>
-          <div className="elite-card p-7 sm:p-9">
-            <p className="section-kicker">{kicker}</p>
-            <h1 className="text-2xl font-semibold tracking-tight text-white">{title}</h1>
-            <div className="mt-2 text-sm leading-6 text-zinc-400">{description}</div>
-            <div className="mt-7">{children}</div>
+          <div className="elite-auth-card">
+            <div className="p-7 sm:p-9">
+              <p className="section-kicker">{kicker}</p>
+              <h1 className="text-[1.65rem] font-semibold tracking-tight text-white">{title}</h1>
+              <div className="mt-2 text-sm leading-6 text-zinc-400">{description}</div>
+              <div className="mt-7">{children}</div>
+            </div>
+            <p className="flex items-center justify-center gap-2 border-t border-white/6 px-6 py-3.5 text-[11px] tracking-wide text-zinc-500"><LockKeyhole className="size-3.5 text-[#c9a227]/70" aria-hidden />Acesso restrito e registrado · sessão protegida de 24 horas</p>
           </div>
+          <p className="mt-6 text-center text-[11px] uppercase tracking-[0.3em] text-zinc-600 lg:hidden">Mais visão · Mais estratégia · Mais impacto</p>
         </div>
       </section>
     </main>

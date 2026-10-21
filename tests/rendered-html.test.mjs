@@ -21,7 +21,8 @@ test("ships the territorial map and existing expansion identity", async () => {
   const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
 
   assert.match(clientFiles, /Mapa territorial/);
-  assert.match(clientFiles, /elite-academy-official\.png/);
+  assert.match(clientFiles, /elite-emblem\.png/);
+  assert.match(await readFile(new URL("../app/brand-hero.tsx", import.meta.url), "utf8"), /elite-emblem\.png/, 'entrada usa o emblema sem fundo');
   assert.match(mapSource, /nunca na residência/);
   assert.match(mapSource, /Não informe residência/);
   assert.match(layout, /elite-academy-official\.png/);

@@ -62,7 +62,7 @@ export function PasswordForm() {
       <PasswordField id="confirm" name="confirm" label="Repita a senha" autoComplete="new-password" />
       <p className="text-xs leading-5 text-zinc-500">Mínimo de 10 caracteres, com letras e números. Não use o seu e-mail.</p>
       {error && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm text-red-200">{error}</p>}
-      <Button type="submit" disabled={busy} className="h-11 bg-[#c9a227] text-base font-semibold text-black hover:bg-[#d8b43a]">
+      <Button type="submit" disabled={busy} className="h-12 bg-gradient-to-r from-[#f3d27a] via-[#c9a227] to-[#b8901f] text-base font-semibold tracking-wide text-black shadow-[0_10px_30px_-10px_rgba(201,162,39,0.7)] transition hover:brightness-110">
         {busy ? <><LoaderCircle className="animate-spin" /> Salvando…</> : info.hasPassword ? "Salvar nova senha e entrar" : "Criar senha e entrar"}
       </Button>
     </form>
