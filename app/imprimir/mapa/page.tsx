@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser, SIGN_IN_PATH } from "@/app/auth";
 import { getTeamAccess } from "@/db/access";
+import { logoVersion } from "@/db/identity";
 import { ORGANIZATION_HEADER, parseOrganizationId } from "@/lib/tenant-request";
 import { PrintMap } from "@/app/imprimir/mapa/print-map";
 
@@ -19,5 +20,6 @@ export default async function PrintMapPage({ searchParams }: { searchParams?: Pr
   if (!access) redirect("/");
   const query = (await searchParams) ?? {};
   const city = Number(Array.isArray(query.city) ? query.city[0] : query.city);
-  return <PrintMap organization={access.organizationName} author={access.name} initialCity={Number.isSafeInteger(city) && city > 0 ? city : null} />;
+  const version = await logoVersion(access.organizationId);
+  return <PrintMap logo={version ? `/api/organization-logo?org=${access.organizationId}&v=${encodeURIComponent(version)}` : null} organization={access.organizationName} author={access.name} initialCity={Number.isSafeInteger(city) && city > 0 ? city : null} />;
 }

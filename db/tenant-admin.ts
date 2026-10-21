@@ -12,6 +12,13 @@ export async function requireFeature(org:number,feature:'imports'|'exports'|'map
  const e=await row(`SELECT ${feature} AS enabled FROM organization_entitlements WHERE organization_id=?`,org);
  if(e&&Number(e.enabled)!==1)throw new TenantError('Este recurso não está liberado para sua organização.',403);
 }
+/** Logo da empresa: só PNG, JPEG ou WebP de verdade, até 150 KB e dentro do armazenamento do plano. */
+export async function validateLogo(org:number,logo:string,official:boolean){
+ if(!official)throw new TenantError('Confirme que esta é a logo oficial autorizada.');const m=/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(logo);if(!m)throw new TenantError('Use PNG, JPEG ou WebP. SVG não é aceito neste upload.');let bytes:string;try{bytes=atob(m[2]);}catch{throw new TenantError('Arquivo inválido.')}
+ if(bytes.length>150000)throw new TenantError('A logo deve ter até 150 KB.');
+ const valid=m[1]==='png'?bytes.startsWith('\x89PNG\r\n\x1a\n'):m[1]==='jpeg'?bytes.startsWith('\xff\xd8\xff'):bytes.startsWith('RIFF')&&bytes.slice(8,12)==='WEBP';if(!valid)throw new TenantError('O conteúdo não corresponde ao formato da imagem.');
+ const ent=await row('SELECT storage_bytes FROM organization_entitlements WHERE organization_id=?',org);if(ent?.storage_bytes!=null&&bytes.length>Number(ent.storage_bytes))throw new TenantError('O arquivo excede o armazenamento contratado para logos.');
+}
 function requireAdmin(a:AccessView|null):asserts a is AccessView {if(!a?.active||a.role!=='Administrador')throw new TenantError('Acesso administrativo não autorizado.',403)}
 function auditStatement(org:number,actor:string,action:string,reason:string){return database().prepare('INSERT INTO platform_audit(organization_id,actor_email,action,reason,created_at) VALUES(?,?,?,?,?)').bind(org,actor,action,reason,brazilTimestamp())}
 async function scope(org:number,city:number|null,amb:number|null,role:string){
@@ -98,11 +105,7 @@ export async function mutateTenant(emailValue:string,name:string,a:AccessView|nu
  if(action==='profile'){
   const v=z.object({name:z.string().trim().min(2).max(120),objective:z.string().trim().max(1000),onboarding:z.object({pilotCityId:id.nullable(),responsibles:z.string().max(500),goals:z.string().max(1000),firstRecord:z.string().max(500)}),logo:z.string().max(210000).nullable(),official:z.boolean()}).parse(input);
   if(v.onboarding.pilotCityId)await scope(org,v.onboarding.pilotCityId,null,'Administrador');
-  if(v.logo){if(!v.official)throw new TenantError('Confirme que esta é a logo oficial autorizada.');const m=/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(v.logo);if(!m)throw new TenantError('Use PNG, JPEG ou WebP. SVG não é aceito neste upload.');let bytes:string;try{bytes=atob(m[2]);}catch{throw new TenantError('Arquivo inválido.')}
-   if(bytes.length>150000)throw new TenantError('A logo deve ter até 150 KB.');
-   const valid=m[1]==='png'?bytes.startsWith('\x89PNG\r\n\x1a\n'):m[1]==='jpeg'?bytes.startsWith('\xff\xd8\xff'):bytes.startsWith('RIFF')&&bytes.slice(8,12)==='WEBP';if(!valid)throw new TenantError('O conteúdo não corresponde ao formato da imagem.');
-   const ent=await row('SELECT storage_bytes FROM organization_entitlements WHERE organization_id=?',org);if(ent?.storage_bytes!=null&&bytes.length>Number(ent.storage_bytes))throw new TenantError('O arquivo excede o armazenamento contratado para logos.');
-  }
+  if(v.logo)await validateLogo(org,v.logo,v.official);
   await db.batch([db.prepare('UPDATE organizations SET name=? WHERE id=?').bind(v.name,org),db.prepare('INSERT INTO organization_profiles(organization_id,objective,onboarding,logo,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(organization_id) DO UPDATE SET objective=excluded.objective,onboarding=excluded.onboarding,logo=excluded.logo,updated_at=excluded.updated_at').bind(org,v.objective,JSON.stringify(v.onboarding),v.logo,now),auditStatement(org,actor,'profile_updated','Identidade e configuração inicial atualizadas.')]);return {};
  }
  throw new TenantError('Ação não reconhecida.');

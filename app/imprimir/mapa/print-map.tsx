@@ -24,7 +24,7 @@ type Loaded = { records: TerritoryRecord[]; linked: Map<string, number>; hasMore
  * Folha A3 (paisagem) do território de uma cidade: desenho com os locais numerados,
  * legenda e lista. Funciona sem o mapa de fundo; o navegador imprime ou salva em PDF.
  */
-export function PrintMap({ organization, author, initialCity }: { organization: string; author: string; initialCity: number | null }) {
+export function PrintMap({ logo, organization, author, initialCity }: { logo: string | null; organization: string; author: string; initialCity: number | null }) {
   const [cities, setCities] = useState<TerritoryRecord[] | null>(null);
   const [cityId, setCityId] = useState<number | null>(initialCity);
   const [loaded, setLoaded] = useState<{ city: number; data: Loaded } | null>(null);
@@ -76,7 +76,7 @@ export function PrintMap({ organization, author, initialCity }: { organization: 
     {!sheet && !error && <p role="status" className="mx-auto flex max-w-[1400px] items-center gap-2 text-sm text-neutral-700"><LoaderCircle className="size-4 animate-spin" /> Preparando o mapa…</p>}
     {sheet && city && <article className="print-sheet mx-auto grid max-w-[1400px] grid-cols-[1.55fr_1fr] gap-6 bg-white p-8 shadow-xl print:max-w-none print:p-0 print:shadow-none">
       <header className="col-span-2 flex items-end justify-between gap-6 border-b-2 border-neutral-900 pb-4">
-        <div className="flex items-center gap-4"><img src="/elite-emblem.png" alt="" width={56} height={56} className="size-14" /><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a6d14]">{organization} · Mapa territorial</p><h1 className="text-3xl font-bold tracking-tight">{city.name}/{city.state}</h1></div></div>
+        <div className="flex items-center gap-4"><img src={logo ?? "/elite-emblem.png"} alt="" width={56} height={56} className="size-14 object-contain" /><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a6d14]">{organization} · Mapa territorial</p><h1 className="text-3xl font-bold tracking-tight">{city.name}/{city.state}</h1></div></div>
         <dl className="flex gap-8 text-right text-sm">{[["Locais", sheet.items.length], ["Pessoas ligadas", sheet.people], ["Parceiros", sheet.items.filter((i) => i.record.kind === "partner").length], ["Eventos e ações", sheet.items.filter((i) => ["event", "action"].includes(i.record.kind)).length]].map(([label, value]) => <div key={label}><dt className="text-neutral-500">{label}</dt><dd className="text-2xl font-bold">{value}</dd></div>)}</dl>
       </header>
       <section aria-label="Desenho do território" className="relative">

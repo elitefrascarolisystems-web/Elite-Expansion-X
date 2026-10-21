@@ -7,6 +7,7 @@ import {CommercialWorkspace} from '@/app/commercial-workspace';
 import { AppShell, type NewAction } from "@/app/app-shell";
 import { AdvisorsPanel } from "@/app/advisors-panel";
 import { QuickSearch } from "@/app/quick-search";
+import { IdentityPanel, logoUrl } from "@/app/identity-panel";
 import { OpportunityDialog, type OpportunityEdit } from "@/app/opportunity-dialog";
 import { copyText } from "@/lib/copy-text";
 import { GettingStarted, WelcomeDialog } from "@/app/getting-started";
@@ -464,7 +465,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const outline = "border-white/10 bg-white/5 text-white";
 
   return <>
-    <AppShell access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={pending ? { vendas: pending } : {}} actions={actions} onNavigate={(next) => navigate(next)} search={<QuickSearch sales={canPipeline} onPick={(pick) => (pick.kind === "territory" ? openMapKey(pick.key) : openFollowup(pick.leadId))} />}>
+    <AppShell logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={pending ? { vendas: pending } : {}} actions={actions} onNavigate={(next) => navigate(next)} search={<QuickSearch sales={canPipeline} onPick={(pick) => (pick.kind === "territory" ? openMapKey(pick.key) : openFollowup(pick.leadId))} />}>
       <div className="space-y-5">
         {showFilters && <FilterBar data={data} filters={filters} onChange={setFilters} />}
         {attributionWarning && <div className="flex items-start gap-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><AlertTriangle className="mt-1 size-4 shrink-0" />Filtros por canal ou embaixador não usam fechamentos consolidados, pois eles não possuem atribuição individual. Cidades detalhadas continuam sendo calculadas normalmente.</div>}
@@ -492,6 +493,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
 
         {here === "gestao/time" && <TeamPanel key={inviteRequest} startInvite={inviteRequest > 0} data={data} onData={setData} onRefresh={refreshDashboard} open={setDialog} />}
         {here === "gestao/regras" && <RulesPanel data={data} view={view} open={setDialog} />}
+        {here === "gestao/identidade" && <IdentityPanel data={data} onSaved={refreshDashboard} />}
         {here === "gestao/plano" && data.plan && <PlanCard plan={data.plan} organization={data.access.organizationName} />}
         {here === "gestao/historico" && <HistoryPanel data={data} />}
         {here === "gestao/assessoria" && <AdvisoryPanel data={data} />}

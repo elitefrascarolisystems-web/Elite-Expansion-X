@@ -274,6 +274,8 @@ export type DashboardData = {
   agenda?: AgendaView;
   /** Plano da organização: limites, uso e recursos liberados. */
   plan?: PlanUsage;
+  /** Logo da empresa assinante: versão (data da troca) ou null sem logo. */
+  logoVersion?: string | null;
   access: AccessView;
   settings: SettingsView;
   cities: CityRecord[];

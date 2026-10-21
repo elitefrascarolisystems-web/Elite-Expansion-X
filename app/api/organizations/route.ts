@@ -2,6 +2,8 @@ import {getCurrentUser} from '@/app/auth';
 import {getTeamAccess} from '@/db/access';
 import {createOrganization,listAdvisors,listOrganizations,OrganizationError,setAdvisor} from '@/db/organizations';
 import {organizationFromRequest} from '@/lib/tenant-request';
+import {saveIdentity} from '@/db/identity';
+import {TenantError} from '@/db/tenant-admin';
 import {ZodError} from 'zod';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'no-store'};
@@ -30,6 +32,8 @@ export async function POST(request:Request){
   return Response.json({ok:true,organizationId:target.organizationId,isAdvisory:target.isAdvisory===true},{headers});
  }
  const a=await getTeamAccess(u.email,u.displayName,organizationFromRequest(request));
+ // Identidade (nome e logo): o administrador da própria empresa.
+ if(body.action==='identity'){if(!a)return Response.json({error:'Você não tem acesso a esta parte da plataforma. Fale com o administrador se precisar.'},{status:403,headers});return Response.json({ok:true,...await saveIdentity(a,body.data)},{headers});}
  if(!a?.isPlatformOwner)return Response.json({error:'Somente os donos da plataforma podem fazer isso.'},{status:403,headers});
  if(body.action==='create')return Response.json({ok:true,id:await createOrganization(a,body.data)},{headers});
  if(body.action==='advisor')return Response.json({ok:true,advisors:await setAdvisor(a,body.data)},{headers});
@@ -37,7 +41,7 @@ export async function POST(request:Request){
  }catch(e){
   if(e instanceof ZodError)return Response.json({error:e.issues[0]?.message??'Dados inválidos.'},{status:400,headers});
   // Só mensagens escritas de propósito chegam ao usuário; erros do banco nunca.
-  if(e instanceof OrganizationError)return Response.json({error:e.message},{status:e.status,headers});
+  if(e instanceof OrganizationError||e instanceof TenantError)return Response.json({error:e.message},{status:e.status,headers});
   return Response.json({error:'Não foi possível salvar. Tente novamente.'},{status:503,headers});
  }
 }

@@ -50,7 +50,7 @@ export function navigationFor(access: AccessView, { hasAdvisors }: NavOptions): 
       id: "gestao", label: "Gestão", description: "Equipe, regras, plano e histórico da empresa.",
       views: admin ? [
         { id: "time", label: "Time e acessos" }, { id: "regras", label: "Regras e cálculos" },
-        ...only(access.organizationId !== 1, { id: "plano", label: "Plano" }), { id: "historico", label: "Histórico" },
+        ...only(access.organizationId !== 1, { id: "identidade", label: "Identidade" }), ...only(access.organizationId !== 1, { id: "plano", label: "Plano" }), { id: "historico", label: "Histórico" },
         ...only(hasAdvisors, { id: "assessoria", label: "Assessoria Elite" }),
       ] : [],
     },

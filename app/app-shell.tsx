@@ -28,7 +28,9 @@ function writeCollapsed(value: boolean) { try { window.localStorage.setItem(COLL
  * Estrutura da plataforma da equipe: barra lateral (computador), barra inferior
  * (celular), cabeçalho com a organização e o "+ Novo", título da área e sub-abas.
  */
-export function AppShell({ access, userName, signOutPath, areas, location, badges, actions, onNavigate, search, children }: {
+export function AppShell({ logo, access, userName, signOutPath, areas, location, badges, actions, onNavigate, search, children }: {
+  /** Logo da empresa assinante (no lugar do emblema Elite), quando houver. */
+  logo?: string | null;
   access: AccessView; userName: string; signOutPath: string; areas: NavArea[]; location: NavLocation;
   badges: Partial<Record<AreaId, number>>; actions: NewAction[]; onNavigate: (location: NavLocation) => void; search?: ReactNode; children: ReactNode;
 }) {
@@ -47,7 +49,7 @@ export function AppShell({ access, userName, signOutPath, areas, location, badge
 
   return <div className={`elite-shell ${collapsed ? "is-collapsed" : ""}`}>
     <aside className="elite-sidebar" aria-label="Áreas da plataforma">
-      <div className="elite-sidebar-brand"><img src="/elite-emblem.png" alt="Elite Frascaroli Academy — logo oficial" width={541} height={541} className="elite-brand-logo" />{!collapsed && (client
+      <div className="elite-sidebar-brand"><img src={logo ?? "/elite-emblem.png"} alt={logo ? `Logo da ${access.organizationName}` : "Elite Frascaroli Academy — logo oficial"} width={541} height={541} className="elite-brand-logo" />{!collapsed && (client
         ? <div className="min-w-0"><p className="truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-subtle">Elite Expansion X</p><p className="elite-sidebar-org line-clamp-2 break-words" title={access.organizationName}>{access.organizationName}</p></div>
         : <div className="min-w-0"><p className="truncate font-semibold tracking-tight text-white">Elite Expansion X</p><p className="truncate text-xs text-subtle">{access.organizationName}</p></div>)}</div>
       <nav className="elite-sidebar-nav">{areas.map((area) => { const Icon = AREA_ICONS[area.id]; const active = area.id === current.id; return <button key={area.id} type="button" onClick={() => go(area)} aria-current={active ? "page" : undefined} title={collapsed ? area.label : undefined} className={`elite-nav-item ${active ? "is-active" : ""}`}><Icon className="size-[18px] shrink-0" />{!collapsed && <span className="flex-1 truncate text-left">{area.label}</span>}{badge(area.id, collapsed)}</button>; })}</nav>
@@ -62,7 +64,7 @@ export function AppShell({ access, userName, signOutPath, areas, location, badge
 
     <div className="elite-shell-main">
       <header className="elite-topbar">
-        <div className="flex shrink-0 items-center lg:hidden"><img src="/elite-emblem.png" alt="Elite Frascaroli Academy — logo oficial" width={541} height={541} className="elite-brand-logo" /></div>
+        <div className="flex shrink-0 items-center lg:hidden"><img src={logo ?? "/elite-emblem.png"} alt={logo ? `Logo da ${access.organizationName}` : "Elite Frascaroli Academy — logo oficial"} width={541} height={541} className="elite-brand-logo" /></div>
         <div className="ml-auto flex min-w-0 items-center gap-2">
           {search}
           <OrganizationSwitcher access={access} />

@@ -103,3 +103,26 @@ test('assinaturas: suspender corta o acesso com aviso claro e reativar devolve t
  const audit=(await call('subscriptions','GET')).body.audit.filter(a=>a.organizationId===org).map(a=>a.action);
  assert.deepEqual(audit,['reactivate','suspend','subscription','create']);
 });
+
+test('identidade: só o administrador da empresa troca nome e logo, com formato conferido',async()=>{
+ const org=await subscriber();const {saveIdentity}=await vite.ssrLoadModule('/db/identity.ts');const access=await accessMod();
+ const admin=await access.getUserAccess(CLIENT,'Dona',org);
+ const png='data:image/png;base64,'+Buffer.from('\x89PNG\r\n\x1a\n'+'x'.repeat(40),'latin1').toString('base64');
+ await assert.rejects(saveIdentity(admin,{name:'Academia Horizonte',logo:png,official:false}),/logo oficial/);
+ await assert.rejects(saveIdentity(admin,{name:'Academia Horizonte',logo:'data:image/svg+xml;base64,PHN2Zz4=',official:true}),/PNG, JPEG ou WebP/);
+ await assert.rejects(saveIdentity(admin,{name:'Academia Horizonte',logo:'data:image/png;base64,'+Buffer.from('nao e png').toString('base64'),official:true}),/não corresponde/);
+ const saved=await saveIdentity(admin,{name:'Academia Horizonte Pro',logo:png,official:true});
+ assert.ok(saved.logoVersion);assert.equal(sqlite.prepare('SELECT name FROM organizations WHERE id=?').get(org).name,'Academia Horizonte Pro');
+ // A logo só sai para quem tem acesso à empresa.
+ const route=await api('organization-logo');
+ as(CLIENT);const ok=await route.GET(new Request(`https://elite.invalid/api/organization-logo?org=${org}`));assert.equal(ok.status,200);assert.equal(ok.headers.get('content-type'),'image/png');
+ sqlite.prepare("INSERT INTO app_users(organization_id,email,name,role,active,created_by,created_at) VALUES(1,'outro@elite.invalid','Outro','Comercial',1,'t','2026-01-01')").run();
+ as('outro@elite.invalid');assert.equal((await route.GET(new Request(`https://elite.invalid/api/organization-logo?org=${org}`))).status,403);
+ // Só o administrador; a Elite usa sempre o emblema.
+ sqlite.prepare("INSERT INTO app_users(organization_id,email,name,role,active,created_by,created_at) VALUES(?,'vend@cliente.invalid','Vend','Comercial',1,'t','2026-01-01')").run(org);
+ await assert.rejects(saveIdentity(await access.getUserAccess('vend@cliente.invalid','V',org),{name:'X Hack'}),/Somente o administrador/);
+ await assert.rejects(saveIdentity(await access.getUserAccess(OWNER,'Dono',1),{name:'Elite'}),/emblema oficial/);
+ // Retirar a logo
+ await saveIdentity(admin,{name:'Academia Horizonte Pro',logo:null});
+ as(CLIENT);assert.equal((await route.GET(new Request(`https://elite.invalid/api/organization-logo?org=${org}`))).status,404);
+});
