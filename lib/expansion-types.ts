@@ -1,3 +1,4 @@
+import type { PlanUsage } from "@/lib/subscriptions";
 export const USER_ROLES = ["Administrador", "Coordenação", "Líder", "Embaixador", "Comercial", "Mentorado"] as const;
 /**
  * Mentorados têm só o portal deles e nunca acessam os dados da equipe. (Empresas
@@ -269,6 +270,8 @@ export type DashboardData = {
   mappingStats?: MappingStats;
   /** Retornos atrasados e de hoje de quem está conectado. */
   agenda?: AgendaView;
+  /** Plano da organização: limites, uso e recursos liberados. */
+  plan?: PlanUsage;
   access: AccessView;
   settings: SettingsView;
   cities: CityRecord[];

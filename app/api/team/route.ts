@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/app/auth";
 import { getTeamAccess } from "@/db/access";
 import { AuthError, createPasswordLink } from "@/db/auth";
 import { ActionError, executeAction } from "@/db/mutations";
+import { planLimitFromDatabase } from "@/db/plan";
 import { getDashboardData } from "@/db/queries";
 import { brazilTimestamp, database } from "@/db/runtime";
 import { canPerform } from "@/lib/expansion-permissions";
@@ -27,6 +28,8 @@ type InviteResult = { email: string; name: string; ok: boolean; link?: string; e
 function rowError(error: unknown) {
   if (error instanceof ZodError) return error.issues[0]?.message ?? "Revise os dados desta pessoa.";
   if (error instanceof ActionError || error instanceof AuthError) return error.message;
+  const planLimit = error instanceof Error ? planLimitFromDatabase(error.message) : null;
+  if (planLimit) return planLimit;
   return "Não foi possível cadastrar agora. Tente de novo.";
 }
 

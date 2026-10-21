@@ -2,6 +2,7 @@ import {nameKey,PERSON_ROLES,PLACE_LINKS,PLACE_TYPES,personRoleFromText,placeLin
 import { ZodError } from 'zod';
 import {rowDue,type Followup} from '@/lib/followup';
 import { database, brazilTimestamp } from '@/db/runtime';
+import { featureBlocked } from '@/db/plan';
 import { canAccessCity } from '@/lib/expansion-permissions';
 import { cityReference } from '@/lib/territorial-map';
 import { locationSchema, personSchema, activitySchema, roleSchema, displayedCoordinates, importPersonSchema } from '@/lib/territory-validation';
@@ -132,6 +133,7 @@ function duplicateError(a:AccessView,same:{name:string;place:string}[]){
 }
 async function importPeople(a:AccessView,input:unknown){
   const body=input as {rows?:unknown[];commit?:boolean};
+  const blocked=await featureBlocked(a.organizationId,'imports');if(blocked)throw new TerritoryError(blocked,403);
   if(!Array.isArray(body?.rows)||body.rows.length<1||body.rows.length>50) throw new TerritoryError('Importe de 1 a 50 pessoas por lote.');
   const output:{line:number;ok:boolean;status:string}[]=[];const seen=new Set<string>();const places=new Map<number,{id:string;key:string}[]>();
   for(const [index,item] of body.rows.entries()){

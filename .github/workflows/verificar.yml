@@ -45,6 +45,7 @@ jobs:
             tests/places.test.mjs \
             tests/portal.test.mjs \
             tests/rendered-html.test.mjs \
+            tests/subscriptions.test.mjs \
             tests/team.test.mjs \
             tests/territory-integration.test.mjs \
             tests/ui-components.test.mjs 2>&1 | tee resultado-testes.txt

@@ -87,11 +87,12 @@ Mentorados têm um **portal só deles**: a jornada (etapas que marcam como concl
 
 A Elite Expansion X é independente de qualquer outra plataforma da Elite (como a Elite Map X). Uma **empresa assinante** usa a plataforma inteira, como a Elite usa, mas **em um ambiente só dela**: cidades, mapa, equipe, vendas, portal de mentorados e indicadores próprios, sem ver nada da Elite nem de outros assinantes.
 
-1. **Criar** — no topo, *Nova organização* (só os donos da plataforma veem): nome da empresa, nome e e-mail do responsável. A empresa começa vazia, com todos os recursos.
+1. **Criar** — aba *Assinaturas* (só os donos da plataforma veem) → *Nova empresa assinante*: nome da empresa, responsável, plano, valor mensal, data "pago até" e limites. A empresa começa vazia, só dela.
 2. **Liberar o acesso** — você entra no ambiente dela pela *Assessoria Elite* (aparece um aviso para o cliente) → *Time e acessos* → *Gerar link* do responsável. A mensagem fala da plataforma de expansão **da empresa**, não da Elite.
 3. **O responsável assume** — cria a senha, convida o próprio time e segue os *Primeiros passos* dele.
 4. **Acompanhar** — pela *Assessoria Elite*, a Elite pode ver e apoiar o cliente; cada alteração fica marcada no histórico dele, e a aba *Configurações* do cliente mostra quem da Elite tem acesso.
-5. **Cobrança** — a assinatura é cobrada fora da plataforma. Ainda não há botão para suspender um cliente que deixou de pagar (está nas pendências).
+5. **Plano e limites** — em *Assinaturas* → *Plano*: usuários da equipe (mentorados não contam), cidades ativas (as planejadas não contam), e se a empresa pode importar planilhas, exportar relatórios e usar mapas de satélite/Street View. Os limites valem na hora, no servidor: quem já está cadastrado continua; só não entram pessoas ou cidades novas além do limite, com uma mensagem pedindo para falar com a Elite. A empresa vê o próprio plano e o uso em *Configurações*.
+6. **Cobrança e suspensão** — a cobrança é feita fora da plataforma. Em *Assinaturas* você vê a receita mensal, quem está com o pagamento vencido e quem vence nos próximos 7 dias. Quem não pagou: *Suspender* (com o motivo). Ninguém da empresa entra (nem a Assessoria Elite) e todos veem o aviso "assinatura suspensa"; os dados ficam guardados. *Reativar* devolve o acesso como estava. Tudo fica no histórico das assinaturas.
 
 ## 10. Pendências para depois do lançamento
 
@@ -99,5 +100,4 @@ A Elite Expansion X é independente de qualquer outra plataforma da Elite (como 
 - Decidir se este endereço de teste vira o oficial ou se criamos um endereço definitivo.
 - Sistema de Prospecção Elite 1.0 / Banco de Ganchos (aguardando material).
 - Mapas impressos (A3/PDF).
-- Gestão das assinaturas na tela: suspender/reativar empresa, plano e limites (o servidor já tem a base).
-- Cobrança automática da assinatura e logo de cada empresa assinante (opcional).
+- Cobrança automática da assinatura (boleto/Pix/cartão) e logo de cada empresa assinante (opcional).

@@ -393,3 +393,9 @@ export const portalProgress = sqliteTable('portal_progress', {
  userId:integer('user_id').notNull().references(()=>appUsers.id,{onDelete:'cascade'}),stepId:integer('step_id').notNull().references(()=>portalSteps.id,{onDelete:'cascade'}),
  doneAt:text('done_at').notNull(),
 },(table)=>[uniqueIndex('portal_progress_unique').on(table.userId,table.stepId)]);
+/** Assinatura de cada empresa (gestão comercial da plataforma; a cobrança acontece fora dela). */
+export const organizationSubscriptions = sqliteTable('organization_subscriptions', {
+ organizationId:integer('organization_id').primaryKey().references(()=>organizations.id),plan:text('plan').notNull().default(''),
+ priceCents:integer('price_cents').notNull().default(0),paidUntil:text('paid_until'),notes:text('notes').notNull().default(''),
+ updatedBy:text('updated_by').notNull(),updatedAt:text('updated_at').notNull(),
+});

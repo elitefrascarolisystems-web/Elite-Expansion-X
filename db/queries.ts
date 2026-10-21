@@ -19,6 +19,7 @@ import type {
 import { getSettings, listActiveAdvisors } from "@/db/access";
 import { getMappingStats } from "@/db/mapping-stats";
 import { getAgenda } from "@/db/agenda";
+import { getPlan } from "@/db/plan";
 import { asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runtime";
 
 type Scope = { where: string; values: Array<string | number> };
@@ -350,6 +351,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     mapping: mapping ? { people: asNumber(mapping.people), linked: asNumber(mapping.linked) } : undefined,
     mappingStats: await getMappingStats(access),
     agenda: await getAgenda(access),
+    plan: await getPlan(access.organizationId),
     access,
     settings,
     cities,

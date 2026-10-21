@@ -2,6 +2,7 @@ import type { AccessView } from "@/lib/expansion-types";
 import type { ActionName } from "@/lib/expansion-permissions";
 import { canAccessAmbassador, canAccessCity, canAccessLead, canPerform } from "@/lib/expansion-permissions";
 import { audit, asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runtime";
+import { citySlotBlocked, seatBlocked } from "@/db/plan";
 
 export class ActionError extends Error {}
 
@@ -141,6 +142,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
   for(const cityId of candidateCities){const row=(await db.prepare('SELECT id FROM cities WHERE id=? AND organization_id=?').bind(cityId,access.organizationId).all()).results[0];if(!row)throw new ActionError("Registro fora do seu acesso.");}
 
   if (action === "create_city") {
+    if (text(input, "status") === "Ativa") { const blocked = await citySlotBlocked(access.organizationId); if (blocked) throw new ActionError(blocked); }
     const result = await db.prepare(`
       INSERT INTO cities
         (organization_id, name, state, phase, leader_name, target_cac_cents, ambassador_goal, sales_goal,
@@ -161,6 +163,11 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     const cityId = number(input, "cityId");
     await cityExists(cityId);
     ensureCityPermission(access, cityId);
+    if (text(input, "status") === "Ativa") {
+      const current = (await db.prepare("SELECT status FROM cities WHERE id=?").bind(cityId).all()).results[0];
+      const blocked = current?.status === "Ativa" ? null : await citySlotBlocked(access.organizationId, cityId);
+      if (blocked) throw new ActionError(blocked);
+    }
     await db.prepare(`
       UPDATE cities SET phase = ?, leader_name = ?, target_cac_cents = ?, ambassador_goal = ?,
         sales_goal = ?, status = ?, budget_cents = ?, tracking_mode = ?, notes = ?, updated_at = ?
@@ -555,6 +562,8 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     }
     const email = text(input, "email").toLowerCase();
     const existing = await db.prepare("SELECT id FROM app_users WHERE lower(email) = lower(?) AND organization_id=? LIMIT 1").bind(email,access.organizationId).all();
+    const blocked = await seatBlocked(access.organizationId, text(input, "role"), existing.results[0] ? asNumber(existing.results[0].id) : null);
+    if (blocked) throw new ActionError(blocked);
     let entityId: number;
     if (existing.results[0]) {
       entityId = asNumber(existing.results[0].id);

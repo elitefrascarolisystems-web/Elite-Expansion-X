@@ -2,6 +2,7 @@ import {organizationFromRequest} from '@/lib/tenant-request';
 import {getCurrentUser} from '@/app/auth';
 import { getTeamAccess } from "@/db/access";
 import { ActionError, executeAction } from "@/db/mutations";
+import { planLimitFromDatabase } from "@/db/plan";
 import { getDashboardData } from "@/db/queries";
 import { actionNameSchema, parseActionPayload } from "@/lib/expansion-validation";
 import { ZodError } from "zod";
@@ -41,8 +42,10 @@ export async function POST(request: Request) {
   } catch (error) {
     const raw = error instanceof Error ? error.message : '';
     const duplicate = raw.includes('UNIQUE constraint failed');
-    const known = error instanceof ZodError || error instanceof ActionError || duplicate;
+    const planLimit = planLimitFromDatabase(raw);
+    const known = error instanceof ZodError || error instanceof ActionError || duplicate || planLimit !== null;
     const message = error instanceof ZodError ? error.issues[0]?.message ?? 'Revise os campos informados.'
+      : planLimit ? planLimit
       : duplicate ? 'Já existe um registro com esse nome, código ou e-mail.'
       : error instanceof ActionError ? raw : 'Não foi possível salvar. Atualize os dados antes de tentar novamente.';
     const status = !known ? 503 : /permissão|fora do seu acesso|próprio embaixador|não possui acesso/.test(message) ? 403 : 400;

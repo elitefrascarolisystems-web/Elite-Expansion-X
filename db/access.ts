@@ -177,3 +177,11 @@ export async function getTeamAccess(email: string, displayName: string, organiza
   const access = await getUserAccess(email, displayName, organizationId);
   return access && !isPortalRole(access.role) ? access : null;
 }
+
+/** Empresa suspensa à qual a pessoa pertence (para explicar por que não entra), ou null. */
+export async function suspendedOrganizationOf(email: string): Promise<string | null> {
+  const row = (await database().prepare(`
+    SELECT o.name FROM app_users u JOIN organizations o ON o.id=u.organization_id AND o.active=0
+    WHERE lower(u.email)=lower(?) AND u.active=1 ORDER BY o.id LIMIT 1`).bind(email).all()).results[0];
+  return row ? String(row.name) : null;
+}
