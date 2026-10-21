@@ -410,7 +410,7 @@ button:disabled { cursor: not-allowed; }
 .territory-shell .territory-toolbar input,.territory-shell .territory-select,.territory-shell .territory-field input,.territory-shell .territory-field select{background:var(--territory-control);color:var(--territory-text);border-color:var(--territory-border)}
 .territory-shell .text-zinc-400,.territory-shell .text-zinc-300,.territory-shell .territory-detail dt {color:var(--territory-muted)}
 .territory-shell [class*="text-gold"]{color:var(--territory-accent)}
-.territory-shell[data-theme=light] button[data-slot=button]:not([class*="bg-gold"]){color:var(--territory-text);border-color:var(--territory-border);background:var(--territory-control)}
+.territory-shell[data-theme=light] button[data-slot=button]:not([class*="bg-gold"]),.territory-shell[data-theme=light] a[data-slot=button]:not([class*="bg-gold"]){color:var(--territory-text);border-color:var(--territory-border);background:var(--territory-control)}
 .territory-shell :focus-visible{outline:3px solid var(--territory-accent);outline-offset:3px}
 .territory-pin{display:flex;align-items:center;justify-content:center;position:relative;width:42px;height:42px}
 .territory-pin[data-selected=true]{outline:4px solid #d6b94f;outline-offset:3px}
@@ -426,7 +426,7 @@ button:disabled { cursor: not-allowed; }
 .territory-shell .territory-toolbar,.territory-shell .territory-list,.territory-shell .territory-list button.record,.territory-shell .territory-detail{border-color:var(--territory-border)}
 .territory-shell[data-theme=dark] .territory-canvas-wrap{background:#111827}
 .territory-shell[data-theme=light] .text-amber-200,.territory-dialog[data-theme=light] .text-amber-200{color:#854d0e}
-.territory-dialog[data-theme=light] button[data-slot=button]:not([class*="bg-gold"]){color:#17202b;background:#fff;border-color:#9ca3af}
+.territory-dialog[data-theme=light] button[data-slot=button]:not([class*="bg-gold"]),.territory-dialog[data-theme=light] a[data-slot=button]:not([class*="bg-gold"]){color:#17202b;background:#fff;border-color:#9ca3af}
 .territory-shell input[type=checkbox]{min-height:20px;width:20px;accent-color:var(--territory-accent)}
 .territory-dialog :focus-visible{outline:3px solid #a17b17;outline-offset:3px}
 

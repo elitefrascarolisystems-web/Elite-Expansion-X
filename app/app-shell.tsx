@@ -28,9 +28,9 @@ function writeCollapsed(value: boolean) { try { window.localStorage.setItem(COLL
  * Estrutura da plataforma da equipe: barra lateral (computador), barra inferior
  * (celular), cabeçalho com a organização e o "+ Novo", título da área e sub-abas.
  */
-export function AppShell({ access, userName, signOutPath, areas, location, badges, actions, onNavigate, children }: {
+export function AppShell({ access, userName, signOutPath, areas, location, badges, actions, onNavigate, search, children }: {
   access: AccessView; userName: string; signOutPath: string; areas: NavArea[]; location: NavLocation;
-  badges: Partial<Record<AreaId, number>>; actions: NewAction[]; onNavigate: (location: NavLocation) => void; children: ReactNode;
+  badges: Partial<Record<AreaId, number>>; actions: NewAction[]; onNavigate: (location: NavLocation) => void; search?: ReactNode; children: ReactNode;
 }) {
   const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -64,6 +64,7 @@ export function AppShell({ access, userName, signOutPath, areas, location, badge
       <header className="elite-topbar">
         <div className="flex shrink-0 items-center lg:hidden"><img src="/elite-emblem.png" alt="Elite Frascaroli Academy — logo oficial" width={541} height={541} className="elite-brand-logo" /></div>
         <div className="ml-auto flex min-w-0 items-center gap-2">
+          {search}
           <OrganizationSwitcher access={access} />
           {actions.length > 0 && <NewMenu actions={actions} />}
         </div>

@@ -6,6 +6,7 @@ import {FollowupWorkspace} from '@/app/followup-workspace';
 import {CommercialWorkspace} from '@/app/commercial-workspace';
 import { AppShell, type NewAction } from "@/app/app-shell";
 import { AdvisorsPanel } from "@/app/advisors-panel";
+import { QuickSearch } from "@/app/quick-search";
 import { copyText } from "@/lib/copy-text";
 import { GettingStarted, WelcomeDialog } from "@/app/getting-started";
 import { TeamPanel } from "@/app/team-panel";
@@ -338,6 +339,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const [mapPersonId, setMapPersonId] = useState<string | undefined>();
   const [followupLeadId, setFollowupLeadId] = useState<number | undefined>();
   const [mapLeadId, setMapLeadId] = useState<number | undefined>();
+  // Registro do mapa aberto pela busca (cidade, pessoa, local, parceiro, evento).
+  const [mapFocusKey, setMapFocusKey] = useState<string | undefined>();
   const [mappingOpen, setMappingOpen] = useState(false);
   // Atendimentos: lista de acompanhamento ou dados das oportunidades (etapa, temperatura, empresa).
   const [salesMode, setSalesMode] = useState<"lista" | "dados">("lista");
@@ -374,8 +377,9 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
     navigate(resolveLocation(areas, data.access, area, sub));
   };
   const openFollowup = (leadId: number) => { setFollowupLeadId(leadId); setSalesMode("lista"); navigate({ area: "vendas", view: "agenda" }); };
-  const openMapPerson = (personId: string) => { setMapPersonId(personId); setMapLeadId(undefined); navigate({ area: "territorio", view: "mapa" }); };
-  const openMapLead = (leadId: number) => { setMapPersonId(undefined); setMapLeadId(leadId); navigate({ area: "territorio", view: "mapa" }); };
+  const openMapPerson = (personId: string) => { setMapPersonId(personId); setMapLeadId(undefined); setMapFocusKey(undefined); navigate({ area: "territorio", view: "mapa" }); };
+  const openMapLead = (leadId: number) => { setMapPersonId(undefined); setMapLeadId(leadId); setMapFocusKey(undefined); navigate({ area: "territorio", view: "mapa" }); };
+  const openMapKey = (key: string) => { setMapPersonId(undefined); setMapLeadId(undefined); setMapFocusKey(key); navigate({ area: "territorio", view: "mapa" }); };
 
   async function refreshDashboard(){const r=await tenantFetch("/api/dashboard");const v=await r.json();if(!r.ok)throw new Error(v.error);setData(v.data);}
   const savingLock = useRef(false);
@@ -433,14 +437,14 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const outline = "border-white/10 bg-white/5 text-white";
 
   return <>
-    <AppShell access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={pending ? { vendas: pending } : {}} actions={actions} onNavigate={(next) => navigate(next)}>
+    <AppShell access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={pending ? { vendas: pending } : {}} actions={actions} onNavigate={(next) => navigate(next)} search={<QuickSearch sales={canPipeline} onPick={(pick) => (pick.kind === "territory" ? openMapKey(pick.key) : openFollowup(pick.leadId))} />}>
       <div className="space-y-5">
         {showFilters && <FilterBar data={data} filters={filters} onChange={setFilters} />}
         {attributionWarning && <div className="flex items-start gap-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><AlertTriangle className="mt-1 size-4 shrink-0" />Filtros por canal ou embaixador não usam fechamentos consolidados, pois eles não possuem atribuição individual. Cidades detalhadas continuam sendo calculadas normalmente.</div>}
 
         {location.area === "hoje" && <TodayPanel data={data} view={fullView} onGo={go} onFollowup={openFollowup} shortcuts={actions.filter((action) => action.group === "dia" && action.id !== "atendimento-mapa")} />}
 
-        {here === "territorio/mapa" && <>{canMap && <ActionBar hint="Locais e pessoas de cada cidade. Pessoas aparecem no local ligado a elas, nunca na residência."><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-gold text-black"><MapPin /> Mapear local e pessoas</Button></ActionBar>}<TerritorialMap key={mapPersonId || mapLeadId || "map"} focusPersonId={mapPersonId} focusLeadId={mapLeadId} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canImport && <PeopleImport data={data} onSaved={refreshDashboard} />}</>}
+        {here === "territorio/mapa" && <>{canMap && <ActionBar hint="Locais e pessoas de cada cidade. Pessoas aparecem no local ligado a elas, nunca na residência."><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-gold text-black"><MapPin /> Mapear local e pessoas</Button></ActionBar>}<TerritorialMap key={mapFocusKey || mapPersonId || mapLeadId || "map"} focusKey={mapFocusKey} focusPersonId={mapPersonId} focusLeadId={mapLeadId} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canImport && <PeopleImport data={data} onSaved={refreshDashboard} />}</>}
         {here === "territorio/cidades" && <><ActionBar hint="Saúde de cada cidade, decisão registrada e fechamentos consolidados.">{canPerform(data.access, "record_city") && <Button onClick={() => setDialog({ name: "city-result" })} variant="outline" className={outline}><Activity /> Fechamento consolidado</Button>}{canCity && <Button onClick={() => setDialog({ name: "city" })} className="bg-gold text-black">Cadastrar cidade</Button>}</ActionBar><CityTable cities={view.cities} onCreate={canCity ? () => setDialog({ name: "city" }) : undefined} onEdit={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} /><TerritoryDecisions data={data} /></>}
         {here === "territorio/locais" && <CommercialWorkspace data={data} mode="businesses" onRefresh={refreshDashboard} />}
 
