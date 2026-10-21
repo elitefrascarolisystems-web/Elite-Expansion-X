@@ -1,7 +1,7 @@
 import { audit, brazilTimestamp, database } from "@/db/runtime";
 import { canPerform } from "@/lib/expansion-permissions";
 import { isPortalRole, type AccessView } from "@/lib/expansion-types";
-import { audienceOf, MAX_REFERRALS_PER_DAY, memberSchema, referSchema, stepSchema, stepToggleSchema, type PortalAdminData, type PortalData } from "@/lib/portal";
+import { PORTAL_AUDIENCE, MAX_REFERRALS_PER_DAY, memberSchema, referSchema, stepSchema, stepToggleSchema, type PortalAdminData, type PortalData } from "@/lib/portal";
 
 type Value = string | number | null;
 const rows = async (sql: string, args: Value[] = []) => (await database().prepare(sql).bind(...args).all()).results;
@@ -25,7 +25,7 @@ const spDay = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Pa
 /** Tudo o que o mentorado vê: só os próprios dados, nada da operação da equipe. */
 export async function getPortalData(access: AccessView): Promise<PortalData> {
   const a = member(access);
-  const audience = audienceOf(a.role);
+  const audience = PORTAL_AUDIENCE;
   const user = await first(`SELECT u.name,u.email,u.role,u.title,u.mentorship_cycle,u.welcomed_at,u.person_id,u.business_id,u.portal_owner_email,u.next_meeting_at,u.next_meeting_note,u.city_id,COALESCE(c.name,'') AS city_name,o.name AS organization_name
     FROM app_users u JOIN organizations o ON o.id=u.organization_id LEFT JOIN cities c ON c.id=u.city_id WHERE u.id=? AND u.organization_id=?`, [a.id, a.organizationId]);
   if (!user) throw new PortalError("Perfil não encontrado.", 404);
@@ -66,7 +66,7 @@ export async function portalAction(access: AccessView, action: string, input: un
   }
   if (action === "step") {
     const v = stepToggleSchema.parse(input);
-    const step = await first("SELECT id FROM portal_steps WHERE id=? AND organization_id=? AND audience=?", [v.stepId, a.organizationId, audienceOf(a.role)]);
+    const step = await first("SELECT id FROM portal_steps WHERE id=? AND organization_id=? AND audience=?", [v.stepId, a.organizationId, PORTAL_AUDIENCE]);
     if (!step) throw new PortalError("Etapa não encontrada.", 404);
     await (v.done
       ? db.prepare("INSERT OR IGNORE INTO portal_progress(user_id,step_id,done_at) VALUES(?,?,?)").bind(a.id, v.stepId, now)

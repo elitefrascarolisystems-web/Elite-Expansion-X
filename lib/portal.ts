@@ -4,7 +4,8 @@ import "./zod-pt";
 /** Públicos do portal e de materiais. */
 export const PORTAL_AUDIENCES = ["Mentorados"] as const;
 export const CONTENT_AUDIENCES = ["Embaixadores", "Mentorados", "Todos"] as const;
-export const audienceOf = (_role: string) => "Mentorados" as const;
+/** Público do portal: hoje só mentorados usam o portal. */
+export const PORTAL_AUDIENCE = "Mentorados" as const;
 export const MAX_REFERRALS_PER_DAY = 20;
 
 const day = (value: string) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value);

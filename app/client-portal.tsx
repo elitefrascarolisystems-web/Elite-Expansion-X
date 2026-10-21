@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import { BookOpen, Building2, CalendarClock, Check, ExternalLink, GraduationCap, HeartHandshake, LoaderCircle, LogOut, Mail, Send, Sparkles, X } from "lucide-react";
+import { BookOpen, CalendarClock, Check, ExternalLink, GraduationCap, HeartHandshake, LoaderCircle, LogOut, Mail, Send, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
