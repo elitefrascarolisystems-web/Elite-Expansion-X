@@ -141,9 +141,14 @@ jobs:
         if: steps.conta.outputs.pronta == 'true' && steps.publicar.outputs.url != ''
         run: |
           sleep 5
-          code="$(curl -s -o /dev/null -w '%{http_code}' "${{ steps.publicar.outputs.url }}/")"
-          echo "::notice title=Resposta do ambiente de teste::HTTP $code (307 = vai para a tela de entrada)"
+          read -r code location < <(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "${{ steps.publicar.outputs.url }}/")
+          echo "::notice title=Resposta do ambiente de teste::HTTP $code ${location:-} (307 para /entrar = tela de entrada da plataforma)"
           case "$code" in 200|302|303|307) ;; *) echo "::error::Resposta inesperada: HTTP $code"; exit 1;; esac
+          # Cloudflare Access ligado no endereço workers.dev: só membros da conta Cloudflare passam,
+          # e a equipe nem chega à tela de entrada da plataforma.
+          case "${location:-}" in *cloudflareaccess.com*)
+            echo "::warning title=Cloudflare Access ligado::O endereço de teste está protegido pelo Cloudflare Access: só membros da conta Cloudflare entram. Para a equipe usar, desligue em Workers & Pages → $WORKER_NAME → Settings → Domains & Routes → workers.dev (ou apague o aplicativo em Zero Trust → Access → Applications).";;
+          esac
 
       # Os donos da plataforma não têm administrador acima deles para gerar o
       # link de acesso pela tela; este passo grava o link deles (72 horas, uso único).
