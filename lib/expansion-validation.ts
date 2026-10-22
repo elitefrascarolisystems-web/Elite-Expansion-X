@@ -4,8 +4,13 @@ import { ACTIONS, type ActionName } from "@/lib/expansion-permissions";
 import { USER_ROLES } from "@/lib/expansion-types";
 
 const shortText = z.string().trim().min(1).max(160);
-const optionalText = z.string().trim().max(500).default("");
-const noteText = z.string().trim().max(2000).default("");
+/**
+ * Campo opcional que não aparece para esta função (ou que a tela não mostrou)
+ * chega do formulário como null (FormData.get): vale como vazio, não como erro.
+ */
+const blank = <T extends z.ZodTypeAny>(schema: T) => z.preprocess((value) => (value === null ? undefined : value), schema);
+const optionalText = blank(z.string().trim().max(500).default(""));
+const noteText = blank(z.string().trim().max(2000).default(""));
 const id = z.number().int().positive();
 const optionalId = z.number().int().positive().nullable().optional();
 const nonNegative = z.number().int().min(0);
@@ -50,7 +55,7 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     cityId: id,
     name: shortText,
     code: z.string().trim().min(3).max(30).regex(/^[A-Za-z0-9_-]+$/, "Use letras, números, hífen ou sublinhado."),
-    email: emailOrEmpty.default(""),
+    email: blank(emailOrEmpty.default("")),
     whatsapp: z.string().trim().max(30).default(""),
     whatsappAuthorized: z.boolean().default(false),
     level: z.enum(["Indicador", "Embaixador ativo", "Referência", "Líder local"]),
@@ -110,7 +115,7 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     eventId: optionalId,
     contentId: optionalId,
     name: shortText,
-    email: emailOrEmpty.default(""),
+    email: blank(emailOrEmpty.default("")),
     whatsapp: z.string().trim().max(30).default(""),
     status: z.enum(["Lead informado", "Lead válido", "Oportunidade"]),
     channel: z.enum(["Mídia paga", "Embaixador", "Parceiro", "Evento", "Conteúdo", "Orgânico", "Indicação", "Outro"]),
@@ -122,7 +127,7 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     consentAccepted: z.literal(true, { message: "Confirme a autorização do contato." }),
     consentSource: shortText,
     consentPurpose: shortText,
-    assignedToEmail: emailOrEmpty.default(""),
+    assignedToEmail: blank(emailOrEmpty.default("")),
   }).refine((value) => Boolean(value.email || value.whatsapp), {
     message: "Informe o WhatsApp ou o e-mail da pessoa.",
     path: ["whatsapp"],
@@ -130,7 +135,7 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
   update_lead: z.object({
     leadId: id,
     status: z.enum(["Lead informado", "Lead válido", "Oportunidade", "Cancelado"]),
-    assignedToEmail: emailOrEmpty.default(""),
+    assignedToEmail: blank(emailOrEmpty.default("")),
     consentRevoked: z.boolean().default(false),
     consentRevocationReason: optionalText,
   }).superRefine((value, context) => {

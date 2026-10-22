@@ -121,7 +121,7 @@ async function resolvePerson(input: Input, access: AccessView, cityId: number, t
     if (!["Administrador", "Coordenação", "Líder"].includes(access.role) && !ownMapped) throw new ActionError("Seu perfil não possui permissão para vincular pessoas existentes.");
     if (!p || Number(p.city_id) !== cityId) throw new ActionError("Pessoa fora do seu acesso.");
     const duplicate = (await db.prepare(`SELECT id FROM ${table} WHERE person_id=?`).bind(id).all()).results[0];
-    if (duplicate) throw new ActionError("Esta pessoa já possui este cadastro. Abra a ficha existente.");
+    if (duplicate) throw new ActionError(table === "ambassadors" ? "Esta pessoa já é embaixadora. Abra a ficha dela em Rede → Embaixadores." : "Esta pessoa já tem atendimento. Abra a ficha dela em Vendas → Atendimentos.");
     input.name = String(p.name);
   }
   const now = brazilTimestamp();

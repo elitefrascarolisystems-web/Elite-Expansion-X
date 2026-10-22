@@ -23,6 +23,15 @@ z.setErrorMap((issue, ctx) => {
       if (issue.validation === "email") return { message: "Informe um e-mail válido." };
       if (issue.validation === "url") return { message: "Informe um link completo, começando com https://." };
       return { message: "Formato inválido." };
+    case z.ZodIssueCode.invalid_union: {
+      // Uma das formas aceitas: vale a explicação da primeira (ex.: "Informe um e-mail válido.").
+      const all = issue.unionErrors?.flatMap((e) => e.issues) ?? [];
+      // A explicação útil é a da forma "de verdade" (e-mail, link…), não a do "vazio também vale".
+      const first = all.find((i) => i.code !== z.ZodIssueCode.invalid_literal && i.code !== z.ZodIssueCode.invalid_type) ?? all[0];
+      return { message: first?.message ?? "Algum campo está em formato inválido. Revise e tente de novo." };
+    }
+    case z.ZodIssueCode.invalid_union_discriminator:
+      return { message: "Escolha uma das opções da lista." };
     case z.ZodIssueCode.invalid_enum_value:
       return { message: "Escolha uma das opções da lista." };
     case z.ZodIssueCode.invalid_date:

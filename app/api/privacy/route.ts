@@ -4,6 +4,7 @@ import { getTeamAccess } from "@/db/access";
 import { anonymizeSubject, correctSubject, exportSubject, listRequests, PrivacyError, revokeSubject, searchSubjects, subjectDetails } from "@/db/privacy";
 import { sameOrigin } from "@/lib/session-cookie";
 import { organizationFromRequest } from "@/lib/tenant-request";
+import { validationMessage } from "@/lib/validation-message";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store" };
@@ -16,7 +17,7 @@ async function access(request: Request) {
   return a;
 }
 function failure(error: unknown) {
-  if (error instanceof ZodError) return Response.json({ error: error.issues[0]?.message ?? "Revise os campos." }, { status: 400, headers });
+  if (error instanceof ZodError) return Response.json({ error: validationMessage(error, "Revise os campos.") }, { status: 400, headers });
   if (error instanceof PrivacyError) return Response.json({ error: error.message }, { status: error.status, headers });
   return Response.json({ error: "Não foi possível concluir. Confira a conexão e tente de novo." }, { status: 503, headers });
 }

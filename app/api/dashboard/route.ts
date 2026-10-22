@@ -6,6 +6,7 @@ import { planLimitFromDatabase } from "@/db/plan";
 import { getDashboardData } from "@/db/queries";
 import { actionNameSchema, parseActionPayload } from "@/lib/expansion-validation";
 import { ZodError } from "zod";
+import { validationMessage } from "@/lib/validation-message";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
     const duplicate = raw.includes('UNIQUE constraint failed');
     const planLimit = planLimitFromDatabase(raw);
     const known = error instanceof ZodError || error instanceof ActionError || duplicate || planLimit !== null;
-    const message = error instanceof ZodError ? error.issues[0]?.message ?? 'Revise os campos informados.'
+    const message = error instanceof ZodError ? validationMessage(error, 'Revise os campos informados.')
       : planLimit ? planLimit
       : duplicate ? 'Já existe um registro com esse nome, código ou e-mail.'
       : error instanceof ActionError ? raw : 'Não foi possível salvar agora. Atualize a página e tente de novo; se continuar, fale com o administrador.';

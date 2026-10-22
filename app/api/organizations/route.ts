@@ -5,6 +5,7 @@ import {organizationFromRequest} from '@/lib/tenant-request';
 import {saveIdentity} from '@/db/identity';
 import {TenantError} from '@/db/tenant-admin';
 import {ZodError} from 'zod';
+import { validationMessage } from "@/lib/validation-message";
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'no-store'};
 
@@ -39,7 +40,7 @@ export async function POST(request:Request){
  if(body.action==='advisor')return Response.json({ok:true,advisors:await setAdvisor(a,body.data)},{headers});
  return Response.json({error:'Ação inválida.'},{status:400,headers});
  }catch(e){
-  if(e instanceof ZodError)return Response.json({error:e.issues[0]?.message??'Dados inválidos.'},{status:400,headers});
+  if(e instanceof ZodError)return Response.json({error:validationMessage(e, 'Dados inválidos.')},{status:400,headers});
   // Só mensagens escritas de propósito chegam ao usuário; erros do banco nunca.
   if(e instanceof OrganizationError||e instanceof TenantError)return Response.json({error:e.message},{status:e.status,headers});
   return Response.json({error:'Não foi possível salvar. Tente novamente.'},{status:503,headers});

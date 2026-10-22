@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { enqueue, useOfflineQueue, useOnline } from "@/app/offline-sync";
 import { StartAttendanceDialog, type AttendancePerson } from "@/app/start-attendance";
 import type { DashboardData } from "@/lib/expansion-types";
+import { defaultOwnerEmail } from "@/lib/owners";
 import { nameKey, PERSON_ROLES, PLACE_LINKS, PLACE_TYPES, SECTORS } from "@/lib/places";
 import { offlineError, type SendError } from "@/lib/offline-queue";
 import { tenantFetch } from "@/lib/tenant-request";
@@ -80,7 +81,7 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
     setBusy(true); setError("");
     const id = crypto.randomUUID();
     const segment = form.segment.trim() || form.sector || form.placeType;
-    const body = { id, cityId, name: form.name.trim(), segment, district: form.district.trim(), address: form.address.trim(), source: "Mapeamento guiado", externalId: "", ownerEmail: data.access.email, status: "Identificada", placeType: form.placeType, sector: form.placeType === "Empresa" ? form.sector : form.sector || "", nextAction: "", verified: false, publicBusiness: form.confirm };
+    const body = { id, cityId, name: form.name.trim(), segment, district: form.district.trim(), address: form.address.trim(), source: "Mapeamento guiado", externalId: "", ownerEmail: defaultOwnerEmail(data, cityId), status: "Identificada", placeType: form.placeType, sector: form.placeType === "Empresa" ? form.sector : form.sector || "", nextAction: "", verified: false, publicBusiness: form.confirm };
     const saved = { id, name: form.name.trim(), placeType: form.placeType, cityId };
     try {
       await post("/api/commercial", { action: "business", data: body });

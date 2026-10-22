@@ -5,6 +5,7 @@ import { OrganizationError } from "@/db/organizations";
 import { createSubscriber, getSubscriptions, saveSubscription, setSubscriptionStatus } from "@/db/subscriptions";
 import { sameOrigin } from "@/lib/session-cookie";
 import { organizationFromRequest } from "@/lib/tenant-request";
+import { validationMessage } from "@/lib/validation-message";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store" };
@@ -18,7 +19,7 @@ async function owner(request: Request) {
 }
 
 function failure(error: unknown) {
-  if (error instanceof ZodError) return Response.json({ error: error.issues[0]?.message ?? "Revise os campos." }, { status: 400, headers });
+  if (error instanceof ZodError) return Response.json({ error: validationMessage(error, "Revise os campos.") }, { status: 400, headers });
   if (error instanceof OrganizationError) return Response.json({ error: error.message }, { status: error.status, headers });
   return Response.json({ error: "Não foi possível concluir. Tente novamente." }, { status: 503, headers });
 }

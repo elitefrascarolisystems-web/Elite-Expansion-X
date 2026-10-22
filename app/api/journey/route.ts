@@ -6,6 +6,7 @@ import { ActionError } from "@/db/mutations";
 import { CommercialError } from "@/db/commercial";
 import { sameOrigin } from "@/lib/session-cookie";
 import { organizationFromRequest } from "@/lib/tenant-request";
+import { validationMessage } from "@/lib/validation-message";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store" };
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
     if (body?.action !== "start") return Response.json({ error: "Esta ação não está disponível. Atualize a página e tente de novo." }, { status: 400, headers });
     return Response.json({ ok: true, result: await startAttendance(access, body.data) }, { headers });
   } catch (error) {
-    if (error instanceof ZodError) return Response.json({ error: error.issues[0]?.message ?? "Revise os campos." }, { status: 400, headers });
+    if (error instanceof ZodError) return Response.json({ error: validationMessage(error, "Revise os campos.") }, { status: 400, headers });
     if (error instanceof JourneyError) return Response.json({ error: error.message, leadId: error.leadId }, { status: error.status, headers });
     if (error instanceof ActionError || error instanceof CommercialError) return Response.json({ error: error.message }, { status: 400, headers });
     return Response.json({ error: "Não foi possível iniciar o atendimento agora. Tente de novo." }, { status: 503, headers });

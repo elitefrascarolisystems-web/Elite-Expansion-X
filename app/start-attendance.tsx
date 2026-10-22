@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TEMPERATURES } from "@/lib/commercial";
 import type { DashboardData } from "@/lib/expansion-types";
+import { defaultOwnerEmail, eligibleOwners } from "@/lib/owners";
 import { LEAD_CHANNELS } from "@/lib/journey";
 import { tenantFetch } from "@/lib/tenant-request";
 
@@ -16,9 +17,10 @@ const today = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Pa
 
 /** Quem pode ser responsável pela oportunidade nesta cidade (mesma regra do servidor). */
 function owners(data: DashboardData, cityId: number) {
-  const list = data.users.filter((u) => u.active && ["Administrador", "Coordenação", "Líder", "Comercial"].includes(u.role) && (u.cityId === cityId || (u.cityId === null && ["Administrador", "Comercial"].includes(u.role))));
+  const list = eligibleOwners(data, cityId);
   const self = data.access.email.toLowerCase();
-  if (!list.some((u) => u.email.toLowerCase() === self)) list.unshift({ ...(list[0] ?? {}), id: 0, email: self, name: data.access.name, role: data.access.role } as (typeof list)[number]);
+  // A Assessoria Elite não é da equipe da empresa: não entra como responsável.
+  if (!data.access.isAdvisory && !list.some((u) => u.email.toLowerCase() === self)) list.unshift({ ...(list[0] ?? {}), id: 0, email: self, name: data.access.name, role: data.access.role } as (typeof list)[number]);
   return list;
 }
 
@@ -39,7 +41,7 @@ export function StartAttendanceDialog({ person, data, onClose, onStarted }: { pe
       const response = await tenantFetch("/api/journey", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "start", data: {
         personId: person.id, whatsapp: f.get("whatsapp"), email: f.get("email"), channel: f.get("channel"),
         consentAccepted: f.get("consent") === "on", consentSource: f.get("consentSource"), consentPurpose: f.get("consentPurpose"),
-        ownerEmail: f.get("ownerEmail") || data.access.email, temperature: f.get("temperature"), nextAction: f.get("nextAction"), dueDate: f.get("dueDate"),
+        ownerEmail: f.get("ownerEmail") || defaultOwnerEmail(data, person.cityId), temperature: f.get("temperature"), nextAction: f.get("nextAction"), dueDate: f.get("dueDate"),
       } }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) { setError({ message: result.error || "Não foi possível iniciar o atendimento.", leadId: result.leadId }); return; }
@@ -59,7 +61,7 @@ export function StartAttendanceDialog({ person, data, onClose, onStarted }: { pe
         <label className="grid gap-1">Temperatura<select name="temperature" defaultValue="Morno" className="commercial-input">{TEMPERATURES.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="grid gap-1 sm:col-span-2">Próximo passo<input name="nextAction" required minLength={3} maxLength={500} defaultValue="Primeiro contato pelo WhatsApp" className="commercial-input" /></label>
         <label className="grid gap-1">Quando<input name="dueDate" type="date" required defaultValue={today()} className="commercial-input" /></label>
-        <label className="grid gap-1">Responsável{canChooseOwner ? <select name="ownerEmail" defaultValue={data.access.email.toLowerCase()} className="commercial-input">{owners(data, person.cityId).map((u) => <option key={u.email} value={u.email.toLowerCase()}>{u.name || u.email}{u.title ? ` · ${u.title}` : ""}</option>)}</select> : <input readOnly value={data.access.name || data.access.email} className="commercial-input opacity-80" />}</label>
+        <label className="grid gap-1">Responsável{canChooseOwner ? <select name="ownerEmail" defaultValue={defaultOwnerEmail(data, person.cityId)} className="commercial-input">{owners(data, person.cityId).map((u) => <option key={u.email} value={u.email.toLowerCase()}>{u.name || u.email}{u.title ? ` · ${u.title}` : ""}</option>)}</select> : <input readOnly value={data.access.name || data.access.email} className="commercial-input opacity-80" />}</label>
         <label className="grid gap-1">Onde autorizou<input name="consentSource" required minLength={3} maxLength={200} defaultValue="Conversa presencial no mapeamento" className="commercial-input" /></label>
         <label className="grid gap-1">Para quê<input name="consentPurpose" required minLength={3} maxLength={200} defaultValue={`Contato comercial da ${data.access.organizationName}`} className="commercial-input" /></label>
       </div>

@@ -3,10 +3,11 @@ import {getCurrentUser} from '@/app/auth';
 import { getTeamAccess } from '@/db/access';
 import { getTerritory, mutateTerritory, TerritoryError } from '@/db/territory';
 import { ZodError } from 'zod';
+import { validationMessage } from "@/lib/validation-message";
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'no-store'};
 async function access(request:Request){const u=await getCurrentUser();if(!u) throw new TerritoryError('Sua sessão terminou. Entre de novo para continuar.',401);const a=await getTeamAccess(u.email,u.displayName,organizationFromRequest(request));if(!a)throw new TerritoryError('Você não tem acesso a esta parte da plataforma. Fale com o administrador se precisar.',403);return a;}
-function failure(e:unknown){return Response.json({error:e instanceof ZodError?e.issues[0]?.message:e instanceof TerritoryError?e.message:'Não foi possível acessar o território. Tente novamente.',...(e instanceof TerritoryError&&e.duplicate?{duplicate:true}:{})},{status:e instanceof TerritoryError?e.status:e instanceof ZodError?400:503,headers});}
+function failure(e:unknown){return Response.json({error:e instanceof ZodError?validationMessage(e):e instanceof TerritoryError?e.message:'Não foi possível acessar o território. Tente novamente.',...(e instanceof TerritoryError&&e.duplicate?{duplicate:true}:{})},{status:e instanceof TerritoryError?e.status:e instanceof ZodError?400:503,headers});}
 export async function GET(request:Request){try{return Response.json(await getTerritory(await access(request),new URL(request.url).searchParams),{headers});}catch(e){return failure(e);}}
 export async function POST(request:Request){try{
  if(request.headers.get('origin')!==new URL(request.url).origin) throw new TerritoryError('Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo.',403);

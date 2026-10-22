@@ -75,6 +75,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { availablePeriods, buildDashboardView, EMPTY_FILTERS } from "@/lib/expansion-domain";
 import { canPerform, type ActionName } from "@/lib/expansion-permissions";
+import { defaultOwnerEmail } from "@/lib/owners";
 import { navigationFor, parseTarget, resolveLocation, type NavLocation } from "@/lib/navigation";
 import type {
   AlertMetric,
@@ -225,7 +226,7 @@ function PendingAttendances({ data, onDone }: { data: DashboardData; onDone: () 
     setBusy(lead.id);
     try {
       const day = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo" }).format(new Date());
-      const response = await tenantFetch("/api/commercial", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "opportunity", data: { id: crypto.randomUUID(), leadId: lead.id, businessId: null, ownerEmail: lead.assignedToEmail || data.access.email, temperature: "Morno", stage: "Novo", nextAction: "Primeiro contato pelo WhatsApp", dueDate: day, lostReason: "" } }) });
+      const response = await tenantFetch("/api/commercial", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "opportunity", data: { id: crypto.randomUUID(), leadId: lead.id, businessId: null, ownerEmail: lead.assignedToEmail || defaultOwnerEmail(data, lead.cityId), temperature: "Morno", stage: "Novo", nextAction: "Primeiro contato pelo WhatsApp", dueDate: day, lostReason: "" } }) });
       const body = await response.json().catch(() => ({}));
       if (!response.ok || !body.ok) throw new Error(body.error || "Não foi possível abrir o acompanhamento. Tente de novo.");
       toast.success(`Acompanhamento de ${lead.name.split(" ")[0]} aberto. O primeiro retorno já está na agenda de hoje.`);

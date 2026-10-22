@@ -11,6 +11,7 @@ import { parseActionPayload } from "@/lib/expansion-validation";
 import { sameOrigin } from "@/lib/session-cookie";
 import { MAX_TEAM_ROWS } from "@/lib/team";
 import { organizationFromRequest } from "@/lib/tenant-request";
+import { validationMessage } from "@/lib/validation-message";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ const inviteBody = z.object({
 type InviteResult = { email: string; name: string; ok: boolean; link?: string; error?: string };
 
 function rowError(error: unknown) {
-  if (error instanceof ZodError) return error.issues[0]?.message ?? "Revise os dados desta pessoa.";
+  if (error instanceof ZodError) return validationMessage(error, "Revise os dados desta pessoa.");
   if (error instanceof ActionError || error instanceof AuthError) return error.message;
   const planLimit = error instanceof Error ? planLimitFromDatabase(error.message) : null;
   if (planLimit) return planLimit;
