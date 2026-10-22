@@ -1,5 +1,5 @@
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -9,9 +9,14 @@ export const metadata: Metadata = {
   icons: {
     icon: [{url: "/elite-academy-official.svg", type: "image/svg+xml"}, {url: "/elite-academy-official.png", type: "image/png"}],
     shortcut: "/elite-academy-official.png",
-    apple: "/elite-academy-official.png",
+    apple: "/app/apple-touch-icon.png",
   },
+  // App no celular: instalável na tela inicial e abre em tela cheia (public/sw.js).
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Elite X", statusBarStyle: "black" },
 };
+
+export const viewport: Viewport = { themeColor: "#070706" };
 
 export default function RootLayout({
   children,

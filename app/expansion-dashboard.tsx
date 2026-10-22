@@ -4,6 +4,7 @@ import {tenantFetch} from '@/lib/tenant-request';
 import {TerritoryDecisions} from '@/app/territory-decisions';
 import {FollowupWorkspace} from '@/app/followup-workspace';
 import {CommercialWorkspace} from '@/app/commercial-workspace';
+import { InstallAppBanner, useAppServiceWorker } from "@/app/app-install";
 import { AppShell, type NewAction } from "@/app/app-shell";
 import { AdvisorsPanel } from "@/app/advisors-panel";
 import { QuickSearch } from "@/app/quick-search";
@@ -15,6 +16,7 @@ import { copyText } from "@/lib/copy-text";
 import { GettingStarted, WelcomeDialog } from "@/app/getting-started";
 import { TeamPanel } from "@/app/team-panel";
 import { MappingWizard } from "@/app/mapping-wizard";
+import { OfflineSync } from "@/app/offline-sync";
 import { MappingStatsPanel } from "@/app/mapping-stats";
 import { PeopleImport } from "@/app/people-import";
 import { AgendaBanner } from "@/app/agenda-banner";
@@ -361,6 +363,7 @@ const FILTERED = ["territorio/cidades", "rede/embaixadores", "vendas/pagamentos"
 
 export function ExpansionDashboard({ initialData, userName, signOutPath, initialArea, initialView }: { initialData: DashboardData; userName: string; signOutPath: string; initialArea?: string | null; initialView?: string | null }) {
   const [data, setData] = useState(initialData);
+  useAppServiceWorker();
   const [filters, setFilters] = useState<DashboardFilters>({ ...EMPTY_FILTERS });
   const [dialog, setDialog] = useState<DialogState>(null);
   const [saving, setSaving] = useState(false);
@@ -469,7 +472,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const outline = "border-white/10 bg-white/5 text-white";
 
   return <>
-    <AppShell logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={pending ? { vendas: pending } : {}} actions={actions} onNavigate={(next) => navigate(next)} search={<QuickSearch sales={canPipeline} onPick={(pick) => (pick.kind === "territory" ? openMapKey(pick.key) : openFollowup(pick.leadId))} />}>
+    <AppShell logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={pending ? { vendas: pending } : {}} actions={actions} onNavigate={(next) => navigate(next)} search={<QuickSearch sales={canPipeline} onPick={(pick) => (pick.kind === "territory" ? openMapKey(pick.key) : openFollowup(pick.leadId))} />} notice={<><OfflineSync access={data.access} cities={data.cities} onSynced={refreshDashboard} /><InstallAppBanner /></>}>
       <div className="space-y-5">
         {showFilters && <FilterBar data={data} filters={filters} onChange={setFilters} />}
         {attributionWarning && <div className="flex items-start gap-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><AlertTriangle className="mt-1 size-4 shrink-0" />Filtros por canal ou embaixador não usam fechamentos consolidados, pois eles não possuem atribuição individual. Cidades detalhadas continuam sendo calculadas normalmente.</div>}

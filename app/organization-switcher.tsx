@@ -18,7 +18,7 @@ export function OrganizationSwitcher({access}:{access:AccessView}){
   tenantFetch('/api/organizations',{signal:controller.signal})
    .then(async response=>{const body=await response.json();if(!response.ok)throw new Error(body.error);return body;})
    .then(body=>setItems(body.organizations))
-   .catch(e=>{if(!controller.signal.aborted)setError(e.message);});
+   .catch(e=>{if(!controller.signal.aborted&&navigator.onLine)setError(e.message);}); // sem sinal, a faixa de conexão já avisa
   return()=>controller.abort();
  },[]);
 

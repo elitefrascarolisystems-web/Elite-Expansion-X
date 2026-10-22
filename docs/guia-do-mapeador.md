@@ -19,6 +19,14 @@ O que fazer, em que ordem e as regras do mapeamento. A mesma versão fica na pla
 7. Atendimento: se a pessoa autorizou o contato, use “Iniciar atendimento” (na ficha do mapa ou logo depois de cadastrá-la). O atendimento começa com o primeiro retorno já marcado na agenda. Depois siga em Vendas → Agenda com o roteiro do Método F.E.C.H.A.; ao confirmar o pagamento, a oportunidade fecha sozinha como Ganho.
 8. Agenda: ao entrar, “Sua agenda” mostra seus retornos atrasados e os de hoje. Comece por eles.
 
+## No celular e sem internet
+
+- Instale o app: no Android (Chrome), toque em “Instalar” na faixa do topo; no iPhone (Safari), Compartilhar → Adicionar à Tela de Início. O ícone Elite X abre a plataforma em tela cheia.
+- Antes de ir a campo, abra a plataforma uma vez com internet, em Território. Assim ela abre no celular mesmo sem sinal.
+- Sem internet, o mapeamento guiado continua: locais e pessoas ficam guardados no celular com o aviso “Aguardando envio” e são enviados sozinhos quando o sinal voltar.
+- Sem sinal não dá para buscar o endereço: deixe o local pendente e marque o ponto no mapa depois.
+- Se aparecer “precisa da sua revisão” (por exemplo, nome repetido na cidade), toque em Ver e decida: enviar mesmo assim ou descartar. Envie tudo antes de sair da plataforma.
+
 ## Regras que não mudam (LGPD)
 
 - Nunca cadastre o endereço da casa de ninguém. A pessoa aparece no local ligado a ela ou no centro da cidade.

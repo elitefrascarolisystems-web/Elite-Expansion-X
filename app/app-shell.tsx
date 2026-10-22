@@ -28,11 +28,13 @@ function writeCollapsed(value: boolean) { try { window.localStorage.setItem(COLL
  * Estrutura da plataforma da equipe: barra lateral (computador), barra inferior
  * (celular), cabeçalho com a organização e o "+ Novo", título da área e sub-abas.
  */
-export function AppShell({ logo, access, userName, signOutPath, areas, location, badges, actions, onNavigate, search, children }: {
+export function AppShell({ logo, access, userName, signOutPath, areas, location, badges, actions, onNavigate, search, notice, children }: {
   /** Logo da empresa assinante (no lugar do emblema Elite), quando houver. */
   logo?: string | null;
   access: AccessView; userName: string; signOutPath: string; areas: NavArea[]; location: NavLocation;
-  badges: Partial<Record<AreaId, number>>; actions: NewAction[]; onNavigate: (location: NavLocation) => void; search?: ReactNode; children: ReactNode;
+  badges: Partial<Record<AreaId, number>>; actions: NewAction[]; onNavigate: (location: NavLocation) => void; search?: ReactNode;
+  /** Avisos sob o cabeçalho (conexão, cadastros guardados, instalar o app). */
+  notice?: ReactNode; children: ReactNode;
 }) {
   const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -72,6 +74,7 @@ export function AppShell({ logo, access, userName, signOutPath, areas, location,
         </div>
       </header>
       {access.isAdvisory && <div role="status" className="border-b border-gold/30 bg-gold/10 px-4 py-2 text-center text-sm text-gold-light">Modo assessoria: você está em <strong>{access.organizationName}</strong> pela Assessoria Elite. A empresa vê esse acesso, e tudo o que você alterar fica registrado no histórico dela.</div>}
+      {notice}
 
       <main className="elite-area">
         <div className="elite-area-head">

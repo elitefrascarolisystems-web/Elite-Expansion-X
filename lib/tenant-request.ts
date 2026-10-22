@@ -26,7 +26,11 @@ export function tenantFetch(input: string, init: RequestInit = {}) {
  const org = currentOrganizationId();
  const headers = new Headers(init.headers);
  if (org !== undefined) headers.set(ORGANIZATION_HEADER, String(org));
- return fetch(input, { ...init, headers, cache: 'no-store' });
+ // Sem sinal, o navegador só diz "Failed to fetch"; as telas mostram a mensagem em português.
+ return fetch(input, { ...init, headers, cache: 'no-store' }).catch((error: unknown) => {
+  if (error instanceof Error && error.name === 'AbortError') throw error;
+  throw new Error('Sem internet agora. Confira a conexão e tente de novo.');
+ });
 }
 
 /**
