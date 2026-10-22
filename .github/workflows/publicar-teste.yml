@@ -47,6 +47,11 @@ on:
         required: false
         default: "0"
         type: string
+      diagnostico_email:
+        description: "Opcional: e-mail de alguém que não consegue entrar. Só consulta (perfil, senha, link, bloqueio); não muda nada."
+        required: false
+        default: ""
+        type: string
 
 concurrency:
   group: publicar-teste
@@ -206,3 +211,26 @@ jobs:
             echo "::notice title=Perfil atualizado::$EMAIL ($FUNCAO). Nenhum link novo foi gerado."
           fi
           rm wrangler.link.json
+
+      - name: Diagnóstico de acesso (só leitura)
+        if: steps.conta.outputs.pronta == 'true' && inputs.diagnostico_email != ''
+        env:
+          D1_DATABASE_ID: ${{ steps.banco.outputs.id }}
+          EMAIL_INFORMADO: ${{ inputs.diagnostico_email }}
+        run: |
+          set -euo pipefail
+          EMAIL="$(printf '%s' "$EMAIL_INFORMADO" | tr '[:upper:]' '[:lower:]' | tr -d ' ')"
+          [[ "$EMAIL" =~ ^[a-z0-9._+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$ ]] || { echo "::error::diagnostico_email inválido."; exit 1; }
+          cat > wrangler.diag.json <<JSON
+          {"name":"$WORKER_NAME","compatibility_date":"2026-05-15",
+           "d1_databases":[{"binding":"DB","database_name":"$D1_DATABASE_NAME","database_id":"$D1_DATABASE_ID"}]}
+          JSON
+          # Nada de hash, senha ou token na saída: só se existe, datas e situação.
+          npx wrangler d1 execute DB --remote -c wrangler.diag.json --json --command \
+            "SELECT 'perfil' AS item, u.organization_id AS org, o.name AS empresa, u.role AS funcao, u.active AS ativo, o.active AS empresa_ativa FROM app_users u JOIN organizations o ON o.id=u.organization_id WHERE lower(u.email)='$EMAIL'; \
+             SELECT 'senha' AS item, COUNT(*) AS tem_senha, MAX(updated_at) AS criada_ou_trocada, MAX(last_login_at) AS ultimo_login FROM user_credentials WHERE email='$EMAIL'; \
+             SELECT 'link' AS item, created_at AS gerado, expires_at AS vence, used_at AS usado, CASE WHEN used_at IS NOT NULL THEN 'usado' WHEN expires_at<strftime('%Y-%m-%dT%H:%M:%fZ','now') THEN 'vencido' ELSE 'valendo' END AS situacao FROM password_links WHERE email='$EMAIL' ORDER BY created_at DESC LIMIT 3; \
+             SELECT 'bloqueio' AS item, failures AS tentativas_erradas, window_started_at AS desde, locked_until AS bloqueado_ate FROM login_throttle WHERE key='email:$EMAIL'; \
+             SELECT 'sessoes' AS item, COUNT(*) AS abertas, MAX(created_at) AS ultima FROM user_sessions WHERE email='$EMAIL' AND expires_at>strftime('%Y-%m-%dT%H:%M:%fZ','now');" \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{for(const r of JSON.parse(s))for(const row of r.results)console.log("::notice title=Diagnóstico::"+JSON.stringify(row));})'
+          rm wrangler.diag.json
