@@ -426,6 +426,8 @@ button:disabled { cursor: not-allowed; }
 .territory-shell .territory-toolbar,.territory-shell .territory-list,.territory-shell .territory-list button.record,.territory-shell .territory-detail{border-color:var(--territory-border)}
 .territory-shell[data-theme=dark] .territory-canvas-wrap{background:#111827}
 .territory-shell[data-theme=light] .text-amber-200,.territory-dialog[data-theme=light] .text-amber-200{color:#854d0e}
+/* Dourado claro some no fundo claro do mapa: no tema claro vira um dourado escuro (contraste AA). */
+.territory-shell[data-theme=light] .section-kicker,.territory-shell[data-theme=light] .text-\[\#e1c96e\],.territory-shell[data-theme=light] .text-\[\#dbc76c\]{color:#7a5c0a}
 .territory-dialog[data-theme=light] button[data-slot=button]:not([class*="bg-gold"]),.territory-dialog[data-theme=light] a[data-slot=button]:not([class*="bg-gold"]){color:#17202b;background:#fff;border-color:#9ca3af}
 .territory-shell input[type=checkbox]{min-height:20px;width:20px;accent-color:var(--territory-accent)}
 .territory-dialog :focus-visible{outline:3px solid #a17b17;outline-offset:3px}

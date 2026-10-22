@@ -97,7 +97,7 @@ export function BrandHero() {
       </div>
 
       <div className="relative z-10 space-y-5">
-        <div className="elite-chain" aria-label={`Cadeia da estratégia: ${STRATEGY_CHAIN.join(", ")}`}>
+        <div className="elite-chain" role="img" aria-label={`Cadeia da estratégia: ${STRATEGY_CHAIN.join(", ")}`}>
           <div className="elite-chain-track" aria-hidden>
             {[0, 1].map((copy) => <div key={copy} className="flex shrink-0 items-center">{STRATEGY_CHAIN.map((step, index) => <span key={step} className="flex items-center"><span className={`elite-chain-step ${index === STRATEGY_CHAIN.length - 1 ? "elite-chain-final" : ""}`}>{step}</span><span className="elite-chain-link" /></span>)}</div>)}
           </div>
