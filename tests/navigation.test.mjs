@@ -13,10 +13,10 @@ test('navegação: cada função vê só as áreas dela',()=>{
  assert.deepEqual(shape(access('Administrador',{isPlatformOwner:true})),{
   hoje:[],territorio:['mapa','cidades','locais'],vendas:['agenda','atendimentos','ganchos','fecha','pagamentos','posvenda'],
   rede:['embaixadores','indicacoes','mentorados','parceiros','materiais'],resultados:['visao','metas','mapeamento','custos'],
-  gestao:['time','regras','historico'],plataforma:['assinaturas','assessores'],
+  gestao:['time','regras','historico','privacidade'],plataforma:['assinaturas','assessores'],
  });
  const client=shape(access('Administrador',{organizationId:7}),{hasAdvisors:true});
- assert.deepEqual(client.gestao,['time','regras','identidade','plano','historico','assessoria'],'empresa assinante vê o plano e a assessoria');
+ assert.deepEqual(client.gestao,['time','regras','identidade','plano','historico','privacidade','assessoria'],'empresa assinante vê o plano e a assessoria');
  assert.equal(client.plataforma,undefined,'só os donos veem a plataforma');
  for(const role of ['Coordenação','Líder']){
   const s=shape(access(role));

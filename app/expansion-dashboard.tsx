@@ -17,6 +17,7 @@ import { GettingStarted, WelcomeDialog } from "@/app/getting-started";
 import { TeamPanel } from "@/app/team-panel";
 import { MappingWizard } from "@/app/mapping-wizard";
 import { OfflineSync } from "@/app/offline-sync";
+import { PrivacyPanel } from "@/app/privacy-panel";
 import { MappingStatsPanel } from "@/app/mapping-stats";
 import { PeopleImport } from "@/app/people-import";
 import { AgendaBanner } from "@/app/agenda-banner";
@@ -504,6 +505,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
         {here === "gestao/identidade" && <IdentityPanel data={data} onSaved={refreshDashboard} />}
         {here === "gestao/plano" && data.plan && <PlanCard plan={data.plan} organization={data.access.organizationName} />}
         {here === "gestao/historico" && <HistoryPanel data={data} />}
+        {here === "gestao/privacidade" && <PrivacyPanel />}
         {here === "gestao/assessoria" && <AdvisoryPanel data={data} />}
 
         {here === "plataforma/assinaturas" && <SubscriptionsPanel />}

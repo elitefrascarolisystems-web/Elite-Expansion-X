@@ -47,10 +47,11 @@ export function navigationFor(access: AccessView, { hasAdvisors }: NavOptions): 
       ],
     },
     {
-      id: "gestao", label: "Gestão", description: "Equipe, regras, plano e histórico da empresa.",
+      id: "gestao", label: "Gestão", description: "Equipe, regras, plano, histórico e pedidos de privacidade (LGPD) da empresa.",
       views: admin ? [
         { id: "time", label: "Time e acessos" }, { id: "regras", label: "Regras e cálculos" },
         ...only(access.organizationId !== 1, { id: "identidade", label: "Identidade" }), ...only(access.organizationId !== 1, { id: "plano", label: "Plano" }), { id: "historico", label: "Histórico" },
+        { id: "privacidade", label: "Privacidade (LGPD)" },
         ...only(hasAdvisors, { id: "assessoria", label: "Assessoria Elite" }),
       ] : [],
     },

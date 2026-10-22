@@ -56,6 +56,7 @@ Tudo o que é preciso para colocar a equipe para mapear e vender na plataforma.
 - Registrar só o necessário: nome, cidade, local e vínculo.
 - Atendimento/lead só com autorização de contato.
 - Cada pessoa usa o próprio login; tudo fica registrado no histórico.
+- Pedido de uma pessoa sobre os próprios dados (ver, corrigir, não ser mais contatada ou apagar): o administrador atende em *Gestão → Privacidade (LGPD)* em até 15 dias.
 
 ## 7. Validação feita antes do lançamento (21/10/2026)
 
@@ -105,7 +106,7 @@ A plataforma da equipe é organizada em áreas, na barra lateral (computador) ou
 | **Vendas** | Agenda · Atendimentos · Método F.E.C.H.A. · Pagamentos · Pós-venda | Toda a equipe |
 | **Rede** | Embaixadores · Indicações · Mentorados · Parceiros e eventos · Materiais | Gestão (Comercial: Indicações) |
 | **Resultados** | Visão geral · Metas e rotina · Mapeamento · Custos e canais | Gestão (Comercial: Metas e rotina) |
-| **Gestão** | Time e acessos · Regras e cálculos · Plano · Histórico · Assessoria Elite | Administrador |
+| **Gestão** | Time e acessos · Regras e cálculos · Identidade · Plano · Histórico · Privacidade (LGPD) · Assessoria Elite | Administrador |
 | **Plataforma** | Assinaturas · Assessores | Donos da plataforma |
 
 Em *Hoje* ficam também os atalhos do dia: *Mapear local e pessoas*, *Novo atendimento* e *Registrar venda e pagamento*. Os nomes dos botões são os mesmos das janelas que eles abrem, e o glossário fica em *Gestão → Regras e cálculos*.
@@ -121,6 +122,7 @@ Cada função abre onde mais trabalha: Comercial em *Vendas → Agenda*, Coorden
 - **Identidade da empresa assinante** — *Gestão → Identidade*: nome e logo (PNG, JPEG ou WebP, até 150 KB). A logo aparece na barra lateral e no mapa impresso.
 - **App no celular** — a plataforma pode ser instalada como aplicativo: no Android (Chrome), botão *Instalar* na faixa do topo; no iPhone (Safari), *Compartilhar → Adicionar à Tela de Início*. Abre em tela cheia com o ícone Elite X. Ao sair da plataforma, as telas guardadas no aparelho são apagadas.
 - **Mapeamento sem internet** — depois de abrir a plataforma uma vez com sinal, ela abre em campo sem internet na última tela usada. O *Mapear local e pessoas* continua funcionando: locais e pessoas ficam guardados no celular (*Aguardando envio*) e são enviados sozinhos quando o sinal volta. A faixa do topo mostra quantos estão guardados; em *Ver*, a pessoa resolve os que precisam de revisão (nome repetido: *enviar mesmo assim* ou *descartar*). Sem sinal não há busca de endereço: o local fica pendente para marcar no mapa depois. Cada cadastro guardado é só de quem o fez; outra pessoa entrando no mesmo aparelho não o envia.
+- **Privacidade (LGPD)** — *Gestão → Privacidade (LGPD)*, só para o administrador. Busque a pessoa pelo nome, e-mail ou WhatsApp: a ficha junta o cadastro no mapa, o contato, o atendimento, a venda e o cadastro de embaixador. Ações: *Cópia dos dados* (arquivo para enviar à pessoa), *Corrigir dados* (nome, e-mail e WhatsApp em todos os cadastros), *Revogar autorização* (encerra o atendimento e tira da agenda) e *Excluir (anonimizar)* (apaga nome, contatos, local, papéis, ponto no mapa e anotações; ficam só números sem identificação e a venda, exigida pela contabilidade; não pode ser desfeita). Cada pedido fica registrado com a data em que chegou, o canal e se foi atendido no prazo de 15 dias. Se a pessoa também tiver login na plataforma, a ficha avisa para desativar o acesso em *Gestão → Time e acessos*.
 
 ## 12. Pendências para depois do lançamento
 

@@ -405,3 +405,14 @@ export const prospectHooks = sqliteTable('prospect_hooks', {
  title:text('title').notNull(),situation:text('situation').notNull(),channel:text('channel').notNull().default('WhatsApp'),sector:text('sector').notNull().default(''),
  body:text('body').notNull(),status:text('status').notNull().default('Rascunho'),createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
 },(t)=>[index('prospect_hooks_org_status_idx').on(t.organizationId,t.status,t.situation)]);
+/**
+ * Pedidos de titulares (LGPD, art. 18): acesso, correção, revogação e anonimização.
+ * subject_ref aponta o titular (person:<id>, lead:<id> ou ambassador:<id>); depois da
+ * anonimização o subject_label passa a ser o rótulo anônimo, nunca o nome.
+ */
+export const privacyRequests = sqliteTable('privacy_requests', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull().references(()=>organizations.id),
+ kind:text('kind').notNull(),subjectRef:text('subject_ref').notNull(),subjectLabel:text('subject_label').notNull(),
+ channel:text('channel').notNull(),receivedAt:text('received_at').notNull(),completedAt:text('completed_at').notNull(),
+ note:text('note').notNull().default(''),actorEmail:text('actor_email').notNull(),
+},(t)=>[index('privacy_requests_org_idx').on(t.organizationId,t.completedAt),index('privacy_requests_subject_idx').on(t.organizationId,t.subjectRef)]);

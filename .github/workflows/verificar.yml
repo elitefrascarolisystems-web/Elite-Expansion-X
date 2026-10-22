@@ -47,6 +47,7 @@ jobs:
             tests/password-login.test.mjs \
             tests/places.test.mjs \
             tests/portal.test.mjs \
+            tests/privacy.test.mjs \
             tests/rendered-html.test.mjs \
             tests/subscriptions.test.mjs \
             tests/team.test.mjs \
