@@ -61,8 +61,18 @@ export function telaTours({ parametro, navegar }) {
     if (e.key === 'ArrowLeft') { parar(); ir(i - 1); }
   };
   document.addEventListener('keydown', teclas);
-  palco.pronto.then(() => ir(0));
-  return { elemento: h('div', { class: 'ax-tela-3d ax-tela-3d--cheia' }, palcoHost), sair: () => { parar(); document.removeEventListener('keydown', teclas); } };
+  palco.pronto.then(() => {
+    if (innerWidth > 900) palco.visualizador.definirDeslocamento(0.14);
+    ir(0);
+  });
+  return {
+    elemento: h('div', { class: 'ax-tela-3d ax-tela-3d--cheia' }, palcoHost),
+    sair: () => {
+      parar();
+      document.removeEventListener('keydown', teclas);
+      palco.visualizador?.definirDeslocamento(0);
+    },
+  };
 }
 
 export function telaTutor({ parametro, navegar }) {
@@ -196,6 +206,7 @@ export function abrirApresentacao() {
     window.removeEventListener('online', atualizarRede);
     window.removeEventListener('offline', atualizarRede);
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    palco.visualizador?.definirDeslocamento(0);
     raiz.remove();
     if (anterior) montarPalco(anterior);
   };
@@ -209,7 +220,10 @@ export function abrirApresentacao() {
   window.addEventListener('online', atualizarRede);
   window.addEventListener('offline', atualizarRede);
   raiz.append(botao('', { icone: 'fechar', titulo: 'Sair da apresentação', classe: 'ax-btn--icone ax-apresentacao-fechar', onClick: fechar }));
-  pronto.then(() => ir(0)).catch(() => limpar(legenda, h('h1', {}, 'Animal X'), h('p', {}, 'Não foi possível iniciar o 3D neste navegador.')));
+  pronto.then(() => {
+    if (innerWidth > 900) palco.visualizador.definirDeslocamento(0.16);
+    return ir(0);
+  }).catch(() => limpar(legenda, h('h1', {}, 'Animal X'), h('p', {}, 'Não foi possível iniciar o 3D neste navegador.')));
   return fechar;
 }
 

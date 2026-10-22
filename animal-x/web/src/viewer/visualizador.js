@@ -204,6 +204,22 @@ export class Visualizador {
     this.aoTrocarBackend(this.backend, this.motivoWebGL);
   }
 
+  // Desloca o centro da imagem para a direita (fração da largura), para o
+  // objeto não ficar atrás de um cartão de legenda à esquerda.
+  definirDeslocamento(fracao) {
+    this.deslocamento = fracao;
+    this.aplicarDeslocamento();
+  }
+
+  aplicarDeslocamento() {
+    if (!this.camera) return;
+    if (!this.deslocamento || !this.largura) {
+      this.camera.clearViewOffset();
+      return;
+    }
+    this.camera.setViewOffset(this.largura, this.altura, -this.largura * this.deslocamento, 0, this.largura, this.altura);
+  }
+
   definirTema(tema) {
     this.tema = tema;
     this.cena.background = new THREE.Color(tema === 'claro' ? '#e9eef3' : '#070b12');
@@ -257,6 +273,7 @@ export class Visualizador {
     this.altura = h;
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.aplicarDeslocamento();
     this.renderer.setSize(w, h, false);
     this.canvas.style.width = `${w}px`;
     this.canvas.style.height = `${h}px`;
