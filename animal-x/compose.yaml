@@ -1,0 +1,53 @@
+# Animal X com PostgreSQL e Caddy (HTTPS automático quando houver domínio).
+# Uso: copie env.exemplo para .env, ajuste os valores e rode: docker compose up -d
+services:
+  banco:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: animalx
+      POSTGRES_PASSWORD: ${POSTGRES_SENHA:?defina POSTGRES_SENHA no .env}
+      POSTGRES_DB: animalx
+    volumes:
+      - banco:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U animalx"]
+      interval: 10s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      banco:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://animalx:${POSTGRES_SENHA}@banco:5432/animalx
+      ANIMALX_COOKIE_SEGURO: "1"
+      ANIMALX_CONFIAR_PROXY: "1"
+      ANIMALX_BACKUP_DIARIO: "1"
+      ANIMALX_CADASTRO_ABERTO: ${ANIMALX_CADASTRO_ABERTO:-0}
+      ANIMALX_ADMIN_EMAIL: ${ANIMALX_ADMIN_EMAIL:-}
+      ANIMALX_ADMIN_SENHA: ${ANIMALX_ADMIN_SENHA:-}
+      ANIMALX_BACKUP_CHAVE: ${ANIMALX_BACKUP_CHAVE:?defina ANIMALX_BACKUP_CHAVE (32 bytes em base64)}
+    volumes:
+      - dados:/dados
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMINIO: ${DOMINIO:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy:/data
+
+volumes:
+  banco:
+  dados:
+  caddy:

@@ -2,6 +2,8 @@
 
 Data: 22/10/2026. Referência: descrição do Human X 360 (versão 7.24.0) e pesquisa de mercado em [`referencias-mercado-2026-10-22.md`](referencias-mercado-2026-10-22.md).
 
+**Fase 1 iniciada** em [`animal-x/`](../../animal-x/README.md): atlas do cão esquemático, fonte em cada dado, tours, tutor, quiz, contas, laboratório, apresentação e uso offline. O README lista o que existe, o que foi testado e o que falta.
+
 ## Como usar
 
 1. Crie um repositório próprio, `animal-x`. A descrição do Human X pede que a nova plataforma fique em pasta e repositório separados. Este arquivo só guarda o prompt.

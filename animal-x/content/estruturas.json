@@ -1,0 +1,3771 @@
+{
+  "gerado": "scripts/import-uberon.js",
+  "uberon": {
+    "url": "https://raw.githubusercontent.com/obophenotype/uberon/master/uberon.obo",
+    "dataVersion": "releases/2026-10-01",
+    "sha256": "d4751a15d7551a8414caee2628c62bf68301d567caf54ccfa3eef383ae7cbb61",
+    "termos": 15047,
+    "acesso": "2026-10-22"
+  },
+  "sistemas": [
+    {
+      "id": "esqueletico",
+      "pt": "Esquelético",
+      "cor": "#e8dcc4"
+    },
+    {
+      "id": "muscular",
+      "pt": "Muscular (esquemático)",
+      "cor": "#b5473f"
+    },
+    {
+      "id": "nervoso",
+      "pt": "Nervoso",
+      "cor": "#e7c873"
+    },
+    {
+      "id": "cardiovascular",
+      "pt": "Cardiovascular",
+      "cor": "#c23b3b"
+    },
+    {
+      "id": "respiratorio",
+      "pt": "Respiratório",
+      "cor": "#e39a9a"
+    },
+    {
+      "id": "digestorio",
+      "pt": "Digestório",
+      "cor": "#d98b5f"
+    },
+    {
+      "id": "linfatico",
+      "pt": "Linfático",
+      "cor": "#8c4a6b"
+    },
+    {
+      "id": "urinario",
+      "pt": "Urinário",
+      "cor": "#d6b14a"
+    },
+    {
+      "id": "tegumentar",
+      "pt": "Tegumentar (silhueta)",
+      "cor": "#7fd8e6"
+    }
+  ],
+  "regioes": [
+    {
+      "id": "cabeca",
+      "pt": "Cabeça"
+    },
+    {
+      "id": "pescoco",
+      "pt": "Pescoço"
+    },
+    {
+      "id": "torax",
+      "pt": "Tórax"
+    },
+    {
+      "id": "abdome",
+      "pt": "Abdome"
+    },
+    {
+      "id": "pelve",
+      "pt": "Pelve"
+    },
+    {
+      "id": "membro_toracico",
+      "pt": "Membro torácico"
+    },
+    {
+      "id": "membro_pelvico",
+      "pt": "Membro pélvico"
+    },
+    {
+      "id": "cauda",
+      "pt": "Cauda"
+    },
+    {
+      "id": "corpo",
+      "pt": "Corpo todo"
+    }
+  ],
+  "estruturas": [
+    {
+      "id": "cranio",
+      "pt": "Crânio",
+      "en": "skull",
+      "latim": {
+        "termo": "Cranium",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "cabeca",
+      "bilateral": false,
+      "resumo": "Conjunto de ossos da cabeça que protege o encéfalo e sustenta a face. No modelo esquemático, aparece como uma peça única.",
+      "tutor": "É a parte óssea da cabeça. Protege o cérebro e dá forma ao focinho.",
+      "uberon": {
+        "id": "UBERON:0003129",
+        "nome": "skull",
+        "definicao": "Anatomical structure that is part of the head consisting entirely of cranium and mandible[WP].",
+        "refsDefinicao": [
+          "http://sourceforge.net/tracker/?func=detail&aid=2962656&group_id=76834&atid=1205376",
+          "PMID:11523816",
+          "Wikipedia:Skull"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0000075",
+            "nome": "subdivision of skeletal system"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000033",
+            "nome": "head"
+          },
+          {
+            "id": "UBERON:0010323",
+            "nome": "cranial skeletal system"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:89593",
+            "nome": "Craniata <chordates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "mandibula",
+      "pt": "Mandíbula",
+      "en": "mandible",
+      "latim": {
+        "termo": "Mandibula",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "cabeca",
+      "bilateral": false,
+      "resumo": "Osso da arcada inferior, articulado ao crânio, que sustenta os dentes inferiores.",
+      "tutor": "É o osso da boca de baixo, onde ficam os dentes inferiores.",
+      "uberon": {
+        "id": "UBERON:0001684",
+        "nome": "mandible",
+        "definicao": "A dentary bone that is the only bone in one of the lateral halves of the lower jaw skeleton.",
+        "refsDefinicao": [
+          "Wikipedia:Human_mandible",
+          "Wikipedia:Mandible"
+        ],
+        "latim": [
+          "mandibula"
+        ],
+        "sinonimosExatos": [
+          "inferior maxillary bone",
+          "mammaliam mandible",
+          "mandibulla"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0002514",
+            "nome": "intramembranous bone"
+          },
+          {
+            "id": "UBERON:0004742",
+            "nome": "dentary"
+          }
+        ],
+        "partOf": [],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "dentes",
+      "pt": "Dentes",
+      "en": "calcareous tooth",
+      "latim": {
+        "termo": "Dentes",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "digestorio",
+      "regiao": "cabeca",
+      "bilateral": false,
+      "resumo": "Dentição representada de forma esquemática: incisivos, caninos, pré-molares e molares, sem contagem exata por arcada.",
+      "tutor": "Os dentes cortam e trituram o alimento. Os grandes, na frente, são os caninos.",
+      "uberon": {
+        "id": "UBERON:0001091",
+        "nome": "calcareous tooth",
+        "definicao": "Skeletal element within the mouth (or in some species, upper part of the digestive tract) that is composed of dentine and is used in procuring or masticating food.",
+        "refsDefinicao": [
+          "http://orcid.org/0000-0002-6601-2165",
+          "Wikipedia:Tooth_(animal)"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "dental element",
+          "dentine containing tooth",
+          "tooth",
+          "vertebrate tooth"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003913",
+            "nome": "tooth-like structure"
+          },
+          {
+            "id": "UBERON:0010314",
+            "nome": "structure with developmental contribution from neural crest"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0011595",
+            "nome": "jaw region"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "vertebra_cervical",
+      "pt": "Vértebras cervicais",
+      "en": "cervical vertebra",
+      "latim": {
+        "termo": "Vertebrae cervicales",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "pescoco",
+      "bilateral": false,
+      "resumo": "Vértebras do pescoço. O modelo mostra sete, como é usual em mamíferos.",
+      "tutor": "São os ossos do pescoço, que permitem mexer a cabeça.",
+      "uberon": {
+        "id": "UBERON:0002413",
+        "nome": "cervical vertebra",
+        "definicao": "A vertebra that is located in the cervical region of the vertebral column.",
+        "refsDefinicao": [
+          "http://orcid.org/0000-0002-6601-2165"
+        ],
+        "latim": [
+          "vertebrae cervicales"
+        ],
+        "sinonimosExatos": [
+          "cervical vertebrae"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003458",
+            "nome": "neck bone"
+          },
+          {
+            "id": "UBERON:0004247",
+            "nome": "bone of dorsum"
+          },
+          {
+            "id": "UBERON:0004451",
+            "nome": "trunk or cervical vertebra"
+          },
+          {
+            "id": "UBERON:0015007",
+            "nome": "cervical vertebra endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000974",
+            "nome": "neck"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "vertebra_toracica",
+      "pt": "Vértebras torácicas",
+      "en": "thoracic vertebra",
+      "latim": {
+        "termo": "Vertebrae thoracicae",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "torax",
+      "bilateral": false,
+      "resumo": "Vértebras do tórax, onde se articulam as costelas. O modelo mostra treze, número usual no cão.",
+      "tutor": "São os ossos das costas na altura do peito, presos às costelas.",
+      "uberon": {
+        "id": "UBERON:0002347",
+        "nome": "thoracic vertebra",
+        "definicao": "A thoracic vertebra endochondral element that is composed primarily of a bone tissue.",
+        "refsDefinicao": [
+          "OBOL:automatic"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "dorsal vertebra",
+          "thorax vertebra",
+          "vertebra of thorax",
+          "vertebra thoracica"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0002412",
+            "nome": "vertebra"
+          },
+          {
+            "id": "UBERON:0003827",
+            "nome": "thoracic segment bone"
+          },
+          {
+            "id": "UBERON:0004247",
+            "nome": "bone of dorsum"
+          },
+          {
+            "id": "UBERON:0015008",
+            "nome": "thoracic vertebra endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000915",
+            "nome": "thoracic segment of trunk"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "vertebra_lombar",
+      "pt": "Vértebras lombares",
+      "en": "lumbar vertebra",
+      "latim": {
+        "termo": "Vertebrae lumbales",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Vértebras da região lombar, entre o tórax e a pelve. O modelo mostra sete, número usual no cão.",
+      "tutor": "São os ossos da parte de baixo das costas.",
+      "uberon": {
+        "id": "UBERON:0002414",
+        "nome": "lumbar vertebra",
+        "definicao": "Large vertebra of the movable part of the vertebral column, characterized by the absence of the foramen transversarium within the transverse process, and by the absence of facets on the sides of the body.",
+        "refsDefinicao": [
+          "Wikipedia:Lumbar_vertebrae"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0002412",
+            "nome": "vertebra"
+          },
+          {
+            "id": "UBERON:0003828",
+            "nome": "abdominal segment bone"
+          },
+          {
+            "id": "UBERON:0004247",
+            "nome": "bone of dorsum"
+          },
+          {
+            "id": "UBERON:0015009",
+            "nome": "lumbar vertebra endochondral element"
+          }
+        ],
+        "partOf": [],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "sacro",
+      "pt": "Sacro",
+      "en": "fused sacrum",
+      "latim": {
+        "termo": "Os sacrum",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": [
+          "os sacrum [vertebrae sacrales I - V]"
+        ]
+      },
+      "sistema": "esqueletico",
+      "regiao": "pelve",
+      "bilateral": false,
+      "resumo": "Vértebras fundidas que ligam a coluna à pelve.",
+      "tutor": "É o osso que une a coluna ao quadril.",
+      "uberon": {
+        "id": "UBERON:0003690",
+        "nome": "fused sacrum",
+        "definicao": "A collection of sacral vertebrae in the sacral region that are fused and part of the bony pelvis.",
+        "refsDefinicao": [
+          "https://orcid.org/0000-0002-6601-2165"
+        ],
+        "latim": [
+          "os sacrum",
+          "os sacrum [vertebrae sacrales I - V]"
+        ],
+        "sinonimosExatos": [
+          "sacrum",
+          "sacrum [sacral vertebrae I - V]",
+          "sacrum [sacral vertebrae I-V]"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003828",
+            "nome": "abdominal segment bone"
+          },
+          {
+            "id": "UBERON:0004247",
+            "nome": "bone of dorsum"
+          },
+          {
+            "id": "UBERON:0005179",
+            "nome": "pelvic region element"
+          },
+          {
+            "id": "UBERON:0006075",
+            "nome": "sacral region of vertebral column"
+          },
+          {
+            "id": "UBERON:0008001",
+            "nome": "irregular bone"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0001270",
+            "nome": "bony pelvis"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "vertebra_caudal",
+      "pt": "Vértebras caudais",
+      "en": "caudal vertebra",
+      "latim": {
+        "termo": "Vertebrae caudales",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "cauda",
+      "bilateral": false,
+      "resumo": "Vértebras da cauda. O número varia entre indivíduos e raças; o modelo usa uma quantidade ilustrativa.",
+      "tutor": "São os ossos do rabo.",
+      "uberon": {
+        "id": "UBERON:0001095",
+        "nome": "caudal vertebra",
+        "definicao": "Any vertebral bone that is part of the caudal region of the vertebral column (tail or coccyx).",
+        "refsDefinicao": [
+          "http://orcid.org/0000-0002-6601-2165"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "caudal vertebrae",
+          "caudal vertebral bone",
+          "caudal vertebral bone element",
+          "coccygeal segment",
+          "coccygeal vertebra",
+          "fused tail vertebra"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0002412",
+            "nome": "vertebra"
+          },
+          {
+            "id": "UBERON:0004247",
+            "nome": "bone of dorsum"
+          },
+          {
+            "id": "UBERON:0018142",
+            "nome": "caudal vertebra endochondral element"
+          }
+        ],
+        "partOf": [],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "costela",
+      "pt": "Costelas",
+      "en": "rib",
+      "latim": {
+        "termo": "Costae",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "torax",
+      "bilateral": true,
+      "resumo": "Ossos curvos que formam a parede do tórax. O modelo mostra treze pares, número usual no cão.",
+      "tutor": "As costelas formam uma gaiola que protege o coração e os pulmões.",
+      "uberon": {
+        "id": "UBERON:0002228",
+        "nome": "rib",
+        "definicao": "An intersegmental rod-shaped bone that forms in the peritoneal membrane and attach to the vertebral parapophyses.",
+        "refsDefinicao": [
+          "Wikipedia:Rib",
+          "ZFIN:curator"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0002513",
+            "nome": "endochondral bone"
+          },
+          {
+            "id": "UBERON:0015019",
+            "nome": "rib endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0003252",
+            "nome": "thoracic rib cage"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "esterno",
+      "pt": "Esterno",
+      "en": "sternum",
+      "latim": {
+        "termo": "Sternum",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "torax",
+      "bilateral": false,
+      "resumo": "Osso segmentado na parte ventral do tórax, onde se unem as cartilagens das costelas.",
+      "tutor": "É o osso do peito, embaixo, onde as costelas se encontram.",
+      "uberon": {
+        "id": "UBERON:0000975",
+        "nome": "sternum",
+        "definicao": "A midventral endochondral skeletal element which represents the origin site of the pectoral muscles[PHENOSCAPE:ad].",
+        "refsDefinicao": [
+          "https://github.com/obophenotype/uberon/issues/67",
+          "PHENOSCAPE:ad"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "vertebrate sternum"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0005181",
+            "nome": "thoracic segment organ"
+          },
+          {
+            "id": "UBERON:0010363",
+            "nome": "endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "RO:0002577",
+            "nome": "system"
+          },
+          {
+            "id": "UBERON:0000915",
+            "nome": "thoracic segment of trunk"
+          },
+          {
+            "id": "UBERON:0003252",
+            "nome": "thoracic rib cage"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:32523",
+            "nome": "Tetrapoda"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "escapula",
+      "pt": "Escápula",
+      "en": "scapula",
+      "latim": {
+        "termo": "Scapula",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Osso plano do ombro, apoiado na parede do tórax e unido ao corpo por músculos.",
+      "tutor": "É o osso do ombro, uma placa achatada ao lado do peito.",
+      "uberon": {
+        "id": "UBERON:0006849",
+        "nome": "scapula",
+        "definicao": "Endochondral bone that is dorsoventrally compressed and provides attachment site for muscles of the pectoral appendage.",
+        "refsDefinicao": [
+          "https://github.com/obophenotype/uberon/issues/204",
+          "https://github.com/obophenotype/uberon/issues/339",
+          "VSAO:0000157"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "scapulae"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0002513",
+            "nome": "endochondral bone"
+          },
+          {
+            "id": "UBERON:0007829",
+            "nome": "pectoral girdle bone"
+          },
+          {
+            "id": "UBERON:0015057",
+            "nome": "scapula endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0001467",
+            "nome": "shoulder"
+          },
+          {
+            "id": "UBERON:0007831",
+            "nome": "pectoral girdle skeleton"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "umero",
+      "pt": "Úmero",
+      "en": "humerus",
+      "latim": {
+        "termo": "Humerus",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Osso longo do braço, entre a articulação do ombro e a do cotovelo.",
+      "tutor": "É o osso entre o ombro e o cotovelo da pata da frente.",
+      "uberon": {
+        "id": "UBERON:0000976",
+        "nome": "humerus",
+        "definicao": "Paired endochondral long bone that extends between the pectoral girdle and the skeletal parts of the forelimb. [PHENOSCAPE:mah].",
+        "refsDefinicao": [
+          "AAO:0000679",
+          "https://github.com/obophenotype/uberon/issues/106",
+          "PHENOSCAPE:mah"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "humeri",
+          "humerus bone"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0002495",
+            "nome": "long bone"
+          },
+          {
+            "id": "UBERON:0003461",
+            "nome": "shoulder bone"
+          },
+          {
+            "id": "UBERON:0003607",
+            "nome": "forelimb long bone"
+          },
+          {
+            "id": "UBERON:0004250",
+            "nome": "upper arm bone"
+          },
+          {
+            "id": "UBERON:0015053",
+            "nome": "humerus endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0001440",
+            "nome": "forelimb skeleton"
+          },
+          {
+            "id": "UBERON:0003822",
+            "nome": "forelimb stylopod"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "radio",
+      "pt": "Rádio",
+      "en": "radius bone",
+      "latim": {
+        "termo": "Radius",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Osso do antebraço que transmite o peso do cotovelo ao carpo.",
+      "tutor": "É um dos dois ossos entre o cotovelo e o punho da pata da frente.",
+      "uberon": {
+        "id": "UBERON:0001423",
+        "nome": "radius bone",
+        "definicao": "The major preaxial endochondral bone in the anterior zeugopod[Phenoscape].",
+        "refsDefinicao": [
+          "PHENOSCAPE:mah"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "radius"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003466",
+            "nome": "forelimb zeugopod bone"
+          },
+          {
+            "id": "UBERON:0003607",
+            "nome": "forelimb long bone"
+          },
+          {
+            "id": "UBERON:0015001",
+            "nome": "radius endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0010703",
+            "nome": "forelimb zeugopod skeleton"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "ulna",
+      "pt": "Ulna",
+      "en": "ulna",
+      "latim": {
+        "termo": "Ulna",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Osso do antebraço; sua extremidade proximal forma a ponta do cotovelo (olécrano).",
+      "tutor": "É o outro osso do antebraço. Forma a ponta do cotovelo.",
+      "uberon": {
+        "id": "UBERON:0001424",
+        "nome": "ulna",
+        "definicao": "The major postaxial endochondral bone in the anterior zeugopod[Phenoscape].",
+        "refsDefinicao": [
+          "PHENOSCAPE:mah"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0003466",
+            "nome": "forelimb zeugopod bone"
+          },
+          {
+            "id": "UBERON:0003607",
+            "nome": "forelimb long bone"
+          },
+          {
+            "id": "UBERON:0015003",
+            "nome": "ulna endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0010703",
+            "nome": "forelimb zeugopod skeleton"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "carpo",
+      "pt": "Ossos do carpo",
+      "en": "carpal bone",
+      "latim": {
+        "termo": "Ossa carpi",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Pequenos ossos da articulação do carpo, representados como um bloco único no modelo.",
+      "tutor": "São ossinhos do 'punho' da pata da frente.",
+      "uberon": {
+        "id": "UBERON:0001435",
+        "nome": "carpal bone",
+        "definicao": "A bone that is part of the carpal skeleton. Examples: scaphoid, lunate, capitate[cjm].",
+        "refsDefinicao": [
+          "https://orcid.org/0000-0002-6601-2165"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "bone of carpus",
+          "carpal",
+          "carpal skeleton bone"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003656",
+            "nome": "mesopodium bone"
+          },
+          {
+            "id": "UBERON:0005897",
+            "nome": "manus bone"
+          },
+          {
+            "id": "UBERON:0015049",
+            "nome": "carpus endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0004452",
+            "nome": "carpal region"
+          },
+          {
+            "id": "UBERON:0009880",
+            "nome": "carpal skeleton"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "metacarpo",
+      "pt": "Ossos metacarpais",
+      "en": "metacarpal bone",
+      "latim": {
+        "termo": "Ossa metacarpalia",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Ossos entre o carpo e os dedos da mão.",
+      "tutor": "São os ossos da 'palma' da pata da frente.",
+      "uberon": {
+        "id": "UBERON:0002374",
+        "nome": "metacarpal bone",
+        "definicao": "A bone that is part of the metacarpal skeleton.",
+        "refsDefinicao": [
+          "https://orcid.org/0000-0002-6601-2165",
+          "Wikipedia:Metacarpal_bone"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "metacarpal"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003607",
+            "nome": "forelimb long bone"
+          },
+          {
+            "id": "UBERON:0003821",
+            "nome": "metapodium bone"
+          },
+          {
+            "id": "UBERON:0012358",
+            "nome": "manual digitopodium bone"
+          },
+          {
+            "id": "UBERON:0015042",
+            "nome": "manual digit metacarpus endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0004453",
+            "nome": "metacarpus region"
+          },
+          {
+            "id": "UBERON:0010544",
+            "nome": "metacarpus skeleton"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "falanges_mao",
+      "pt": "Falanges do membro torácico",
+      "en": "phalanx of manus",
+      "latim": {
+        "termo": "Ossa digitorum manus",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Ossos dos dedos da mão. O modelo simplifica os dedos e não mostra o primeiro dedo (ergô).",
+      "tutor": "São os ossos dos dedos da pata da frente.",
+      "uberon": {
+        "id": "UBERON:0001436",
+        "nome": "phalanx of manus",
+        "definicao": "A phalanx that is part of a forelimb autopod[Automatically generated definition].",
+        "refsDefinicao": [
+          "https://orcid.org/0000-0002-6601-2165",
+          "Wikipedia:Phalanges_of_the_hand"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "digitus manus phalanx",
+          "finger phalanx",
+          "hand digit phalanx",
+          "hand phalanx",
+          "manual phalanx",
+          "phalanx of digit of hand"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003221",
+            "nome": "phalanx"
+          },
+          {
+            "id": "UBERON:0003607",
+            "nome": "forelimb long bone"
+          },
+          {
+            "id": "UBERON:0004249",
+            "nome": "manual digit bone"
+          },
+          {
+            "id": "UBERON:0015024",
+            "nome": "manual digit phalanx endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0002389",
+            "nome": "manual digit"
+          },
+          {
+            "id": "UBERON:0010688",
+            "nome": "skeleton of manual acropodium"
+          },
+          {
+            "id": "UBERON:5102389",
+            "nome": "manual digit digitopodial skeleton"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "osso_coxal",
+      "pt": "Osso do quadril (coxal)",
+      "en": "innominate bone",
+      "latim": {
+        "termo": "Os coxae",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": [
+          "os coxa",
+          "os innominatum"
+        ]
+      },
+      "sistema": "esqueletico",
+      "regiao": "pelve",
+      "bilateral": true,
+      "resumo": "Osso formado por ílio, ísquio e púbis, que contém o acetábulo onde se articula o fêmur.",
+      "tutor": "É o osso do quadril, onde encaixa a coxa.",
+      "uberon": {
+        "id": "UBERON:0001272",
+        "nome": "innominate bone",
+        "definicao": "A fused bone consisting of the ilium, ischium and pubis. Together with the sacrum and coccyx, it comprises the pelvis. [WP,modified].",
+        "refsDefinicao": [
+          "https://github.com/obophenotype/uberon/issues/290",
+          "https://orcid.org/0000-0002-6601-2165",
+          "Wikipedia:Hip_bone"
+        ],
+        "latim": [
+          "os coxa",
+          "os coxae",
+          "os innominatum"
+        ],
+        "sinonimosExatos": [
+          "coxal bone",
+          "hip bone",
+          "innominate bone",
+          "pelvic bone"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0007830",
+            "nome": "pelvic girdle bone/zone"
+          },
+          {
+            "id": "UBERON:0010428",
+            "nome": "flat bone"
+          },
+          {
+            "id": "UBERON:0015212",
+            "nome": "lateral structure"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0001464",
+            "nome": "hip"
+          },
+          {
+            "id": "UBERON:0007832",
+            "nome": "pelvic girdle skeleton"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "femur",
+      "pt": "Fêmur",
+      "en": "femur",
+      "latim": {
+        "termo": "Os femoris",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": [
+          "os femorale",
+          "os longissimum"
+        ]
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Osso longo da coxa, entre a articulação do quadril e a do joelho.",
+      "tutor": "É o osso da coxa, o maior da pata de trás.",
+      "uberon": {
+        "id": "UBERON:0000981",
+        "nome": "femur",
+        "definicao": "Endochondral longbone connecting the pelvic girdle with posterior zeugopodium skeleton.[VSAO, modified].",
+        "refsDefinicao": [
+          "VSAO:0000186",
+          "Wikipedia:Femur"
+        ],
+        "latim": [
+          "os femorale",
+          "os femoris",
+          "os longissimum"
+        ],
+        "sinonimosExatos": [
+          "thigh bone"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003608",
+            "nome": "hindlimb long bone"
+          },
+          {
+            "id": "UBERON:0003826",
+            "nome": "upper leg bone"
+          },
+          {
+            "id": "UBERON:0008202",
+            "nome": "bone of hip region"
+          },
+          {
+            "id": "UBERON:0015052",
+            "nome": "femur endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000376",
+            "nome": "hindlimb stylopod"
+          },
+          {
+            "id": "UBERON:0001441",
+            "nome": "hindlimb skeleton"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7742",
+            "nome": "Vertebrata <vertebrates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "patela",
+      "pt": "Patela",
+      "en": "patella",
+      "latim": {
+        "termo": "Patella",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Osso sesamoide na face cranial do joelho, dentro do tendão do músculo quadríceps femoral.",
+      "tutor": "É a 'rótula', um ossinho na frente do joelho.",
+      "uberon": {
+        "id": "UBERON:0002446",
+        "nome": "patella",
+        "definicao": "A large sesamoid bone found in the distal femur/proximal tibial region of the hindlimb of tetrapods. The patella is the attachment site for proximal hindlimb tendons.[PHENOSCAPE:ad].",
+        "refsDefinicao": [
+          "https://sourceforge.net/tracker/?func=detail&atid=1205376&aid=3470151&group_id=76834",
+          "PHENOSCAPE:ad"
+        ],
+        "latim": [
+          "patella"
+        ],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0001479",
+            "nome": "sesamoid bone"
+          },
+          {
+            "id": "UBERON:0005893",
+            "nome": "leg bone"
+          },
+          {
+            "id": "UBERON:0011141",
+            "nome": "appendicular ossicle"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0001441",
+            "nome": "hindlimb skeleton"
+          },
+          {
+            "id": "UBERON:0001465",
+            "nome": "knee"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "tibia",
+      "pt": "Tíbia",
+      "en": "tibia",
+      "latim": {
+        "termo": "Tibia",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Principal osso da perna, entre o joelho e o tarso.",
+      "tutor": "É o osso principal entre o joelho e o 'calcanhar' da pata de trás.",
+      "uberon": {
+        "id": "UBERON:0000979",
+        "nome": "tibia",
+        "definicao": "The major preaxial endochondral bone in the posterior zeugopod[Phenoscape].",
+        "refsDefinicao": [
+          "PHENOSCAPE:mah"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "shankbone",
+          "shinbone"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0002495",
+            "nome": "long bone"
+          },
+          {
+            "id": "UBERON:0003608",
+            "nome": "hindlimb long bone"
+          },
+          {
+            "id": "UBERON:0004251",
+            "nome": "hindlimb zeugopod bone"
+          },
+          {
+            "id": "UBERON:0015004",
+            "nome": "tibia endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0010720",
+            "nome": "hindlimb zeugopod skeleton"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7742",
+            "nome": "Vertebrata <vertebrates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "fibula",
+      "pt": "Fíbula",
+      "en": "fibula",
+      "latim": {
+        "termo": "Fibula",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Osso delgado, lateral à tíbia.",
+      "tutor": "É um osso fino ao lado da tíbia.",
+      "uberon": {
+        "id": "UBERON:0001446",
+        "nome": "fibula",
+        "definicao": "The major postaxial endochondral bone in the posterior zeugopod[Phenoscape].",
+        "refsDefinicao": [
+          "PHENOSCAPE:mah"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0002495",
+            "nome": "long bone"
+          },
+          {
+            "id": "UBERON:0003608",
+            "nome": "hindlimb long bone"
+          },
+          {
+            "id": "UBERON:0004251",
+            "nome": "hindlimb zeugopod bone"
+          },
+          {
+            "id": "UBERON:0015013",
+            "nome": "fibula endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0010720",
+            "nome": "hindlimb zeugopod skeleton"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "tarso",
+      "pt": "Ossos do tarso",
+      "en": "tarsal bone",
+      "latim": {
+        "termo": "Ossa tarsi",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Ossos da articulação do tarso; o calcâneo forma a ponta do jarrete. No modelo, um bloco com o calcâneo destacado.",
+      "tutor": "São os ossos do 'calcanhar' da pata de trás.",
+      "uberon": {
+        "id": "UBERON:0001447",
+        "nome": "tarsal bone",
+        "definicao": "A bone that is part of the tarsal skeleton. Examples: calcaneus, talus, centralia.",
+        "refsDefinicao": [
+          "https://orcid.org/0000-0002-6601-2165"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "ankle bone",
+          "bone of ankle",
+          "bone of tarsal skeleton",
+          "bone of tarsus",
+          "ossa tarsalia",
+          "ossa tarsi"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003656",
+            "nome": "mesopodium bone"
+          },
+          {
+            "id": "UBERON:0005899",
+            "nome": "pes bone"
+          },
+          {
+            "id": "UBERON:0015050",
+            "nome": "tarsus endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0004454",
+            "nome": "tarsal region"
+          },
+          {
+            "id": "UBERON:0009879",
+            "nome": "tarsal skeleton"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "metatarso",
+      "pt": "Ossos metatarsais",
+      "en": "metatarsal bone",
+      "latim": {
+        "termo": "Ossa metatarsalia",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Ossos entre o tarso e os dedos do pé.",
+      "tutor": "São os ossos da 'sola' da pata de trás.",
+      "uberon": {
+        "id": "UBERON:0001448",
+        "nome": "metatarsal bone",
+        "definicao": "The metatarsus or metatarsal bones are a group of five long bones in the pes located between the tarsal bones of the hind- and mid-pes and the phalanges of the toes. Lacking individual names, the metatarsal bones are numbered from the medial side (side of big toe): the first, second, third, fourth, and fifth metatarsal. The metatarsals are analogous to the metacarpal bones of the manus. [WP,unvetted].",
+        "refsDefinicao": [
+          "Wikipedia:Metatarsal_bone"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "metatarsal"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003608",
+            "nome": "hindlimb long bone"
+          },
+          {
+            "id": "UBERON:0003821",
+            "nome": "metapodium bone"
+          },
+          {
+            "id": "UBERON:0012359",
+            "nome": "pedal digitopodium bone"
+          },
+          {
+            "id": "UBERON:0015036",
+            "nome": "pedal digit metatarsal endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000983",
+            "nome": "metatarsus region"
+          },
+          {
+            "id": "UBERON:0010545",
+            "nome": "metatarsus skeleton"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "falanges_pe",
+      "pt": "Falanges do membro pélvico",
+      "en": "phalanx of pes",
+      "latim": {
+        "termo": "Ossa digitorum pedis",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Ossos dos dedos do pé, simplificados no modelo.",
+      "tutor": "São os ossos dos dedos da pata de trás.",
+      "uberon": {
+        "id": "UBERON:0001449",
+        "nome": "phalanx of pes",
+        "definicao": "A phalanx that is part of a hindlimb autopod[Automatically generated definition].",
+        "refsDefinicao": [
+          "https://orcid.org/0000-0002-6601-2165",
+          "Wikipedia:Phalanges_of_the_foot"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "digitus pedis phalanx",
+          "foot digit phalanx",
+          "foot phalanx",
+          "pedal phalanx",
+          "phalanx of digit of foot",
+          "phalanx of digitus pedis"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003221",
+            "nome": "phalanx"
+          },
+          {
+            "id": "UBERON:0003608",
+            "nome": "hindlimb long bone"
+          },
+          {
+            "id": "UBERON:0004248",
+            "nome": "pedal digit bone"
+          },
+          {
+            "id": "UBERON:0015030",
+            "nome": "pedal digit phalanx endochondral element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0001466",
+            "nome": "pedal digit"
+          },
+          {
+            "id": "UBERON:0002387",
+            "nome": "pes"
+          },
+          {
+            "id": "UBERON:0010696",
+            "nome": "skeleton of pedal acropodium"
+          },
+          {
+            "id": "UBERON:5101466",
+            "nome": "pedal digit digitopodial skeleton"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "encefalo",
+      "pt": "Encéfalo",
+      "en": "brain",
+      "latim": {
+        "termo": "Encephalon",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "nervoso",
+      "regiao": "cabeca",
+      "bilateral": false,
+      "resumo": "Parte do sistema nervoso central dentro do crânio. A superfície do modelo é decorativa e não representa sulcos reais.",
+      "tutor": "É o cérebro, que comanda o corpo todo.",
+      "uberon": {
+        "id": "UBERON:0000955",
+        "nome": "brain",
+        "definicao": "The brain is the center of the nervous system in all vertebrate, and most invertebrate, animals. Some primitive animals such as jellyfish and starfish have a decentralized nervous system without a brain, while sponges lack any nervous system at all. In vertebrates, the brain is located in the head, protected by the skull and close to the primary sensory apparatus of vision, hearing, balance, taste, and smell[WP].",
+        "refsDefinicao": [
+          "https://github.com/obophenotype/uberon/issues/300",
+          "Wikipedia:Brain"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0000062",
+            "nome": "organ"
+          },
+          {
+            "id": "UBERON:0004121",
+            "nome": "ectoderm-derived structure"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0001017",
+            "nome": "central nervous system"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "medula_espinhal",
+      "pt": "Medula espinhal",
+      "en": "spinal cord",
+      "latim": {
+        "termo": "Medulla spinalis",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": [
+          "fissura cerebro-cerebellaris",
+          "fissura cerebrocerebellaris"
+        ]
+      },
+      "sistema": "nervoso",
+      "regiao": "corpo",
+      "bilateral": false,
+      "resumo": "Parte do sistema nervoso central dentro do canal vertebral.",
+      "tutor": "É o 'cabo' de nervos que corre dentro da coluna e leva mensagens do cérebro ao corpo.",
+      "uberon": {
+        "id": "UBERON:0002240",
+        "nome": "spinal cord",
+        "definicao": "Part of the central nervous system located in the vertebral canal continuous with and caudal to the brain; demarcated from brain by plane of foramen magnum. It is composed of an inner core of gray matter in which nerve cells predominate, and an outer layer of white matter in which myelinated nerve fibers predominate, and surrounds the central canal. (CUMBO).",
+        "refsDefinicao": [
+          "BIRNLEX:1709"
+        ],
+        "latim": [
+          "fissura cerebro-cerebellaris",
+          "fissura cerebrocerebellaris",
+          "medulla spinalis"
+        ],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0000489",
+            "nome": "cavitated compound organ"
+          },
+          {
+            "id": "UBERON:0004121",
+            "nome": "ectoderm-derived structure"
+          },
+          {
+            "id": "UBERON:0005174",
+            "nome": "dorsal region element"
+          },
+          {
+            "id": "UBERON:0010314",
+            "nome": "structure with developmental contribution from neural crest"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0001017",
+            "nome": "central nervous system"
+          },
+          {
+            "id": "UBERON:0001137",
+            "nome": "dorsum"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "coracao",
+      "pt": "Coração",
+      "en": "heart",
+      "latim": {
+        "termo": "Cor",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "cardiovascular",
+      "regiao": "torax",
+      "bilateral": false,
+      "resumo": "Órgão muscular que bombeia o sangue. Fica no tórax, entre os pulmões; no modelo, sem câmaras internas.",
+      "tutor": "É a bomba que empurra o sangue pelo corpo. Fica no peito, entre os pulmões.",
+      "uberon": {
+        "id": "UBERON:0000948",
+        "nome": "heart",
+        "definicao": "A myogenic muscular circulatory organ found in the vertebrate cardiovascular system composed of chambers of cardiac muscle. It is the primary circulatory organ.",
+        "refsDefinicao": [
+          "http://orcid.org/0000-0002-6601-2165",
+          "Wikipedia:Heart"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "chambered heart",
+          "vertebrate heart"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0004120",
+            "nome": "mesoderm-derived structure"
+          },
+          {
+            "id": "UBERON:0005181",
+            "nome": "thoracic segment organ"
+          },
+          {
+            "id": "UBERON:0007100",
+            "nome": "primary circulatory organ"
+          },
+          {
+            "id": "UBERON:0010314",
+            "nome": "structure with developmental contribution from neural crest"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0015410",
+            "nome": "heart plus pericardium"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7742",
+            "nome": "Vertebrata <vertebrates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "aorta",
+      "pt": "Aorta",
+      "en": "aorta",
+      "latim": {
+        "termo": "Aorta",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": [
+          "arteria maxima"
+        ]
+      },
+      "sistema": "cardiovascular",
+      "regiao": "torax",
+      "bilateral": false,
+      "resumo": "Principal artéria que sai do coração. O modelo mostra o arco e a parte inicial da aorta descendente.",
+      "tutor": "É o maior vaso que sai do coração e leva sangue para o corpo.",
+      "uberon": {
+        "id": "UBERON:0000947",
+        "nome": "aorta",
+        "definicao": "The main trunk of the systemic arterial system that carries blood from the heart to all the organs and other structures of the body, bringing oxygenated blood to all parts of the body in the systemic circulation.",
+        "refsDefinicao": [
+          "http://orcid.org/0000-0002-6601-2165",
+          "ISBN:0-683-40008-8",
+          "MESH:A07.231.114.056",
+          "MP:0000272",
+          "Wikipedia:Aorta"
+        ],
+        "latim": [
+          "arteria maxima"
+        ],
+        "sinonimosExatos": [
+          "trunk of aortic tree",
+          "trunk of systemic arterial tree"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003509",
+            "nome": "arterial blood vessel"
+          },
+          {
+            "id": "UBERON:0003519",
+            "nome": "thoracic cavity blood vessel"
+          },
+          {
+            "id": "UBERON:0013768",
+            "nome": "great vessel of heart"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "RO:0002577",
+            "nome": "system"
+          },
+          {
+            "id": "UBERON:0010191",
+            "nome": "aortic system"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "traqueia",
+      "pt": "Traqueia",
+      "en": "trachea",
+      "latim": {
+        "termo": "Trachea",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "respiratorio",
+      "regiao": "pescoco",
+      "bilateral": false,
+      "resumo": "Tubo que conduz o ar da laringe até os brônquios.",
+      "tutor": "É o tubo por onde o ar desce até os pulmões.",
+      "uberon": {
+        "id": "UBERON:0003126",
+        "nome": "trachea",
+        "definicao": "The trachea is the portion of the airway that attaches to the bronchi as it branches [GO:dph].",
+        "refsDefinicao": [
+          "GO:0060438",
+          "Wikipedia:Vertebrate_trachea"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "cartilaginous trachea",
+          "vertebrate trachea",
+          "windpipe"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0000117",
+            "nome": "respiratory tube"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0007196",
+            "nome": "tracheobronchial tree"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7742",
+            "nome": "Vertebrata <vertebrates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "pulmao",
+      "pt": "Pulmões",
+      "en": "lung",
+      "latim": {
+        "termo": "Pulmo",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "respiratorio",
+      "regiao": "torax",
+      "bilateral": true,
+      "resumo": "Órgãos das trocas gasosas, um de cada lado do tórax. O modelo não divide os lobos.",
+      "tutor": "São os órgãos onde o ar entra e o oxigênio passa para o sangue.",
+      "uberon": {
+        "id": "UBERON:0002048",
+        "nome": "lung",
+        "definicao": "Respiration organ that develops as an outpocketing of the esophagus.",
+        "refsDefinicao": [
+          "http://orcid.org/0000-0002-6601-2165"
+        ],
+        "latim": [
+          "pulmo"
+        ],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0000171",
+            "nome": "respiration organ"
+          },
+          {
+            "id": "UBERON:0005178",
+            "nome": "thoracic cavity element"
+          },
+          {
+            "id": "UBERON:0015212",
+            "nome": "lateral structure"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000170",
+            "nome": "pair of lungs"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7776",
+            "nome": "Gnathostomata <vertebrates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "diafragma",
+      "pt": "Diafragma",
+      "en": "diaphragm",
+      "latim": {
+        "termo": "Diaphragma",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "respiratorio",
+      "regiao": "torax",
+      "bilateral": false,
+      "resumo": "Músculo em cúpula que separa o tórax do abdome e participa da respiração.",
+      "tutor": "É o músculo que separa o peito da barriga e ajuda a respirar.",
+      "uberon": {
+        "id": "UBERON:0001103",
+        "nome": "diaphragm",
+        "definicao": "A thin musculomebranous barrier that separates the abdominal and thoracic cavities. Often used for breathing control.",
+        "refsDefinicao": [
+          "MP:0002279"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "diaphragm muscle",
+          "diaphragm of thorax",
+          "thoracic diaphragm"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003830",
+            "nome": "thoracic segment muscle"
+          },
+          {
+            "id": "UBERON:0003831",
+            "nome": "respiratory system muscle"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000915",
+            "nome": "thoracic segment of trunk"
+          },
+          {
+            "id": "UBERON:0001004",
+            "nome": "respiratory system"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:40674",
+            "nome": "Mammalia"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "esofago",
+      "pt": "Esôfago",
+      "en": "esophagus",
+      "latim": {
+        "termo": "Oesophagus",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "digestorio",
+      "regiao": "torax",
+      "bilateral": false,
+      "resumo": "Tubo que leva o alimento da faringe ao estômago, passando pelo pescoço e pelo tórax.",
+      "tutor": "É o tubo que leva a comida da boca até o estômago.",
+      "uberon": {
+        "id": "UBERON:0001043",
+        "nome": "esophagus",
+        "definicao": "Tube that connects the pharynx to the stomach. In mammals, the oesophagus connects the buccal cavity with the stomach. The stratified squamous non-keratinised epithelium lining the buccal cavity is continued through the pharynx down into the oesophagus. The lowest part of the oesophagus (ca. 2 cm) is lined with gastric mucosa and covered by peritoneum. The main body of the oesophagus is lined with small, simple mucous glands. Each gland opens into the lumen by a long duct which pierces the muscularis mucosae (Wilson and Washington, 1989). A sphincter is situated at the point where the oesophagus enters the stomach to prevent gastro-oesophageal reflux, i.e. to prevent acidic gastric contents from reaching stratified epithelia of the oesophagus, where they can cause inflammation and irritation (Wilson and Washington, 1989; Brown et al., 1993).",
+        "refsDefinicao": [
+          "http://www.rivm.nl/interspeciesinfo/inter/oesophagus/",
+          "Wikipedia:Esophagus"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "gullet",
+          "oesophagus"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0000062",
+            "nome": "organ"
+          },
+          {
+            "id": "UBERON:0004921",
+            "nome": "subdivision of digestive tract"
+          },
+          {
+            "id": "UBERON:0013765",
+            "nome": "digestive system element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "RO:0002577",
+            "nome": "system"
+          },
+          {
+            "id": "UBERON:0004908",
+            "nome": "upper digestive tract"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "estomago",
+      "pt": "Estômago",
+      "en": "stomach",
+      "latim": {
+        "termo": "Ventriculus",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "digestorio",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Órgão onde o alimento é armazenado e começa a ser digerido. No cão, é simples, com uma única cavidade.",
+      "tutor": "É onde a comida chega e começa a ser digerida.",
+      "uberon": {
+        "id": "UBERON:0000945",
+        "nome": "stomach",
+        "definicao": "An expanded region of the vertebrate alimentary tract that serves as a food storage compartment and digestive organ. A stomach is lined, in whole or in part by a glandular epithelium.",
+        "refsDefinicao": [
+          "https://orcid.org/0000-0002-6601-2165",
+          "ISBN:0073040584",
+          "Wikipedia:Stomach"
+        ],
+        "latim": [
+          "ventriculus"
+        ],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0004921",
+            "nome": "subdivision of digestive tract"
+          },
+          {
+            "id": "UBERON:0010039",
+            "nome": "food storage organ"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0001041",
+            "nome": "foregut"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7742",
+            "nome": "Vertebrata <vertebrates>"
+          },
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7776",
+            "nome": "Gnathostomata <vertebrates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "figado",
+      "pt": "Fígado",
+      "en": "liver",
+      "latim": {
+        "termo": "Hepar",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": [
+          "iecur",
+          "jecur"
+        ]
+      },
+      "sistema": "digestorio",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Maior glândula do corpo, logo atrás do diafragma. O modelo não separa os lobos.",
+      "tutor": "É um órgão grande que ajuda na digestão e limpa o sangue.",
+      "uberon": {
+        "id": "UBERON:0002107",
+        "nome": "liver",
+        "definicao": "An exocrine gland which secretes bile and functions in metabolism of protein and carbohydrate and fat, synthesizes substances involved in the clotting of the blood, synthesizes vitamin A, detoxifies poisonous substances, stores glycogen, and breaks down worn-out erythrocytes[GO].",
+        "refsDefinicao": [
+          "BTO:0000759",
+          "Wikipedia:Liver"
+        ],
+        "latim": [
+          "iecur",
+          "jecur"
+        ],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0002365",
+            "nome": "exocrine gland"
+          },
+          {
+            "id": "UBERON:0004119",
+            "nome": "endoderm-derived structure"
+          },
+          {
+            "id": "UBERON:0005172",
+            "nome": "abdomen element"
+          },
+          {
+            "id": "UBERON:0006925",
+            "nome": "digestive system gland"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000916",
+            "nome": "abdomen"
+          },
+          {
+            "id": "UBERON:0000949",
+            "nome": "endocrine system"
+          },
+          {
+            "id": "UBERON:0001007",
+            "nome": "digestive system"
+          },
+          {
+            "id": "UBERON:0002330",
+            "nome": "exocrine system"
+          },
+          {
+            "id": "UBERON:0002423",
+            "nome": "hepatobiliary system"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7742",
+            "nome": "Vertebrata <vertebrates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "baco",
+      "pt": "Baço",
+      "en": "spleen",
+      "latim": {
+        "termo": "Lien",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "linfatico",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Órgão alongado do lado esquerdo do abdome, próximo ao estômago.",
+      "tutor": "É um órgão que filtra o sangue e participa da defesa do corpo.",
+      "uberon": {
+        "id": "UBERON:0002106",
+        "nome": "spleen",
+        "definicao": "The organ that functions to filter blood and to store red corpuscles and platelets.",
+        "refsDefinicao": [
+          "ISBN:0-683-40008-8",
+          "MP:0000689"
+        ],
+        "latim": [
+          "lien"
+        ],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0004177",
+            "nome": "hemopoietic organ"
+          },
+          {
+            "id": "UBERON:0005057",
+            "nome": "immune organ"
+          },
+          {
+            "id": "UBERON:0017672",
+            "nome": "abdominal viscera"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000916",
+            "nome": "abdomen"
+          },
+          {
+            "id": "UBERON:0002390",
+            "nome": "hematopoietic system"
+          },
+          {
+            "id": "UBERON:0002405",
+            "nome": "immune system"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7776",
+            "nome": "Gnathostomata <vertebrates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "pancreas",
+      "pt": "Pâncreas",
+      "en": "pancreas",
+      "latim": {
+        "termo": "Pancreas",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "digestorio",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Glândula próxima ao duodeno, com função digestiva e endócrina.",
+      "tutor": "É uma glândula que produz sucos digestivos e insulina.",
+      "uberon": {
+        "id": "UBERON:0001264",
+        "nome": "pancreas",
+        "definicao": "An endoderm derived structure that produces precursors of digestive enzymes and blood glucose regulating hormones[GO].",
+        "refsDefinicao": [
+          "GO:0031016"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0002075",
+            "nome": "viscus"
+          }
+        ],
+        "partOf": [],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7742",
+            "nome": "Vertebrata <vertebrates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "intestino_delgado",
+      "pt": "Intestino delgado",
+      "en": "small intestine",
+      "latim": {
+        "termo": "Intestinum tenue",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "digestorio",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Parte longa do intestino onde ocorre a maior parte da absorção. O modelo mostra alças ilustrativas.",
+      "tutor": "É a parte comprida do intestino, onde o corpo absorve os nutrientes.",
+      "uberon": {
+        "id": "UBERON:0002108",
+        "nome": "small intestine",
+        "definicao": "Subdivision of digestive tract that connects the stomach to the large intestine and is where much of the digestion and absorption of food takes place (with the exception of ruminants). The mammalian small intestine is long and coiled and can be differentiated histologically into: duodenum, jejunem, ileum[WP,cjm,Kardong].",
+        "refsDefinicao": [
+          "ISBN:0073040584",
+          "Wikipedia:Small_intestine"
+        ],
+        "latim": [
+          "intestinum tenue"
+        ],
+        "sinonimosExatos": [
+          "small bowel",
+          "small intestine"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0004921",
+            "nome": "subdivision of digestive tract"
+          },
+          {
+            "id": "UBERON:0013765",
+            "nome": "digestive system element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000160",
+            "nome": "intestine"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7742",
+            "nome": "Vertebrata <vertebrates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "intestino_grosso",
+      "pt": "Intestino grosso",
+      "en": "large intestine",
+      "latim": {
+        "termo": "Intestinum crassum",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "digestorio",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Parte final do intestino, até o reto.",
+      "tutor": "É a parte final do intestino, que forma as fezes.",
+      "uberon": {
+        "id": "UBERON:0000059",
+        "nome": "large intestine",
+        "definicao": "A subdivision of the digestive tract that connects the small intestine to the cloaca or anus. Lacks or has few villi[Kardong].",
+        "refsDefinicao": [
+          "ISBN:0073040584",
+          "Wikipedia:Large_intestine_(anatomy)"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0004921",
+            "nome": "subdivision of digestive tract"
+          },
+          {
+            "id": "UBERON:0013765",
+            "nome": "digestive system element"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000160",
+            "nome": "intestine"
+          },
+          {
+            "id": "UBERON:0004907",
+            "nome": "lower digestive tract"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7742",
+            "nome": "Vertebrata <vertebrates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "rim",
+      "pt": "Rins",
+      "en": "kidney",
+      "latim": {
+        "termo": "Ren",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "urinario",
+      "regiao": "abdome",
+      "bilateral": true,
+      "resumo": "Órgãos que filtram o sangue e produzem a urina, junto ao teto do abdome. No cão, o direito fica mais cranial que o esquerdo.",
+      "tutor": "São os filtros do sangue que produzem a urina.",
+      "uberon": {
+        "id": "UBERON:0002113",
+        "nome": "kidney",
+        "definicao": "A paired organ of the urinary tract that produces urine and maintains bodily fluid homeostasis, blood pressure, pH levels, red blood cell production and skeleton mineralization.",
+        "refsDefinicao": [
+          "http://anatomy.uams.edu/anatomyhtml/kidney.html",
+          "https://www.kidney.org/kidneydisease/top-5-jobs-kidneys-do",
+          "PMID:25140012",
+          "PMID:35003210",
+          "Wikipedia:Kidney"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0000489",
+            "nome": "cavitated compound organ"
+          },
+          {
+            "id": "UBERON:0005172",
+            "nome": "abdomen element"
+          },
+          {
+            "id": "UBERON:0015212",
+            "nome": "lateral structure"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000916",
+            "nome": "abdomen"
+          },
+          {
+            "id": "UBERON:0011143",
+            "nome": "upper urinary tract"
+          }
+        ],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:7742",
+            "nome": "Vertebrata <vertebrates>"
+          }
+        ]
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "bexiga",
+      "pt": "Bexiga urinária",
+      "en": "urinary bladder",
+      "latim": {
+        "termo": "Vesica urinaria",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "urinario",
+      "regiao": "pelve",
+      "bilateral": false,
+      "resumo": "Órgão que armazena a urina.",
+      "tutor": "É onde a urina fica guardada até o animal urinar.",
+      "uberon": {
+        "id": "UBERON:0001255",
+        "nome": "urinary bladder",
+        "definicao": "Distensible musculomembranous organ situated in the anterior part of the pelvic cavity in which urine collects before excretion[MP].",
+        "refsDefinicao": [
+          "MGI:anna",
+          "Wikipedia:Urinary_bladder"
+        ],
+        "latim": [
+          "vesica urinaria"
+        ],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0002075",
+            "nome": "viscus"
+          },
+          {
+            "id": "UBERON:0004120",
+            "nome": "mesoderm-derived structure"
+          },
+          {
+            "id": "UBERON:0018707",
+            "nome": "bladder organ"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0001556",
+            "nome": "lower urinary tract"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "m_temporal",
+      "pt": "Músculo temporal",
+      "en": "temporalis muscle",
+      "latim": {
+        "termo": "M. temporalis",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "muscular",
+      "regiao": "cabeca",
+      "bilateral": true,
+      "resumo": "Músculo da mastigação sobre o crânio, que fecha a boca. Forma esquemática.",
+      "tutor": "É um músculo da cabeça que ajuda a fechar a boca para morder.",
+      "uberon": {
+        "id": "UBERON:0001598",
+        "nome": "temporalis muscle",
+        "definicao": "Pharyngeal arch 1 muscle that is innervated by the deep temporal branches of the trigeminal nerve and attaches to the wall of the braincase (including the cranial vault) and mandible.",
+        "refsDefinicao": [
+          "MFMO:0000085"
+        ],
+        "latim": [
+          "musculus temporalis",
+          "musculus temporalis"
+        ],
+        "sinonimosExatos": [
+          "temporal muscle",
+          "temporalis"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003681",
+            "nome": "masticatory muscle"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0000033",
+            "nome": "head"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "m_masseter",
+      "pt": "Músculo masseter",
+      "en": "masseter muscle",
+      "latim": {
+        "termo": "M. masseter",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "muscular",
+      "regiao": "cabeca",
+      "bilateral": true,
+      "resumo": "Músculo da mastigação na face lateral da mandíbula. Forma esquemática.",
+      "tutor": "É o músculo da bochecha que ajuda a mastigar.",
+      "uberon": {
+        "id": "UBERON:0001597",
+        "nome": "masseter muscle",
+        "definicao": "Pharyngeal arch 1 muscle that participates in oral/pharyngeal behaviors, is innervated by masseteric nerve branches of the trigeminal nerve (CN V), and attaches to mandible and zygomatic arch.",
+        "refsDefinicao": [
+          "DOI:10.1093/icb/icr067",
+          "MFMO:0000075"
+        ],
+        "latim": [
+          "musculus masseter"
+        ],
+        "sinonimosExatos": [
+          "masseter"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003681",
+            "nome": "masticatory muscle"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0001567",
+            "nome": "cheek"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "m_trapezio",
+      "pt": "Músculo trapézio",
+      "en": "trapezius muscle",
+      "latim": {
+        "termo": "M. trapezius",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "muscular",
+      "regiao": "pescoco",
+      "bilateral": true,
+      "resumo": "Músculo superficial do pescoço e do dorso que se insere na espinha da escápula. Forma esquemática.",
+      "tutor": "É um músculo do pescoço e das costas que move o ombro.",
+      "uberon": {
+        "id": "UBERON:0002380",
+        "nome": "trapezius muscle",
+        "definicao": "A large superficial muscle that extends longitudinally from the occipital bone to the lower thoracic vertebrae and laterally to the spine of the scapula (shoulder blade). Its functions are to move the scapulae and support the arm. The trapezius has three functional regions: the superior region (descending part), which supports the weight of the arm; the intermediate region (transverse part), which retracts the scapulae; and the inferior region (ascending part), which medially rotates and depresses the scapulae. [WP,unvetted].",
+        "refsDefinicao": [
+          "Wikipedia:Trapezius_muscle"
+        ],
+        "latim": [
+          "musculus trapezius"
+        ],
+        "sinonimosExatos": [
+          "trapezius"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0001482",
+            "nome": "muscle of shoulder"
+          },
+          {
+            "id": "UBERON:0010313",
+            "nome": "neural crest-derived structure"
+          }
+        ],
+        "partOf": [],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "m_latissimo_dorso",
+      "pt": "Músculo latíssimo do dorso",
+      "en": "latissimus dorsi muscle",
+      "latim": {
+        "termo": "M. latissimus dorsi",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "muscular",
+      "regiao": "torax",
+      "bilateral": true,
+      "resumo": "Músculo largo do dorso que vai até o úmero e puxa o membro torácico para trás. Forma esquemática.",
+      "tutor": "É um músculo grande das costas que puxa a pata da frente para trás.",
+      "uberon": {
+        "id": "UBERON:0001112",
+        "nome": "latissimus dorsi muscle",
+        "definicao": "The latissimus dorsi is the larger, flat, dorso-lateral muscle on the trunk, posterior to the arm, and partly covered by the trapezius on its median dorsal region. [WP,unvetted].",
+        "refsDefinicao": [
+          "Wikipedia:Latissimus_dorsi_muscle"
+        ],
+        "latim": [
+          "musculus latissimus dorsi"
+        ],
+        "sinonimosExatos": [
+          "dorsal latissimus muscle",
+          "latissimi dorsi",
+          "latissimus dorsi",
+          "musculus latissimus dorsi"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0001482",
+            "nome": "muscle of shoulder"
+          },
+          {
+            "id": "UBERON:0034908",
+            "nome": "scapular muscle"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0008713",
+            "nome": "pectoral girdle and thoracic body wall skeletal muscle"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "m_triceps_braquial",
+      "pt": "Músculo tríceps braquial",
+      "en": "triceps brachii",
+      "latim": {
+        "termo": "M. triceps brachii",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "muscular",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Músculo caudal do braço que estende o cotovelo, inserido no olécrano. Forma esquemática.",
+      "tutor": "É o músculo de trás do braço que estica o cotovelo.",
+      "uberon": {
+        "id": "UBERON:0001509",
+        "nome": "triceps brachii",
+        "definicao": "The triceps brachii muscle (Latin for 'three-headed' muscle of the arm, it is called a three headed muscle because there are three bundles of muscle, each of different origin, joining together at the elbow) is the large muscle on the back of the human upper limb. It is the muscle principally responsible for extension of the elbow joint (i.e. straightening of the arm). Though a similarly-named muscle, the triceps surae, is found on the lower leg, the triceps brachii is commonly called simply the 'triceps'. [WP,unvetted].",
+        "refsDefinicao": [
+          "Wikipedia:Triceps_brachii_muscle"
+        ],
+        "latim": [
+          "musculus triceps brachii"
+        ],
+        "sinonimosExatos": [
+          "triceps",
+          "triceps brachii muscle"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0001482",
+            "nome": "muscle of shoulder"
+          },
+          {
+            "id": "UBERON:0004255",
+            "nome": "forelimb stylopod muscle"
+          },
+          {
+            "id": "UBERON:0034908",
+            "nome": "scapular muscle"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0003822",
+            "nome": "forelimb stylopod"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "m_biceps_braquial",
+      "pt": "Músculo bíceps braquial",
+      "en": "biceps brachii",
+      "latim": {
+        "termo": "M. biceps brachii",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "muscular",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Músculo cranial do braço que flexiona o cotovelo. Forma esquemática.",
+      "tutor": "É o músculo da frente do braço que dobra o cotovelo.",
+      "uberon": {
+        "id": "UBERON:0001507",
+        "nome": "biceps brachii",
+        "definicao": "A muscle in the forelimb stylopod which in humans has several functions, the most important being to rotate the forearm and to flex the elbow. [WP,unvetted].",
+        "refsDefinicao": [
+          "Wikipedia:Biceps_brachii_muscle"
+        ],
+        "latim": [
+          "musculus biceps brachii"
+        ],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0004255",
+            "nome": "forelimb stylopod muscle"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0003822",
+            "nome": "forelimb stylopod"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "m_gluteo_medio",
+      "pt": "Músculo glúteo médio",
+      "en": "gluteus medius",
+      "latim": {
+        "termo": "M. gluteus medius",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "muscular",
+      "regiao": "pelve",
+      "bilateral": true,
+      "resumo": "Músculo da garupa que estende o quadril. Forma esquemática.",
+      "tutor": "É o músculo da garupa que empurra o corpo para a frente.",
+      "uberon": {
+        "id": "UBERON:0001371",
+        "nome": "gluteus medius",
+        "definicao": "One of three gluteal muscles, is a broad, thick, radiating muscle, situated on the outer surface of the pelvis. Its posterior third is covered by the gluteus maximus, its anterior two-thirds by the gluteal aponeurosis, which separates it from the superficial fascia and integument. [WP,unvetted].",
+        "refsDefinicao": [
+          "Wikipedia:Gluteus_medius_muscle"
+        ],
+        "latim": [
+          "musculus gluteus medius"
+        ],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0002000",
+            "nome": "gluteal muscle"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0004470",
+            "nome": "musculature of pelvic girdle"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "m_quadriceps_femoral",
+      "pt": "Músculo quadríceps femoral",
+      "en": "quadriceps femoris",
+      "latim": {
+        "termo": "M. quadriceps femoris",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "muscular",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Grupo muscular cranial da coxa que estende o joelho; seu tendão contém a patela. Forma esquemática.",
+      "tutor": "É o músculo da frente da coxa que estica o joelho.",
+      "uberon": {
+        "id": "UBERON:0001377",
+        "nome": "quadriceps femoris",
+        "definicao": "One of the muscles belong to the group consisting of the rectus femoris and the three heads of the vastus (lateralis, medialis, intermedius).",
+        "refsDefinicao": [
+          "ISBN:0073040584"
+        ],
+        "latim": [
+          "musculus quadriceps femoris"
+        ],
+        "sinonimosExatos": [
+          "quadriceps",
+          "quadriceps femoris muscle"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0003663",
+            "nome": "hindlimb muscle"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0002103",
+            "nome": "hindlimb"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "m_biceps_femoral",
+      "pt": "Músculo bíceps femoral",
+      "en": "biceps femoris",
+      "latim": {
+        "termo": "M. biceps femoris",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "muscular",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Músculo grande na face lateral da coxa. Forma esquemática.",
+      "tutor": "É um músculo grande do lado de fora da coxa.",
+      "uberon": {
+        "id": "UBERON:0001374",
+        "nome": "biceps femoris",
+        "definicao": "The biceps femoris is a muscle of the posterior (the back) thigh. As its name implies, it has two parts, one of which (the long head) forms part of the hamstrings muscle group. [WP,unvetted].",
+        "refsDefinicao": [
+          "Wikipedia:Biceps_femoris_muscle"
+        ],
+        "latim": [
+          "musculus biceps femoris"
+        ],
+        "sinonimosExatos": [
+          "biceps femoris muscle"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0002463",
+            "nome": "muscle of posterior compartment of hindlimb stylopod"
+          }
+        ],
+        "partOf": [],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "m_semitendineo",
+      "pt": "Músculo semitendíneo",
+      "en": "semitendinosus",
+      "latim": {
+        "termo": "M. semitendinosus",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "muscular",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Músculo caudal da coxa. Forma esquemática.",
+      "tutor": "É um músculo da parte de trás da coxa.",
+      "uberon": {
+        "id": "UBERON:0001375",
+        "nome": "semitendinosus",
+        "definicao": "The semitendinosus is a muscle in the back of the thigh; it is one of the hamstrings. [WP,unvetted].",
+        "refsDefinicao": [
+          "Wikipedia:Semitendinosus_muscle"
+        ],
+        "latim": [
+          "musculus semitendinosus"
+        ],
+        "sinonimosExatos": [
+          "semitendinosus muscle"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0002463",
+            "nome": "muscle of posterior compartment of hindlimb stylopod"
+          }
+        ],
+        "partOf": [],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "m_gastrocnemio",
+      "pt": "Músculo gastrocnêmio",
+      "en": "gastrocnemius",
+      "latim": {
+        "termo": "M. gastrocnemius",
+        "fonte": "uberon",
+        "nota": "Coincide com um sinônimo latino do Uberon (OMO:0003011). Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "muscular",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Músculo caudal da perna que se insere no calcâneo e estende o tarso. Forma esquemática.",
+      "tutor": "É a 'panturrilha' da pata de trás, que estica o calcanhar.",
+      "uberon": {
+        "id": "UBERON:0001388",
+        "nome": "gastrocnemius",
+        "definicao": "The most superficial muscle of the triceps surae group, in the posterior portion of the lower hindleg.",
+        "refsDefinicao": [
+          "http://orcid.org/0000-0002-6601-2165",
+          "ISBN:0073040584",
+          "MP:0013188"
+        ],
+        "latim": [
+          "musculus gastrocnemius"
+        ],
+        "sinonimosExatos": [
+          "gastrocnemius muscle",
+          "m. gastrocnemius",
+          "m.gastrocnemius"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0004256",
+            "nome": "hindlimb zeugopod muscle"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0001665",
+            "nome": "triceps surae"
+          },
+          {
+            "id": "UBERON:0003823",
+            "nome": "hindlimb zeugopod"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "uberon",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    },
+    {
+      "id": "pele",
+      "pt": "Pele (silhueta)",
+      "en": "skin of body",
+      "latim": {
+        "termo": "Cutis",
+        "fonte": "animalx-traducao",
+        "nota": "Termo da equipe. Conferir com a NAV.",
+        "outrosNoUberon": []
+      },
+      "sistema": "tegumentar",
+      "regiao": "corpo",
+      "bilateral": false,
+      "resumo": "Silhueta translúcida do corpo, só para orientação. Não representa espessura nem camadas da pele.",
+      "tutor": "É o contorno do corpo, mostrado transparente para ver o que tem dentro.",
+      "uberon": {
+        "id": "UBERON:0002097",
+        "nome": "skin of body",
+        "definicao": "The organ covering the body that consists of the dermis and epidermis.",
+        "refsDefinicao": [
+          "UBERON:cjm"
+        ],
+        "latim": [],
+        "sinonimosExatos": [
+          "entire skin",
+          "skin organ"
+        ],
+        "isA": [
+          {
+            "id": "UBERON:0000062",
+            "nome": "organ"
+          },
+          {
+            "id": "UBERON:0010314",
+            "nome": "structure with developmental contribution from neural crest"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0002199",
+            "nome": "integument"
+          }
+        ],
+        "taxon": []
+      },
+      "fontes": {
+        "pt": "animalx-traducao",
+        "en": "uberon",
+        "definicao": "uberon",
+        "latim": "animalx-traducao",
+        "resumo": "animalx-traducao",
+        "tutor": "animalx-traducao",
+        "geometria": "animalx-esquematico"
+      },
+      "revisao": {
+        "status": "nao_revisado"
+      }
+    }
+  ],
+  "comparada": [
+    {
+      "pt": "Estômago de ruminante",
+      "especies": [
+        "bovino"
+      ],
+      "uberon": {
+        "id": "UBERON:0007366",
+        "nome": "ruminant stomach",
+        "definicao": "The ruminants' stomach consists of four compartments: rumen, reticulum, omasum and abomasum. The first three compartments comprise the forestomach (proventriculus). They are lined with nonglandular membrane. The fourth compartment, the abomasum comprises the true stomach of the ruminants. It is lined with glandular mucous membrane. The rumen lies on the left of the abdominal cavity, the reticulum cranially and the omasum on the right. The abomasum lies ventrally, its proximal end lies ventral to the rumen, reticulum and omasum.",
+        "refsDefinicao": [
+          "http://www.onemedicine.tuskegee.edu/DigestiveSystem/Stomach/Stomach_Ruminants.html"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0000945",
+            "nome": "stomach"
+          }
+        ],
+        "partOf": [],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:9845",
+            "nome": "Ruminantia"
+          }
+        ]
+      }
+    },
+    {
+      "pt": "Rúmen",
+      "especies": [
+        "bovino"
+      ],
+      "uberon": {
+        "id": "UBERON:0007365",
+        "nome": "rumen",
+        "definicao": "The first compartment of the ruminant stomach. It lies on the left side of the body, occupying the whole of the left side of the abdomen and even stretching across the median plane of the body to the right side. It is capacious, divided into an upper and a lower sac, each of which has a blind sac at its posterior extremity.",
+        "refsDefinicao": [
+          "MESH:A13.869.804",
+          "Wikipedia:Rumen"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0011954",
+            "nome": "stomach non-glandular region"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0007359",
+            "nome": "ruminant forestomach"
+          },
+          {
+            "id": "UBERON:0007364",
+            "nome": "reticulorumen"
+          }
+        ],
+        "taxon": []
+      }
+    },
+    {
+      "pt": "Retículo",
+      "especies": [
+        "bovino"
+      ],
+      "uberon": {
+        "id": "UBERON:0007361",
+        "nome": "ruminant reticulum",
+        "definicao": "The second stomach of ruminants. It lies almost in the midline in the front of the abdomen, in contact with the liver and diaphragm and communicates freely with the RUMEN via the ruminoreticular orifice. The lining of the reticulum is raised into folds forming a honeycomb pattern over the surface. (From Concise Veterinary Dictionary, 1988).",
+        "refsDefinicao": [
+          "MESH:A13.869.697",
+          "Wikipedia:Reticulum_(anatomy)"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0011954",
+            "nome": "stomach non-glandular region"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0007359",
+            "nome": "ruminant forestomach"
+          },
+          {
+            "id": "UBERON:0007364",
+            "nome": "reticulorumen"
+          }
+        ],
+        "taxon": []
+      }
+    },
+    {
+      "pt": "Omaso",
+      "especies": [
+        "bovino"
+      ],
+      "uberon": {
+        "id": "UBERON:0007362",
+        "nome": "omasum",
+        "definicao": "The third stomach of ruminants, situated on the right side of the abdomen at a higher level than the fourth stomach and between this latter and the second stomach, with both of which it communicates. From its inner surface project large numbers of leaves or folia, each of which possesses roughened surfaces. In the center of each folium is a band of muscle fibers which produces a rasping movement of the leaf when it contracts. One leaf rubs against those on either side of it, and large particles of food material are ground down between the rough surfaces, preparatory to further digestion in the succeeeding parts of the alimentary canal. (Black's Veterinary Dictionary, 17th ed).",
+        "refsDefinicao": [
+          "MESH:A13.869.524",
+          "Wikipedia:Omasum"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0011954",
+            "nome": "stomach non-glandular region"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0007359",
+            "nome": "ruminant forestomach"
+          },
+          {
+            "id": "UBERON:0007364",
+            "nome": "reticulorumen"
+          }
+        ],
+        "taxon": []
+      }
+    },
+    {
+      "pt": "Abomaso",
+      "especies": [
+        "bovino"
+      ],
+      "uberon": {
+        "id": "UBERON:0007358",
+        "nome": "abomasum",
+        "definicao": "The fourth stomach of ruminating animals, which is an elongated pear-shaped sac lying on the floor of the abdomen, on the right-hand side, and roughly between the seventh and twelfth ribs. It leads to the beginning of the small intestine. (Adapted From Black's Veterinary Dictionary, 17th ed).",
+        "refsDefinicao": [
+          "MESH:A13.869.106",
+          "UBERON:cjm",
+          "Wikipedia:Abomasum"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0011953",
+            "nome": "stomach glandular region"
+          }
+        ],
+        "partOf": [
+          {
+            "id": "UBERON:0007366",
+            "nome": "ruminant stomach"
+          }
+        ],
+        "taxon": []
+      }
+    },
+    {
+      "pt": "Casco",
+      "especies": [
+        "equino",
+        "bovino"
+      ],
+      "uberon": {
+        "id": "UBERON:0008963",
+        "nome": "hoof",
+        "definicao": "The tip of a toe of an ungulate mammal, strengthened by a thick horny (keratin) covering. The hoof consists of a hard or rubbery sole, and a hard wall formed by a thick nail rolled around the tip of the toe. The weight of the animal is normally borne by both the sole and the edge of the hoof wall. Hooves grow continuously, and are constantly worn down by use.",
+        "refsDefinicao": [
+          "https://github.com/obophenotype/uberon/issues/296",
+          "Wikipedia:Hoof"
+        ],
+        "latim": [],
+        "sinonimosExatos": [],
+        "isA": [
+          {
+            "id": "UBERON:0009564",
+            "nome": "distal limb integumentary appendage"
+          }
+        ],
+        "partOf": [],
+        "taxon": [
+          {
+            "relacao": "in_taxon",
+            "id": "NCBITaxon:314145",
+            "nome": "Laurasiatheria"
+          }
+        ]
+      }
+    }
+  ]
+}

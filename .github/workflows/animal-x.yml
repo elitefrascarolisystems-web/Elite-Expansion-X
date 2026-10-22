@@ -1,0 +1,70 @@
+name: Animal X
+
+# Roda só quando a pasta animal-x (ou este arquivo) muda: lint, build,
+# testes com PostgreSQL real e teste no navegador (Chromium).
+on:
+  push:
+    paths:
+      - 'animal-x/**'
+      - '.github/workflows/animal-x.yml'
+  pull_request:
+    paths:
+      - 'animal-x/**'
+      - '.github/workflows/animal-x.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: animal-x-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: animal-x
+
+jobs:
+  testes:
+    name: Lint, build e testes (PostgreSQL)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: animal-x/package-lock.json
+
+      - name: Instalar dependências (lockfile)
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build e testes
+        run: npm test
+
+      - name: Conferir integridade do pacote
+        run: npm run verify
+
+  navegador:
+    name: Teste no navegador (Chromium)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: animal-x/package-lock.json
+
+      - name: Instalar dependências (lockfile)
+        run: npm ci --no-audit --no-fund
+
+      - name: Instalar o Chromium do Playwright
+        run: npx playwright-core install --with-deps chromium
+
+      - name: Build e teste de ponta a ponta
+        run: npm run test:visual

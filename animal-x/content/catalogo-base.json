@@ -1,0 +1,718 @@
+{
+  "nota": "Catálogo-base escrito pela equipe. O script scripts/import-uberon.js resolve cada nome em inglês no Uberon e gera content/estruturas.json. Nomes em português, resumos, textos para o tutor e latim da equipe são traduções e redações da equipe, ainda não revisadas.",
+  "sistemas": [
+    {
+      "id": "esqueletico",
+      "pt": "Esquelético",
+      "cor": "#e8dcc4"
+    },
+    {
+      "id": "muscular",
+      "pt": "Muscular (esquemático)",
+      "cor": "#b5473f"
+    },
+    {
+      "id": "nervoso",
+      "pt": "Nervoso",
+      "cor": "#e7c873"
+    },
+    {
+      "id": "cardiovascular",
+      "pt": "Cardiovascular",
+      "cor": "#c23b3b"
+    },
+    {
+      "id": "respiratorio",
+      "pt": "Respiratório",
+      "cor": "#e39a9a"
+    },
+    {
+      "id": "digestorio",
+      "pt": "Digestório",
+      "cor": "#d98b5f"
+    },
+    {
+      "id": "linfatico",
+      "pt": "Linfático",
+      "cor": "#8c4a6b"
+    },
+    {
+      "id": "urinario",
+      "pt": "Urinário",
+      "cor": "#d6b14a"
+    },
+    {
+      "id": "tegumentar",
+      "pt": "Tegumentar (silhueta)",
+      "cor": "#7fd8e6"
+    }
+  ],
+  "regioes": [
+    {
+      "id": "cabeca",
+      "pt": "Cabeça"
+    },
+    {
+      "id": "pescoco",
+      "pt": "Pescoço"
+    },
+    {
+      "id": "torax",
+      "pt": "Tórax"
+    },
+    {
+      "id": "abdome",
+      "pt": "Abdome"
+    },
+    {
+      "id": "pelve",
+      "pt": "Pelve"
+    },
+    {
+      "id": "membro_toracico",
+      "pt": "Membro torácico"
+    },
+    {
+      "id": "membro_pelvico",
+      "pt": "Membro pélvico"
+    },
+    {
+      "id": "cauda",
+      "pt": "Cauda"
+    },
+    {
+      "id": "corpo",
+      "pt": "Corpo todo"
+    }
+  ],
+  "estruturas": [
+    {
+      "id": "cranio",
+      "en": "skull",
+      "pt": "Crânio",
+      "la": "Cranium",
+      "sistema": "esqueletico",
+      "regiao": "cabeca",
+      "bilateral": false,
+      "resumo": "Conjunto de ossos da cabeça que protege o encéfalo e sustenta a face. No modelo esquemático, aparece como uma peça única.",
+      "tutor": "É a parte óssea da cabeça. Protege o cérebro e dá forma ao focinho."
+    },
+    {
+      "id": "mandibula",
+      "en": "mandible",
+      "pt": "Mandíbula",
+      "la": "Mandibula",
+      "sistema": "esqueletico",
+      "regiao": "cabeca",
+      "bilateral": false,
+      "resumo": "Osso da arcada inferior, articulado ao crânio, que sustenta os dentes inferiores.",
+      "tutor": "É o osso da boca de baixo, onde ficam os dentes inferiores."
+    },
+    {
+      "id": "dentes",
+      "en": "calcareous tooth",
+      "pt": "Dentes",
+      "la": "Dentes",
+      "sistema": "digestorio",
+      "regiao": "cabeca",
+      "bilateral": false,
+      "resumo": "Dentição representada de forma esquemática: incisivos, caninos, pré-molares e molares, sem contagem exata por arcada.",
+      "tutor": "Os dentes cortam e trituram o alimento. Os grandes, na frente, são os caninos."
+    },
+    {
+      "id": "vertebra_cervical",
+      "en": "cervical vertebra",
+      "pt": "Vértebras cervicais",
+      "la": "Vertebrae cervicales",
+      "sistema": "esqueletico",
+      "regiao": "pescoco",
+      "bilateral": false,
+      "resumo": "Vértebras do pescoço. O modelo mostra sete, como é usual em mamíferos.",
+      "tutor": "São os ossos do pescoço, que permitem mexer a cabeça."
+    },
+    {
+      "id": "vertebra_toracica",
+      "en": "thoracic vertebra",
+      "pt": "Vértebras torácicas",
+      "la": "Vertebrae thoracicae",
+      "sistema": "esqueletico",
+      "regiao": "torax",
+      "bilateral": false,
+      "resumo": "Vértebras do tórax, onde se articulam as costelas. O modelo mostra treze, número usual no cão.",
+      "tutor": "São os ossos das costas na altura do peito, presos às costelas."
+    },
+    {
+      "id": "vertebra_lombar",
+      "en": "lumbar vertebra",
+      "pt": "Vértebras lombares",
+      "la": "Vertebrae lumbales",
+      "sistema": "esqueletico",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Vértebras da região lombar, entre o tórax e a pelve. O modelo mostra sete, número usual no cão.",
+      "tutor": "São os ossos da parte de baixo das costas."
+    },
+    {
+      "id": "sacro",
+      "en": "sacrum",
+      "pt": "Sacro",
+      "la": "Os sacrum",
+      "sistema": "esqueletico",
+      "regiao": "pelve",
+      "bilateral": false,
+      "resumo": "Vértebras fundidas que ligam a coluna à pelve.",
+      "tutor": "É o osso que une a coluna ao quadril."
+    },
+    {
+      "id": "vertebra_caudal",
+      "en": "caudal vertebra",
+      "pt": "Vértebras caudais",
+      "la": "Vertebrae caudales",
+      "sistema": "esqueletico",
+      "regiao": "cauda",
+      "bilateral": false,
+      "resumo": "Vértebras da cauda. O número varia entre indivíduos e raças; o modelo usa uma quantidade ilustrativa.",
+      "tutor": "São os ossos do rabo."
+    },
+    {
+      "id": "costela",
+      "en": "rib",
+      "pt": "Costelas",
+      "la": "Costae",
+      "sistema": "esqueletico",
+      "regiao": "torax",
+      "bilateral": true,
+      "resumo": "Ossos curvos que formam a parede do tórax. O modelo mostra treze pares, número usual no cão.",
+      "tutor": "As costelas formam uma gaiola que protege o coração e os pulmões."
+    },
+    {
+      "id": "esterno",
+      "en": "sternum",
+      "pt": "Esterno",
+      "la": "Sternum",
+      "sistema": "esqueletico",
+      "regiao": "torax",
+      "bilateral": false,
+      "resumo": "Osso segmentado na parte ventral do tórax, onde se unem as cartilagens das costelas.",
+      "tutor": "É o osso do peito, embaixo, onde as costelas se encontram."
+    },
+    {
+      "id": "escapula",
+      "en": "scapula",
+      "pt": "Escápula",
+      "la": "Scapula",
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Osso plano do ombro, apoiado na parede do tórax e unido ao corpo por músculos.",
+      "tutor": "É o osso do ombro, uma placa achatada ao lado do peito."
+    },
+    {
+      "id": "umero",
+      "en": "humerus",
+      "pt": "Úmero",
+      "la": "Humerus",
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Osso longo do braço, entre a articulação do ombro e a do cotovelo.",
+      "tutor": "É o osso entre o ombro e o cotovelo da pata da frente."
+    },
+    {
+      "id": "radio",
+      "en": "radius bone",
+      "pt": "Rádio",
+      "la": "Radius",
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Osso do antebraço que transmite o peso do cotovelo ao carpo.",
+      "tutor": "É um dos dois ossos entre o cotovelo e o punho da pata da frente."
+    },
+    {
+      "id": "ulna",
+      "en": "ulna",
+      "pt": "Ulna",
+      "la": "Ulna",
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Osso do antebraço; sua extremidade proximal forma a ponta do cotovelo (olécrano).",
+      "tutor": "É o outro osso do antebraço. Forma a ponta do cotovelo."
+    },
+    {
+      "id": "carpo",
+      "en": "carpal bone",
+      "pt": "Ossos do carpo",
+      "la": "Ossa carpi",
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Pequenos ossos da articulação do carpo, representados como um bloco único no modelo.",
+      "tutor": "São ossinhos do 'punho' da pata da frente."
+    },
+    {
+      "id": "metacarpo",
+      "en": "metacarpal bone",
+      "pt": "Ossos metacarpais",
+      "la": "Ossa metacarpalia",
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Ossos entre o carpo e os dedos da mão.",
+      "tutor": "São os ossos da 'palma' da pata da frente."
+    },
+    {
+      "id": "falanges_mao",
+      "en": "phalanx of manus",
+      "pt": "Falanges do membro torácico",
+      "la": "Ossa digitorum manus",
+      "sistema": "esqueletico",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Ossos dos dedos da mão. O modelo simplifica os dedos e não mostra o primeiro dedo (ergô).",
+      "tutor": "São os ossos dos dedos da pata da frente."
+    },
+    {
+      "id": "osso_coxal",
+      "en": "hip bone",
+      "pt": "Osso do quadril (coxal)",
+      "la": "Os coxae",
+      "sistema": "esqueletico",
+      "regiao": "pelve",
+      "bilateral": true,
+      "resumo": "Osso formado por ílio, ísquio e púbis, que contém o acetábulo onde se articula o fêmur.",
+      "tutor": "É o osso do quadril, onde encaixa a coxa."
+    },
+    {
+      "id": "femur",
+      "en": "femur",
+      "pt": "Fêmur",
+      "la": "Os femoris",
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Osso longo da coxa, entre a articulação do quadril e a do joelho.",
+      "tutor": "É o osso da coxa, o maior da pata de trás."
+    },
+    {
+      "id": "patela",
+      "en": "patella",
+      "pt": "Patela",
+      "la": "Patella",
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Osso sesamoide na face cranial do joelho, dentro do tendão do músculo quadríceps femoral.",
+      "tutor": "É a 'rótula', um ossinho na frente do joelho."
+    },
+    {
+      "id": "tibia",
+      "en": "tibia",
+      "pt": "Tíbia",
+      "la": "Tibia",
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Principal osso da perna, entre o joelho e o tarso.",
+      "tutor": "É o osso principal entre o joelho e o 'calcanhar' da pata de trás."
+    },
+    {
+      "id": "fibula",
+      "en": "fibula",
+      "pt": "Fíbula",
+      "la": "Fibula",
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Osso delgado, lateral à tíbia.",
+      "tutor": "É um osso fino ao lado da tíbia."
+    },
+    {
+      "id": "tarso",
+      "en": "tarsal bone",
+      "pt": "Ossos do tarso",
+      "la": "Ossa tarsi",
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Ossos da articulação do tarso; o calcâneo forma a ponta do jarrete. No modelo, um bloco com o calcâneo destacado.",
+      "tutor": "São os ossos do 'calcanhar' da pata de trás."
+    },
+    {
+      "id": "metatarso",
+      "en": "metatarsal bone",
+      "pt": "Ossos metatarsais",
+      "la": "Ossa metatarsalia",
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Ossos entre o tarso e os dedos do pé.",
+      "tutor": "São os ossos da 'sola' da pata de trás."
+    },
+    {
+      "id": "falanges_pe",
+      "en": "phalanx of pes",
+      "pt": "Falanges do membro pélvico",
+      "la": "Ossa digitorum pedis",
+      "sistema": "esqueletico",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Ossos dos dedos do pé, simplificados no modelo.",
+      "tutor": "São os ossos dos dedos da pata de trás."
+    },
+    {
+      "id": "encefalo",
+      "en": "brain",
+      "pt": "Encéfalo",
+      "la": "Encephalon",
+      "sistema": "nervoso",
+      "regiao": "cabeca",
+      "bilateral": false,
+      "resumo": "Parte do sistema nervoso central dentro do crânio. A superfície do modelo é decorativa e não representa sulcos reais.",
+      "tutor": "É o cérebro, que comanda o corpo todo."
+    },
+    {
+      "id": "medula_espinhal",
+      "en": "spinal cord",
+      "pt": "Medula espinhal",
+      "la": "Medulla spinalis",
+      "sistema": "nervoso",
+      "regiao": "corpo",
+      "bilateral": false,
+      "resumo": "Parte do sistema nervoso central dentro do canal vertebral.",
+      "tutor": "É o 'cabo' de nervos que corre dentro da coluna e leva mensagens do cérebro ao corpo."
+    },
+    {
+      "id": "coracao",
+      "en": "heart",
+      "pt": "Coração",
+      "la": "Cor",
+      "sistema": "cardiovascular",
+      "regiao": "torax",
+      "bilateral": false,
+      "resumo": "Órgão muscular que bombeia o sangue. Fica no tórax, entre os pulmões; no modelo, sem câmaras internas.",
+      "tutor": "É a bomba que empurra o sangue pelo corpo. Fica no peito, entre os pulmões."
+    },
+    {
+      "id": "aorta",
+      "en": "aorta",
+      "pt": "Aorta",
+      "la": "Aorta",
+      "sistema": "cardiovascular",
+      "regiao": "torax",
+      "bilateral": false,
+      "resumo": "Principal artéria que sai do coração. O modelo mostra o arco e a parte inicial da aorta descendente.",
+      "tutor": "É o maior vaso que sai do coração e leva sangue para o corpo."
+    },
+    {
+      "id": "traqueia",
+      "en": "trachea",
+      "pt": "Traqueia",
+      "la": "Trachea",
+      "sistema": "respiratorio",
+      "regiao": "pescoco",
+      "bilateral": false,
+      "resumo": "Tubo que conduz o ar da laringe até os brônquios.",
+      "tutor": "É o tubo por onde o ar desce até os pulmões."
+    },
+    {
+      "id": "pulmao",
+      "en": "lung",
+      "pt": "Pulmões",
+      "la": "Pulmo",
+      "sistema": "respiratorio",
+      "regiao": "torax",
+      "bilateral": true,
+      "resumo": "Órgãos das trocas gasosas, um de cada lado do tórax. O modelo não divide os lobos.",
+      "tutor": "São os órgãos onde o ar entra e o oxigênio passa para o sangue."
+    },
+    {
+      "id": "diafragma",
+      "en": "diaphragm",
+      "pt": "Diafragma",
+      "la": "Diaphragma",
+      "sistema": "respiratorio",
+      "regiao": "torax",
+      "bilateral": false,
+      "resumo": "Músculo em cúpula que separa o tórax do abdome e participa da respiração.",
+      "tutor": "É o músculo que separa o peito da barriga e ajuda a respirar."
+    },
+    {
+      "id": "esofago",
+      "en": "esophagus",
+      "pt": "Esôfago",
+      "la": "Oesophagus",
+      "sistema": "digestorio",
+      "regiao": "torax",
+      "bilateral": false,
+      "resumo": "Tubo que leva o alimento da faringe ao estômago, passando pelo pescoço e pelo tórax.",
+      "tutor": "É o tubo que leva a comida da boca até o estômago."
+    },
+    {
+      "id": "estomago",
+      "en": "stomach",
+      "pt": "Estômago",
+      "la": "Ventriculus",
+      "sistema": "digestorio",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Órgão onde o alimento é armazenado e começa a ser digerido. No cão, é simples, com uma única cavidade.",
+      "tutor": "É onde a comida chega e começa a ser digerida."
+    },
+    {
+      "id": "figado",
+      "en": "liver",
+      "pt": "Fígado",
+      "la": "Hepar",
+      "sistema": "digestorio",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Maior glândula do corpo, logo atrás do diafragma. O modelo não separa os lobos.",
+      "tutor": "É um órgão grande que ajuda na digestão e limpa o sangue."
+    },
+    {
+      "id": "baco",
+      "en": "spleen",
+      "pt": "Baço",
+      "la": "Lien",
+      "sistema": "linfatico",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Órgão alongado do lado esquerdo do abdome, próximo ao estômago.",
+      "tutor": "É um órgão que filtra o sangue e participa da defesa do corpo."
+    },
+    {
+      "id": "pancreas",
+      "en": "pancreas",
+      "pt": "Pâncreas",
+      "la": "Pancreas",
+      "sistema": "digestorio",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Glândula próxima ao duodeno, com função digestiva e endócrina.",
+      "tutor": "É uma glândula que produz sucos digestivos e insulina."
+    },
+    {
+      "id": "intestino_delgado",
+      "en": "small intestine",
+      "pt": "Intestino delgado",
+      "la": "Intestinum tenue",
+      "sistema": "digestorio",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Parte longa do intestino onde ocorre a maior parte da absorção. O modelo mostra alças ilustrativas.",
+      "tutor": "É a parte comprida do intestino, onde o corpo absorve os nutrientes."
+    },
+    {
+      "id": "intestino_grosso",
+      "en": "large intestine",
+      "pt": "Intestino grosso",
+      "la": "Intestinum crassum",
+      "sistema": "digestorio",
+      "regiao": "abdome",
+      "bilateral": false,
+      "resumo": "Parte final do intestino, até o reto.",
+      "tutor": "É a parte final do intestino, que forma as fezes."
+    },
+    {
+      "id": "rim",
+      "en": "kidney",
+      "pt": "Rins",
+      "la": "Ren",
+      "sistema": "urinario",
+      "regiao": "abdome",
+      "bilateral": true,
+      "resumo": "Órgãos que filtram o sangue e produzem a urina, junto ao teto do abdome. No cão, o direito fica mais cranial que o esquerdo.",
+      "tutor": "São os filtros do sangue que produzem a urina."
+    },
+    {
+      "id": "bexiga",
+      "en": "urinary bladder",
+      "pt": "Bexiga urinária",
+      "la": "Vesica urinaria",
+      "sistema": "urinario",
+      "regiao": "pelve",
+      "bilateral": false,
+      "resumo": "Órgão que armazena a urina.",
+      "tutor": "É onde a urina fica guardada até o animal urinar."
+    },
+    {
+      "id": "m_temporal",
+      "en": "temporalis muscle",
+      "pt": "Músculo temporal",
+      "la": "M. temporalis",
+      "sistema": "muscular",
+      "regiao": "cabeca",
+      "bilateral": true,
+      "resumo": "Músculo da mastigação sobre o crânio, que fecha a boca. Forma esquemática.",
+      "tutor": "É um músculo da cabeça que ajuda a fechar a boca para morder."
+    },
+    {
+      "id": "m_masseter",
+      "en": "masseter muscle",
+      "pt": "Músculo masseter",
+      "la": "M. masseter",
+      "sistema": "muscular",
+      "regiao": "cabeca",
+      "bilateral": true,
+      "resumo": "Músculo da mastigação na face lateral da mandíbula. Forma esquemática.",
+      "tutor": "É o músculo da bochecha que ajuda a mastigar."
+    },
+    {
+      "id": "m_trapezio",
+      "en": "trapezius muscle",
+      "pt": "Músculo trapézio",
+      "la": "M. trapezius",
+      "sistema": "muscular",
+      "regiao": "pescoco",
+      "bilateral": true,
+      "resumo": "Músculo superficial do pescoço e do dorso que se insere na espinha da escápula. Forma esquemática.",
+      "tutor": "É um músculo do pescoço e das costas que move o ombro."
+    },
+    {
+      "id": "m_latissimo_dorso",
+      "en": "latissimus dorsi muscle",
+      "pt": "Músculo latíssimo do dorso",
+      "la": "M. latissimus dorsi",
+      "sistema": "muscular",
+      "regiao": "torax",
+      "bilateral": true,
+      "resumo": "Músculo largo do dorso que vai até o úmero e puxa o membro torácico para trás. Forma esquemática.",
+      "tutor": "É um músculo grande das costas que puxa a pata da frente para trás."
+    },
+    {
+      "id": "m_triceps_braquial",
+      "en": "triceps brachii",
+      "pt": "Músculo tríceps braquial",
+      "la": "M. triceps brachii",
+      "sistema": "muscular",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Músculo caudal do braço que estende o cotovelo, inserido no olécrano. Forma esquemática.",
+      "tutor": "É o músculo de trás do braço que estica o cotovelo."
+    },
+    {
+      "id": "m_biceps_braquial",
+      "en": "biceps brachii",
+      "pt": "Músculo bíceps braquial",
+      "la": "M. biceps brachii",
+      "sistema": "muscular",
+      "regiao": "membro_toracico",
+      "bilateral": true,
+      "resumo": "Músculo cranial do braço que flexiona o cotovelo. Forma esquemática.",
+      "tutor": "É o músculo da frente do braço que dobra o cotovelo."
+    },
+    {
+      "id": "m_gluteo_medio",
+      "en": "gluteus medius",
+      "pt": "Músculo glúteo médio",
+      "la": "M. gluteus medius",
+      "sistema": "muscular",
+      "regiao": "pelve",
+      "bilateral": true,
+      "resumo": "Músculo da garupa que estende o quadril. Forma esquemática.",
+      "tutor": "É o músculo da garupa que empurra o corpo para a frente."
+    },
+    {
+      "id": "m_quadriceps_femoral",
+      "en": "quadriceps femoris",
+      "pt": "Músculo quadríceps femoral",
+      "la": "M. quadriceps femoris",
+      "sistema": "muscular",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Grupo muscular cranial da coxa que estende o joelho; seu tendão contém a patela. Forma esquemática.",
+      "tutor": "É o músculo da frente da coxa que estica o joelho."
+    },
+    {
+      "id": "m_biceps_femoral",
+      "en": "biceps femoris",
+      "pt": "Músculo bíceps femoral",
+      "la": "M. biceps femoris",
+      "sistema": "muscular",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Músculo grande na face lateral da coxa. Forma esquemática.",
+      "tutor": "É um músculo grande do lado de fora da coxa."
+    },
+    {
+      "id": "m_semitendineo",
+      "en": "semitendinosus",
+      "pt": "Músculo semitendíneo",
+      "la": "M. semitendinosus",
+      "sistema": "muscular",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Músculo caudal da coxa. Forma esquemática.",
+      "tutor": "É um músculo da parte de trás da coxa."
+    },
+    {
+      "id": "m_gastrocnemio",
+      "en": "gastrocnemius",
+      "pt": "Músculo gastrocnêmio",
+      "la": "M. gastrocnemius",
+      "sistema": "muscular",
+      "regiao": "membro_pelvico",
+      "bilateral": true,
+      "resumo": "Músculo caudal da perna que se insere no calcâneo e estende o tarso. Forma esquemática.",
+      "tutor": "É a 'panturrilha' da pata de trás, que estica o calcanhar."
+    },
+    {
+      "id": "pele",
+      "en": "skin of body",
+      "pt": "Pele (silhueta)",
+      "la": "Cutis",
+      "sistema": "tegumentar",
+      "regiao": "corpo",
+      "bilateral": false,
+      "resumo": "Silhueta translúcida do corpo, só para orientação. Não representa espessura nem camadas da pele.",
+      "tutor": "É o contorno do corpo, mostrado transparente para ver o que tem dentro."
+    }
+  ],
+  "comparada": [
+    {
+      "en": "ruminant stomach",
+      "pt": "Estômago de ruminante",
+      "especies": [
+        "bovino"
+      ]
+    },
+    {
+      "en": "rumen",
+      "pt": "Rúmen",
+      "especies": [
+        "bovino"
+      ]
+    },
+    {
+      "en": "ruminant reticulum",
+      "pt": "Retículo",
+      "especies": [
+        "bovino"
+      ]
+    },
+    {
+      "en": "omasum",
+      "pt": "Omaso",
+      "especies": [
+        "bovino"
+      ]
+    },
+    {
+      "en": "abomasum",
+      "pt": "Abomaso",
+      "especies": [
+        "bovino"
+      ]
+    },
+    {
+      "en": "hoof",
+      "pt": "Casco",
+      "especies": [
+        "equino",
+        "bovino"
+      ]
+    }
+  ]
+}

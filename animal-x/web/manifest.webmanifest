@@ -1,0 +1,11 @@
+{
+  "name": "Animal X — Atlas Veterinário 3D",
+  "short_name": "Animal X",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#070b12",
+  "theme_color": "#070b12",
+  "icons": [{ "src": "icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

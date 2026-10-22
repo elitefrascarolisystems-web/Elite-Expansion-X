@@ -1,0 +1,81 @@
+{
+  "nota": "Registro de procedência. Grau D: licença lida diretamente na fonte. Grau B: lida em trecho do buscador, reconferir no download. NV: não verificada. Nada com grau B ou NV entra no pacote antes da conferência.",
+  "emUso": [
+    {
+      "id": "uberon",
+      "titulo": "Uberon — ontologia de anatomia entre espécies",
+      "autor": "Mungall CJ et al. e colaboradores do Uberon",
+      "url": "https://github.com/obophenotype/uberon",
+      "licenca": { "nome": "CC BY 3.0", "url": "https://creativecommons.org/licenses/by/3.0/" },
+      "grau": "D",
+      "comercial": true,
+      "mesmaLicencaNosDerivados": false,
+      "usadoPara": "Nome em inglês, definição, sinônimos latinos, hierarquia e ligação entre espécies de cada estrutura.",
+      "credito": "Uberon (data-version releases/2026-10-01). Mungall CJ, Torniai C, Gkoutos GV, Lewis SE, Haendel MA. Uberon, an integrative multi-species anatomy ontology. Genome Biology 13, R5 (2012). Licença CC BY 3.0. Extraído e reorganizado pela Animal X.",
+      "verificacao": "Arquivo LICENSE lido no GitHub em 22/10/2026 (Creative Commons Attribution 3.0 Unported). SHA-256 do uberon.obo registrado em content/estruturas.json."
+    },
+    {
+      "id": "animalx-esquematico",
+      "titulo": "Cão esquemático de demonstração",
+      "autor": "Equipe Animal X",
+      "url": null,
+      "licenca": { "nome": "Própria (Animal X)", "url": null },
+      "grau": "D",
+      "comercial": true,
+      "mesmaLicencaNosDerivados": false,
+      "usadoPara": "Toda a geometria 3D desta versão. Formas geradas por código a partir de proporções aproximadas de um cão de porte médio. Não é anatomia medida de um espécime real.",
+      "credito": "Modelo esquemático feito pela equipe Animal X. Não revisado por anatomista.",
+      "verificacao": "Gerado pelo código em web/src/viewer/especime-cao.js."
+    },
+    {
+      "id": "animalx-traducao",
+      "titulo": "Nomes em português, resumos, textos para o tutor e latim da equipe",
+      "autor": "Equipe Animal X",
+      "url": null,
+      "licenca": { "nome": "Própria (Animal X)", "url": null },
+      "grau": "D",
+      "comercial": true,
+      "mesmaLicencaNosDerivados": false,
+      "usadoPara": "Textos em português e termos latinos sem correspondência confirmada no Uberon.",
+      "credito": "Redação e tradução da equipe Animal X. Aguardando revisão científica e conferência com a Nomina Anatomica Veterinaria.",
+      "verificacao": "Status de revisão por estrutura na tela Revisão profissional."
+    }
+  ],
+  "software": [
+    { "id": "three", "titulo": "three.js r186 (0.186.1)", "licenca": "MIT", "arquivo": "node_modules/three/LICENSE", "uso": "Motor 3D no navegador" },
+    { "id": "inter", "titulo": "Inter (Fontsource 5.3.0)", "licenca": "OFL-1.1", "arquivo": "node_modules/@fontsource-variable/inter/LICENSE", "uso": "Fonte do texto" },
+    { "id": "space-grotesk", "titulo": "Space Grotesk (Fontsource 5.3.0)", "licenca": "OFL-1.1", "arquivo": "node_modules/@fontsource/space-grotesk/LICENSE", "uso": "Fonte dos títulos" },
+    { "id": "pg", "titulo": "node-postgres 8.23.1", "licenca": "MIT", "arquivo": "node_modules/pg/LICENSE", "uso": "Conexão com o PostgreSQL (servidor)" },
+    { "id": "esbuild", "titulo": "esbuild 0.28.2", "licenca": "MIT", "arquivo": "node_modules/esbuild/LICENSE.md", "uso": "Build (não vai no pacote)" },
+    { "id": "playwright-core", "titulo": "Playwright 1.56.1", "licenca": "Apache-2.0", "arquivo": "node_modules/playwright-core/LICENSE", "uso": "Testes visuais (não vai no pacote)" }
+  ],
+  "planejadas": [
+    { "id": "edinburgh-open-ed", "titulo": "3D skeletons and skulls (TC) — Royal (Dick) School of Veterinary Studies", "autor": "Dr Tobias Schwarz, University of Edinburgh (Open.Ed)", "url": "https://open.ed.ac.uk/3d-skeletons-and-skulls/", "licenca": { "nome": "CC BY 4.0", "url": "https://creativecommons.org/licenses/by/4.0/" }, "grau": "B", "especies": ["cao", "gato", "equino"], "conteudo": "Crânio de cão dolicocéfalo e braquicéfalo, esqueleto e crânio de gato, crânio de cavalo", "mesmaLicencaNosDerivados": false },
+    { "id": "pixelbeaker-abdome-cao", "titulo": "3D Canine Anatomy — Normal Abdomen", "autor": "Pixelbeaker (Sketchfab)", "url": "https://sketchfab.com/3d-models/3d-canine-anatomy-normal-abdomen-962de878d2e94b75b10075931f0edaa3", "licenca": { "nome": "CC BY", "url": "https://creativecommons.org/licenses/by/4.0/" }, "grau": "B", "especies": ["cao"], "conteudo": "Órgãos abdominais por segmentação de TC", "mesmaLicencaNosDerivados": false },
+    { "id": "pixelbeaker-coracao-cao", "titulo": "Normal Canine Heart Anatomy", "autor": "Pixelbeaker (Sketchfab)", "url": "https://sketchfab.com/3d-models/normal-canine-heart-anatomy-5b4dec17040248948059e998b46f0b86", "licenca": { "nome": "CC BY", "url": "https://creativecommons.org/licenses/by/4.0/" }, "grau": "B", "especies": ["cao"], "conteudo": "Coração do cão", "mesmaLicencaNosDerivados": false },
+    { "id": "pixelbeaker-digestorio-gato", "titulo": "Normal Feline Anatomy — Digestive System", "autor": "Pixelbeaker (Sketchfab)", "url": "https://sketchfab.com/3d-models/normal-feline-anatomy-digestive-system-ab92a2a9d9024447b0ed4c080ad17106", "licenca": { "nome": "CC BY", "url": "https://creativecommons.org/licenses/by/4.0/" }, "grau": "B", "especies": ["gato"], "conteudo": "Sistema digestório do gato", "mesmaLicencaNosDerivados": false },
+    { "id": "cornell-atlas-cortical-cao", "titulo": "Cortical Atlas of the Canine Brain", "autor": "Johnson PJ et al., Cornell University (eCommons)", "url": "https://ecommons.cornell.edu/items/2b2e5e6a-42d7-4f68-8039-53f220c9d838", "licenca": { "nome": "CC0 1.0", "url": "https://creativecommons.org/publicdomain/zero/1.0/" }, "grau": "B", "especies": ["cao"], "conteudo": "Atlas cortical de 30 cães, RM T1, NIfTI", "mesmaLicencaNosDerivados": false },
+    { "id": "cornell-atlas-equino", "titulo": "Equine Brain Atlas", "autor": "Cornell University (eCommons)", "url": "https://ecommons.cornell.edu/handle/1813/64533.2", "licenca": { "nome": "CC0 1.0", "url": "https://creativecommons.org/publicdomain/zero/1.0/" }, "grau": "B", "especies": ["equino"], "conteudo": "RM de 9 cérebros equinos, 3 T", "mesmaLicencaNosDerivados": false },
+    { "id": "cornell-atlas-felino", "titulo": "Feline DTI White Matter Atlas", "autor": "Cornell University (eCommons)", "url": "https://ecommons.cornell.edu/handle/1813/58775.2", "licenca": { "nome": "CC0 1.0", "url": "https://creativecommons.org/publicdomain/zero/1.0/" }, "grau": "B", "especies": ["gato"], "conteudo": "Atlas de substância branca do gato", "mesmaLicencaNosDerivados": false },
+    { "id": "massey-ossos-cao", "titulo": "3D Dog Bone Project", "autor": "Massey University (nzfauna, Sketchfab)", "url": "https://sketchfab.com/3d-models/3d-dog-bone-project-femur-863aec077bf5434a8ada996c10532009", "licenca": { "nome": "CC BY-SA", "url": "https://creativecommons.org/licenses/by-sa/4.0/" }, "grau": "B", "especies": ["cao"], "conteudo": "Fêmur, úmero, escápula, ulna, C7, L1 e crânio. Rádio, fíbula e atlas são NC e ficam de fora.", "mesmaLicencaNosDerivados": true },
+    { "id": "nih-3dpx-000282", "titulo": "Dog Skull (3DPX-000282)", "autor": "NIH 3D", "url": "https://3d.nih.gov/entries/3DPX-000282", "licenca": { "nome": "Domínio público", "url": null }, "grau": "B", "especies": ["cao"], "conteudo": "Crânio de cão", "mesmaLicencaNosDerivados": false },
+    { "id": "if-goiano-calcaneo", "titulo": "Equine calcaneus — veterinary anatomy", "autor": "Instituto Federal Goiano, Campus Urutaí (Sketchfab)", "url": "https://sketchfab.com/3d-models/equine-calcaneus-veterinary-anatomy-3d-model-4679638454724e7e91bae18be05f0769", "licenca": { "nome": "CC BY", "url": "https://creativecommons.org/licenses/by/4.0/" }, "grau": "B", "especies": ["equino"], "conteudo": "Calcâneo equino de peça real", "mesmaLicencaNosDerivados": false },
+    { "id": "barcelona-cranio-equino", "titulo": "Equus caballus skull (MZB 94-0689)", "autor": "Museu de Ciències Naturals de Barcelona (Sketchfab)", "url": "https://sketchfab.com/3d-models/equus-caballus-skull-4b84a1b3bb194e27aa6d1619329c4032", "licenca": { "nome": "CC BY", "url": "https://creativecommons.org/licenses/by/4.0/" }, "grau": "B", "especies": ["equino"], "conteudo": "Crânio de cavalo", "mesmaLicencaNosDerivados": false },
+    { "id": "risd-cranio-gato", "titulo": "Domestic cat skull", "autor": "RISD Nature Lab (Sketchfab)", "url": "https://sketchfab.com/3d-models/domestic-cat-skull-bb6b8398029c45ef9da4e4ff04d2d9d9", "licenca": { "nome": "CC BY", "url": "https://creativecommons.org/licenses/by/4.0/" }, "grau": "B", "especies": ["gato"], "conteudo": "Crânio de gato", "mesmaLicencaNosDerivados": false },
+    { "id": "dundee-cranio-suino", "titulo": "Pig skull", "autor": "University of Dundee (Sketchfab)", "url": "https://sketchfab.com/3d-models/pig-skull-270c6920fd1247c0b048989e64b96b53", "licenca": { "nome": "CC BY", "url": "https://creativecommons.org/licenses/by/4.0/" }, "grau": "B", "especies": ["suino"], "conteudo": "Crânio de suíno", "mesmaLicencaNosDerivados": false },
+    { "id": "nottingham-digito-equino", "titulo": "Equine limb — P1, P2, P3 and navicular", "autor": "University of Nottingham SVMS (Sketchfab)", "url": "https://sketchfab.com/3d-models/equine-limb-p1-p2-p3-navicular-3ee32a605ed54787a9b2a0d11695e927", "licenca": { "nome": "CC BY", "url": "https://creativecommons.org/licenses/by/4.0/" }, "grau": "B", "especies": ["equino"], "conteudo": "Falanges e osso navicular equinos", "mesmaLicencaNosDerivados": false },
+    { "id": "wikidata", "titulo": "Wikidata", "autor": "Colaboradores do Wikidata", "url": "https://www.wikidata.org/wiki/Wikidata:Licensing", "licenca": { "nome": "CC0 1.0", "url": "https://creativecommons.org/publicdomain/zero/1.0/" }, "grau": "B", "especies": [], "conteudo": "Rótulos em português e fatos ligados ao Uberon (propriedade P1554)", "mesmaLicencaNosDerivados": false },
+    { "id": "nav-wava", "titulo": "Nomina Anatomica Veterinaria, 6ª edição (2017)", "autor": "ICVGAN / WAVA", "url": "https://www.wava-amav.org/wava-documents.html", "licenca": { "nome": "Sem licença explícita", "url": null }, "grau": "NV", "especies": [], "conteudo": "Termos latinos oficiais. Usar só como nomenclatura, após autorização escrita da WAVA.", "mesmaLicencaNosDerivados": false }
+  ],
+  "proibidas": [
+    { "titulo": "LMU Munique — vetanatMunich (Sketchfab)", "motivo": "CC BY-NC-ND: proíbe uso comercial e derivados" },
+    { "titulo": "Phenome10K", "motivo": "CC BY-NC 4.0" },
+    { "titulo": "DigiMorph", "motivo": "Licença contraditória entre fontes" },
+    { "titulo": "Allen Brain Atlas", "motivo": "Redistribuição comercial exige permissão escrita" },
+    { "titulo": "3D Anatomy Studios — gato por TC (MorphoSource 000362550)", "motivo": "Uso comercial não permitido" },
+    { "titulo": "CATLAS", "motivo": "Repositório sem licença" },
+    { "titulo": "MorphoSource — acordo padrão", "motivo": "Commercial Use Prohibited" },
+    { "titulo": "Código de referência do 3D Gaussian Splatting (INRIA)", "motivo": "Proíbe uso comercial; usar gsplat do nerfstudio (Apache-2.0)" },
+    { "titulo": "Visible Dog (LMU) e Visible Korean", "motivo": "Sem distribuição pública" }
+  ]
+}

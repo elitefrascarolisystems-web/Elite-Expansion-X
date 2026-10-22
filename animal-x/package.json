@@ -1,0 +1,40 @@
+{
+  "name": "animal-x",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Animal X — atlas de anatomia veterinária 3D interativo, multiespécie e offline.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "start": "node server/main.js",
+    "dev": "node scripts/build.js && node server/main.js",
+    "test": "node scripts/build.js && node --test --test-concurrency=1 'tests/*.test.js'",
+    "test:visual": "node scripts/build.js && node --test --test-concurrency=1 'tests/visual/*.test.js'",
+    "verify": "node scripts/verify-integrity.js",
+    "content:uberon": "node scripts/import-uberon.js",
+    "assets:fetch": "node scripts/fetch-assets.js",
+    "db:migrate": "node scripts/migrate.js",
+    "admin:create": "node scripts/create-admin.js",
+    "backup": "node scripts/backup.js",
+    "backup:restore": "node scripts/restore.js",
+    "db:local": "node scripts/pg-local.js",
+    "lint": "eslint ."
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource/space-grotesk": "5.3.0",
+    "pg": "8.23.1",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.4",
+    "esbuild": "0.28.2",
+    "eslint": "9.39.4",
+    "globals": "16.5.0",
+    "playwright-core": "1.56.1"
+  }
+}
