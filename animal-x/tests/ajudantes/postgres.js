@@ -1,6 +1,7 @@
 // PostgreSQL temporário para os testes. Usa os binários do sistema; como o
 // initdb recusa rodar como root, os comandos passam pelo usuário postgres.
 import { execFileSync, spawnSync } from 'node:child_process';
+import net from 'node:net';
 import { chownSync, existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -34,7 +35,13 @@ export async function iniciarPostgres() {
     const { uid, gid } = { uid: Number(execFileSync('id', ['-u', 'postgres']).toString()), gid: Number(execFileSync('id', ['-g', 'postgres']).toString()) };
     chownSync(pasta, uid, gid);
   }
-  const porta = 55000 + Math.floor(Math.random() * 4000);
+  // Porta livre escolhida pelo sistema, para não colidir com outro serviço.
+  const porta = await new Promise((resolve) => {
+    const s = net.createServer().listen(0, '127.0.0.1', () => {
+      const { port } = s.address();
+      s.close(() => resolve(port));
+    });
+  });
   executar(binario('initdb'), ['-D', pasta, '-U', 'animalx', '--auth=trust', '-E', 'UTF8', '--no-locale']);
   executar(binario('pg_ctl'), ['-D', pasta, '-o', `-p ${porta} -k ${pasta} -c listen_addresses=127.0.0.1`, '-l', path.join(pasta, 'log'), '-w', 'start']);
   executar(binario('createdb'), ['-h', '127.0.0.1', '-p', String(porta), '-U', 'animalx', 'animalx']);

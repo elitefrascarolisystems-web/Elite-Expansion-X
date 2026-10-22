@@ -6,9 +6,9 @@ import { ArmazemMemoria } from '../../server/armazem-memoria.js';
 import { RAIZ, lerConfig } from '../../server/config.js';
 import { gerarHash } from '../../server/seguranca.js';
 
-export async function iniciarServidor({ armazem = new ArmazemMemoria(), config = {}, estruturas = ['coracao', 'femur', 'rim'] } = {}) {
+export async function iniciarServidor({ armazem = new ArmazemMemoria(), config = {}, estruturas = ['coracao', 'femur', 'rim'], senhas } = {}) {
   const cfg = { ...lerConfig({}), distDir: path.join(RAIZ, 'dist'), ...config };
-  const app = criarApp({ armazem, config: cfg, estruturasValidas: new Set(estruturas) });
+  const app = criarApp({ armazem, config: cfg, estruturasValidas: new Set(estruturas), ...(senhas ? { senhas } : {}) });
   const servidor = http.createServer(app);
   await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${servidor.address().port}`;

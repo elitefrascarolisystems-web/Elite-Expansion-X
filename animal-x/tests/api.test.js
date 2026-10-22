@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
+import { conferirSenha, hashParaComparacao } from '../server/seguranca.js';
 import { cliente, criarConta, entrarComo, iniciarServidor } from './ajudantes/servidor.js';
 
 let srv;
@@ -36,19 +37,22 @@ describe('sessão e login', () => {
     assert.equal('senhaHash' in r.dados.usuario, false);
   });
 
-  test('erro de login é o mesmo para e-mail inexistente e senha errada, e tem custo parecido', async () => {
-    const medir = async (email) => {
-      const inicio = performance.now();
-      const r = await cliente(srv.base).pedir('/api/entrar', { metodo: 'POST', corpo: { email, senha: 'errada-errada-1' } });
-      return { r, ms: performance.now() - inicio };
+  test('erro de login é o mesmo para e-mail inexistente e senha errada, e os dois calculam scrypt', async () => {
+    // Conta as chamadas de scrypt em vez de medir tempo (medição é instável).
+    const chamadas = [];
+    const senhas = {
+      conferirSenha: async (senha, hash) => { chamadas.push(hash); return conferirSenha(senha, hash); },
+      hashParaComparacao,
     };
-    const existente = await medir('admin@teste.br');
-    const inexistente = await medir('ninguem@teste.br');
-    assert.equal(existente.r.status, 401);
-    assert.equal(inexistente.r.status, 401);
-    assert.deepEqual(existente.r.dados, inexistente.r.dados);
-    // Os dois caminhos calculam scrypt; sem isso o inexistente seria ~0 ms.
-    assert.ok(inexistente.ms > existente.ms * 0.4, `inexistente ${inexistente.ms.toFixed(0)} ms vs existente ${existente.ms.toFixed(0)} ms`);
+    const contado = await iniciarServidor({ armazem: srv.armazem, senhas });
+    const existente = await cliente(contado.base).pedir('/api/entrar', { metodo: 'POST', corpo: { email: 'admin@teste.br', senha: 'errada-errada-1' } });
+    const inexistente = await cliente(contado.base).pedir('/api/entrar', { metodo: 'POST', corpo: { email: 'ninguem@teste.br', senha: 'errada-errada-1' } });
+    const invalido = await cliente(contado.base).pedir('/api/entrar', { metodo: 'POST', corpo: { email: 'nao-e-email', senha: 'x' } });
+    await contado.fechar();
+    for (const r of [existente, inexistente, invalido]) assert.equal(r.status, 401);
+    assert.deepEqual(existente.dados, inexistente.dados);
+    assert.equal(chamadas.length, 3, 'uma chamada de scrypt por tentativa, exista ou não a conta');
+    assert.equal(chamadas[1], await hashParaComparacao(), 'conta inexistente usa o hash fictício');
     const audit = await srv.armazem.listarAuditoria();
     assert.ok(audit.some((a) => a.acao === 'login_falhou' && /^email:[a-f0-9]{12}$/.test(a.alvo)), 'auditoria não guarda o e-mail em claro');
   });
@@ -151,7 +155,7 @@ describe('papéis e separação de dados', () => {
     const est = await entrarComo(srv.base, 'estudante@teste.br');
     const { dados } = await est.pedir('/api/laboratorio/animais', { metodo: 'POST', corpo: { nome: 'Thor', especie: 'Cão', nascimento: '2019-05-10', sexo: 'macho' } });
     const id = dados.animal.id;
-    assert.equal((await est.pedir(`/api/laboratorio/animais/${id}/registros`, { metodo: 'POST', corpo: { tipo: 'peso', valor: 28.4, data: '2026-10-01' } })).status, 201);
+    assert.equal((await est.pedir(`/api/laboratorio/animais/${id}/registros`, { metodo: 'POST', corpo: { tipo: 'peso', valor: 31.77, data: '2026-10-01' } })).status, 201);
     const adm = await entrarComo(srv.base, 'admin@teste.br');
     assert.deepEqual((await adm.pedir('/api/laboratorio/animais')).dados.animais, []);
     assert.equal((await adm.pedir(`/api/laboratorio/animais/${id}/registros`)).status, 404);
@@ -159,9 +163,10 @@ describe('papéis e separação de dados', () => {
     const usuarios = (await adm.pedir('/api/admin/usuarios')).dados.usuarios;
     assert.ok(usuarios.length >= 3);
     assert.ok(usuarios.every((u) => !('senhaHash' in u)), 'lista de contas sem hash de senha');
-    const auditoria = JSON.stringify((await adm.pedir('/api/admin/auditoria')).dados);
-    assert.equal(auditoria.includes('Thor'), false, 'auditoria não leva dados do animal');
-    assert.equal(auditoria.includes('28.4'), false);
+    // Só os campos de texto: horários com milissegundos podem conter qualquer número.
+    const textos = (await adm.pedir('/api/admin/auditoria')).dados.registros.map((r) => `${r.acao} ${r.alvo ?? ''} ${r.resumo ?? ''}`).join('\n');
+    assert.equal(textos.includes('Thor'), false, 'auditoria não leva dados do animal');
+    assert.equal(textos.includes('31.77'), false, 'auditoria não leva o peso');
   });
 
   test('biblioteca é isolada por pessoa', async () => {

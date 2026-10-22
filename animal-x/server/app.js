@@ -91,7 +91,8 @@ async function lerCorpo(req) {
   }
 }
 
-export function criarApp({ armazem, config, estruturasValidas = new Set(), log = () => {} }) {
+// "senhas" permite aos testes observar as chamadas de scrypt.
+export function criarApp({ armazem, config, estruturasValidas = new Set(), log = () => {}, senhas = { conferirSenha, hashParaComparacao } }) {
   const limites = {
     geral: new LimiteRequisicoes({ janelaMs: 60_000, maximo: 600 }),
     loginIp: new LimiteRequisicoes({ janelaMs: 15 * 60_000, maximo: 30 }),
@@ -197,8 +198,8 @@ export function criarApp({ armazem, config, estruturasValidas = new Set(), log =
     limitar(limites.loginEmail, email);
     const usuario = EMAIL.test(email) ? await armazem.usuarioPorEmail(email) : null;
     // Sempre um cálculo de scrypt, exista ou não a conta.
-    const hash = usuario?.senhaHash ?? await hashParaComparacao();
-    const confere = await conferirSenha(senha.slice(0, 200), hash);
+    const hash = usuario?.senhaHash ?? await senhas.hashParaComparacao();
+    const confere = await senhas.conferirSenha(senha.slice(0, 200), hash);
     if (!usuario || !confere) {
       await armazem.auditar({ acao: 'login_falhou', alvo: `email:${createHash('sha256').update(email).digest('hex').slice(0, 12)}` });
       throw new ErroHttp(401, 'E-mail ou senha incorretos.');
