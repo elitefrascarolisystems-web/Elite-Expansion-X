@@ -3,7 +3,7 @@ import { responderXAI } from '../xai.js';
 import { TOURS } from '../conteudo.js';
 import { api, cadastrar, carregarSessao, definirPreferencia, entrar, local, notificar, preferencias, sessao } from '../estado.js';
 import { seloRevisao } from '../ficha.js';
-import { palco } from '../palco.js';
+import { iniciarPalco, palco } from '../palco.js';
 import { avisar, botao, campo, dataBr, dataHoraBr, dialogo, h, icone, limpar, selo } from '../ui.js';
 import { QUALIDADES } from '../viewer/visualizador.js';
 
@@ -31,7 +31,7 @@ const SITUACAO = [
 ];
 
 export function telaInicio({ navegar }) {
-  const continuar = local.ultimaCena ? botao('Continuar de onde parou', { icone: 'atlas', classe: 'ax-btn--primario', onClick: async () => { navegar('atlas'); await palco.pronto; palco.visualizador.aplicarCena(local.ultimaCena); } }) : botao('Abrir o atlas', { icone: 'atlas', classe: 'ax-btn--primario', onClick: () => navegar('atlas') });
+  const continuar = local.ultimaCena ? botao('Continuar de onde parou', { icone: 'atlas', classe: 'ax-btn--primario', onClick: async () => { navegar('atlas'); await iniciarPalco(); palco.visualizador.aplicarCena(local.ultimaCena); } }) : botao('Abrir o atlas', { icone: 'atlas', classe: 'ax-btn--primario', onClick: () => navegar('atlas') });
   const atalho = (titulo, texto, rota, nomeIcone) => h('button', { type: 'button', class: 'ax-cartao ax-cartao--acao', onClick: () => navegar(rota) }, icone(nomeIcone, 22), h('h3', {}, titulo), h('p', {}, texto));
   return { elemento: h('div', { class: 'ax-pagina ax-inicio' },
     h('section', { class: 'ax-heroi' },
@@ -103,7 +103,7 @@ export function telaBiblioteca({ navegar }) {
         h('h3', {}, item.titulo),
         item.tipo === 'anotacao' ? h('p', {}, item.dados.texto) : h('p', { class: 'ax-nota' }, `${item.dados.ocultas?.length ?? 0} peças ocultas${item.dados.selecionada ? ` · selecionada: ${item.dados.selecionada}` : ''}`),
         h('div', { class: 'ax-grade-botoes' },
-          item.tipo === 'cena' ? botao('Abrir', { icone: 'atlas', classe: 'ax-btn--pequeno', onClick: async () => { navegar('atlas'); await palco.pronto; palco.visualizador.aplicarCena(item.dados); } }) : null,
+          item.tipo === 'cena' ? botao('Abrir', { icone: 'atlas', classe: 'ax-btn--pequeno', onClick: async () => { navegar('atlas'); await iniciarPalco(); palco.visualizador.aplicarCena(item.dados); } }) : null,
           botao('Apagar', { icone: 'lixo', classe: 'ax-btn--pequeno ax-btn--perigo', onClick: async () => { await api(`/api/biblioteca/${item.id}`, { metodo: 'DELETE' }); carregar(); } }))))
         : h('p', { class: 'ax-nota' }, 'Nada salvo ainda. No atlas, use "Salvar cena".'));
     } catch (erro) {
@@ -323,7 +323,12 @@ export function telaConfiguracoes() {
         opcao('Densidade', 'densidade', { confortavel: 'Confortável', compacta: 'Compacta' }),
         opcao('Idioma dos termos', 'idiomaTermos', { pt: 'Português', la: 'Latim', en: 'Inglês' })),
       h('section', { class: 'ax-cartao' }, h('h2', {}, 'Qualidade gráfica'),
-        opcao('Nível de detalhe', 'qualidade', Object.fromEntries(Object.keys(QUALIDADES).map((q) => [q, { leve: 'Leve (celular)', balanceado: 'Balanceado', alto: 'Alto (dispersão subsuperficial)' }[q]])), async (q) => { await palco.pronto; palco.visualizador.definirQualidade(q); }),
+        opcao('Nível de detalhe', 'qualidade', Object.fromEntries(Object.keys(QUALIDADES).map((q) => [q, { leve: 'Leve (celular)', balanceado: 'Balanceado', alto: 'Alto (dispersão subsuperficial)' }[q]])), async (q) => {
+          // Sem palco aberto, a preferência vale quando o 3D iniciar.
+          if (!palco.pronto) return;
+          await palco.pronto;
+          palco.visualizador.definirQualidade(q);
+        }),
         alternar('Forçar WebGL 2 (vale ao recarregar)', 'forcarWebGL'),
         estat),
       h('section', { class: 'ax-cartao' }, h('h2', {}, 'Acessibilidade'),

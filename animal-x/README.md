@@ -122,20 +122,21 @@ Esse fluxo sobe o app, o PostgreSQL 17 e o Caddy com HTTPS. A imagem ainda não 
 npm run lint          # ESLint
 npm test              # build + 35 testes (segurança, API, PostgreSQL real, conteúdo, licenças, build)
 npm run verify        # confere dist/ contra o inventário SHA-256
-npm run test:visual   # 8 testes de ponta a ponta no Chromium
+npm run test:visual   # 9 testes de ponta a ponta no Chromium
 ```
 
 Resultados em 22/10/2026, neste ambiente:
 - **Lint:** sem erros.
 - **Unidade:** 35 de 35 testes passando, com PostgreSQL 16 real (migrations, trava contra migration alterada, backup adulterado recusado e restauração conferida).
 - **Integridade:** os 14 arquivos do pacote conferidos.
-- **Navegador:** 8 de 8 testes passando:
+- **Navegador:** 9 de 9 testes passando:
   - renderização em WebGL 2;
   - WebGPU com volta automática;
   - clique numa estrutura abrindo a ficha;
   - 21 rotas sem erro;
   - celular de 390 px sem rolagem horizontal;
   - cadastro, laboratório e X AI;
+  - apresentação e especialidade abertas direto da tela inicial;
   - tour por teclado e apresentação de 7 passos;
   - uso sem internet.
 

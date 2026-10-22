@@ -2,7 +2,7 @@ import { ESTRUTURAS, SISTEMAS, UBERON, estrutura, nome } from '../catalogo.js';
 import { APRESENTACAO, AVISO_TUTOR, CENAS_TUTOR, TOURS } from '../conteudo.js';
 import { local, persistir, preferencias } from '../estado.js';
 import { ficha } from '../ficha.js';
-import { aplicarCena, montarPalco, palco } from '../palco.js';
+import { aplicarCena, iniciarPalco, montarPalco, palco } from '../palco.js';
 import { botao, h, icone, limpar, selo } from '../ui.js';
 
 const SELO_EQUIPE = () => selo('Texto da equipe · não revisado', 'aviso');
@@ -150,6 +150,7 @@ export function abrirApresentacao() {
       estadoRede,
       h('span', { class: 'ax-nota' }, '← → avança · F tela cheia · Esc sai')));
   document.body.append(raiz);
+  const pronto = iniciarPalco();
   montarPalco(palcoHost);
   const anterior = document.querySelector('.ax-palco-host:not(.ax-apresentacao .ax-palco-host)');
   const atualizarRede = () => {
@@ -208,7 +209,7 @@ export function abrirApresentacao() {
   window.addEventListener('online', atualizarRede);
   window.addEventListener('offline', atualizarRede);
   raiz.append(botao('', { icone: 'fechar', titulo: 'Sair da apresentação', classe: 'ax-btn--icone ax-apresentacao-fechar', onClick: fechar }));
-  palco.pronto.then(() => ir(0));
+  pronto.then(() => ir(0)).catch(() => limpar(legenda, h('h1', {}, 'Animal X'), h('p', {}, 'Não foi possível iniciar o 3D neste navegador.')));
   return fechar;
 }
 

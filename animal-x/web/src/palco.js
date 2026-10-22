@@ -80,7 +80,8 @@ export function aoTrocarBackend(f) {
 // Aplica uma cena descrita por dados: vista, isolar (estruturas ou
 // sistemas), opacidades, realce e seleção.
 export async function aplicarCena(cena = {}, { animar = true } = {}) {
-  await palco.pronto;
+  // Inicia o palco se ainda não existir (por exemplo, vindo da tela inicial).
+  await iniciarPalco();
   const v = palco.visualizador;
   v.registrar();
   for (const m of v.malhas.values()) m.visible = true;
