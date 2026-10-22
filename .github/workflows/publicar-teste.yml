@@ -141,7 +141,9 @@ jobs:
         if: steps.conta.outputs.pronta == 'true' && steps.publicar.outputs.url != ''
         run: |
           sleep 5
-          read -r code location < <(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "${{ steps.publicar.outputs.url }}/")
+          # (sem "read": a saída do curl não termina em quebra de linha e o read falharia com -e)
+          out="$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "${{ steps.publicar.outputs.url }}/")"
+          code="${out%% *}"; location="${out#* }"
           echo "::notice title=Resposta do ambiente de teste::HTTP $code ${location:-} (307 para /entrar = tela de entrada da plataforma)"
           case "$code" in 200|302|303|307) ;; *) echo "::error::Resposta inesperada: HTTP $code"; exit 1;; esac
           # Cloudflare Access ligado no endereço workers.dev: só membros da conta Cloudflare passam,
