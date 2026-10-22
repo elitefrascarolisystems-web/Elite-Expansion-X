@@ -142,7 +142,7 @@ jobs:
         run: |
           sleep 5
           # (sem "read": a saída do curl não termina em quebra de linha e o read falharia com -e)
-          out="$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "${{ steps.publicar.outputs.url }}/")"
+          out="$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "${{ steps.publicar.outputs.url }}/" || true)"
           code="${out%% *}"; location="${out#* }"
           echo "::notice title=Resposta do ambiente de teste::HTTP $code ${location:-} (307 para /entrar = tela de entrada da plataforma)"
           case "$code" in 200|302|303|307) ;; *) echo "::error::Resposta inesperada: HTTP $code"; exit 1;; esac
