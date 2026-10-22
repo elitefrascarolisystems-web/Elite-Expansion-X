@@ -1,33 +1,21 @@
 "use client";
 import {tenantFetch} from '@/lib/tenant-request';
 
-import {TerritoryDecisions} from '@/app/territory-decisions';
-import {FollowupWorkspace} from '@/app/followup-workspace';
-import {CommercialWorkspace} from '@/app/commercial-workspace';
 import { InstallAppBanner, useAppServiceWorker } from "@/app/app-install";
 import { AppShell, type NewAction } from "@/app/app-shell";
-import { AdvisorsPanel } from "@/app/advisors-panel";
 import { QuickSearch } from "@/app/quick-search";
 import { IdentityPanel, logoUrl } from "@/app/identity-panel";
-import { HookPicker, HooksBank } from "@/app/hooks-bank";
 import type { HookContext } from "@/lib/hooks";
-import { OpportunityDialog, type OpportunityEdit } from "@/app/opportunity-dialog";
+import type { OpportunityEdit } from "@/app/opportunity-dialog";
 import { copyText } from "@/lib/copy-text";
 import { GettingStarted, WelcomeDialog } from "@/app/getting-started";
-import { TeamPanel } from "@/app/team-panel";
-import { MappingWizard } from "@/app/mapping-wizard";
 import { NoticesCard, NotificationsPanel } from "@/app/notifications-panel";
 import { OfflineSync } from "@/app/offline-sync";
-import { PrivacyPanel } from "@/app/privacy-panel";
-import { MappingStatsPanel } from "@/app/mapping-stats";
-import { PeopleImport } from "@/app/people-import";
 import { AgendaBanner } from "@/app/agenda-banner";
-import { PortalAdmin } from "@/app/portal-admin";
-import { SubscriptionRequestsPanel } from "@/app/subscription-requests-panel";
-import { PlanCard, SubscriptionsPanel } from "@/app/subscriptions-panel";
 /* eslint-disable @next/next/no-img-element -- QR remoto gerado somente após o administrador configurar o link-base. */
 
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import {
   Activity,
   AlertTriangle,
@@ -56,20 +44,22 @@ import {
   Target,
   TrendingDown,
   Trophy,
-  TrendingUp,
-  Minus,
   UserCog,
   UserPlus,
   Users,
 } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 
-import { ExpansionDialog, type DialogState } from "@/app/expansion-forms";
-import { TerritorialMap } from "@/app/territorial-map";
+import type { DialogState } from "@/app/expansion-forms";
+import { ChartFrame } from "@/components/elite/chart-frame";
+import { EmptyArt } from "@/components/elite/empty-art";
+import { ChartSkeleton, PanelSkeleton } from "@/components/elite/skeletons";
+import { StatTile as Kpi, type Trend } from "@/components/elite/stat-tile";
+import { Timeline } from "@/components/elite/timeline";
+import { monthLabel } from "@/lib/figures";
+import { withViewTransition } from "@/lib/view-transition";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -127,12 +117,33 @@ const successMessage: Partial<Record<ActionName, string>> = {
   create_user: "Perfil preparado. Gere o link de acesso para a pessoa criar a senha.",
 };
 
-const chartConfig = {
-  revenue: { label: "Receita", color: "#c9a227" },
-  cost: { label: "Custo", color: "#5b6575" },
-  leads: { label: "Leads", color: "#c9a227" },
-  payments: { label: "Pagamentos", color: "#6ee7b7" },
-} satisfies ChartConfig;
+// Gráfico carregado só quando a aba abre (a biblioteca de gráficos não pesa nas outras telas).
+const RevenueCostChart = lazy(() => import("@/app/charts/revenue-cost-chart"));
+// Telas e janelas que só aparecem numa aba ou ao abrir: cada uma vem quando é usada, e Hoje abre mais leve.
+const TerritorialMap = lazy(() => import("@/app/territorial-map").then((m) => ({ default: m.TerritorialMap })));
+const TerritoryDecisions = lazy(() => import("@/app/territory-decisions").then((m) => ({ default: m.TerritoryDecisions })));
+const PeopleImport = lazy(() => import("@/app/people-import").then((m) => ({ default: m.PeopleImport })));
+const CommercialWorkspace = lazy(() => import("@/app/commercial-workspace").then((m) => ({ default: m.CommercialWorkspace })));
+const FollowupWorkspace = lazy(() => import("@/app/followup-workspace").then((m) => ({ default: m.FollowupWorkspace })));
+const HooksBank = lazy(() => import("@/app/hooks-bank").then((m) => ({ default: m.HooksBank })));
+const HookPicker = lazy(() => import("@/app/hooks-bank").then((m) => ({ default: m.HookPicker })));
+const PortalAdmin = lazy(() => import("@/app/portal-admin").then((m) => ({ default: m.PortalAdmin })));
+const MappingStatsPanel = lazy(() => import("@/app/mapping-stats").then((m) => ({ default: m.MappingStatsPanel })));
+const TeamPanel = lazy(() => import("@/app/team-panel").then((m) => ({ default: m.TeamPanel })));
+const PrivacyPanel = lazy(() => import("@/app/privacy-panel").then((m) => ({ default: m.PrivacyPanel })));
+const PlanCard = lazy(() => import("@/app/subscriptions-panel").then((m) => ({ default: m.PlanCard })));
+const SubscriptionsPanel = lazy(() => import("@/app/subscriptions-panel").then((m) => ({ default: m.SubscriptionsPanel })));
+const SubscriptionRequestsPanel = lazy(() => import("@/app/subscription-requests-panel").then((m) => ({ default: m.SubscriptionRequestsPanel })));
+const AdvisorsPanel = lazy(() => import("@/app/advisors-panel").then((m) => ({ default: m.AdvisorsPanel })));
+const ExpansionDialog = lazy(() => import("@/app/expansion-forms").then((m) => ({ default: m.ExpansionDialog })));
+const OpportunityDialog = lazy(() => import("@/app/opportunity-dialog").then((m) => ({ default: m.OpportunityDialog })));
+const MappingWizard = lazy(() => import("@/app/mapping-wizard").then((m) => ({ default: m.MappingWizard })));
+
+/** Depois que a tela abre, baixa em segundo plano as janelas e telas mais usadas (e o app as guarda para usar sem internet). */
+function warmUp() {
+  void import("@/app/expansion-forms"); void import("@/app/mapping-wizard"); void import("@/app/opportunity-dialog");
+  void import("@/app/territorial-map"); void import("@/app/followup-workspace"); void import("@/app/hooks-bank");
+}
 
 function badgeClass(value: string) {
   if (["Ativa", "Ativo", "Aprovado", "Concluído", "Concluída", "Realizado", "Pagamento confirmado", "Avançar"].includes(value)) return "border-emerald-400/30 bg-emerald-400/10 text-emerald-300";
@@ -141,7 +152,6 @@ function badgeClass(value: string) {
   return "border-amber-300/30 bg-amber-300/10 text-amber-200";
 }
 
-type Trend = { text: string; tone: "up" | "down" | "flat" };
 
 /** Variação do último período com dados contra o anterior (ex.: "+12% · out x set"). */
 function trendOf(timeline: DashboardView["timeline"], key: "leads" | "payments" | "revenue"): Trend | undefined {
@@ -154,21 +164,15 @@ function trendOf(timeline: DashboardView["timeline"], key: "leads" | "payments" 
   return { text: `${change > 0 ? "+" : ""}${change}% · ${span}`, tone: change > 0 ? "up" : change < 0 ? "down" : "flat" };
 }
 
-/** Indicador padrão: nome, número grande, variação (quando houver) e uma linha de explicação. */
-function Kpi({ label, value, helper, icon: Icon, emphasis = false, trend }: { label: string; value: string; helper: string; icon: typeof Users; emphasis?: boolean; trend?: Trend }) {
-  const TrendIcon = trend?.tone === "up" ? TrendingUp : trend?.tone === "down" ? TrendingDown : Minus;
-  const empty = value === "Sem dados suficientes";
-  return <article className={`elite-card group overflow-hidden p-5 ${emphasis ? "border-gold/30" : ""}`}>
-    <div className="mb-4 flex items-start justify-between gap-3"><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</p><span className="rounded-xl border border-gold/25 bg-gradient-to-b from-gold/20 to-gold/5 p-2 text-gold-light shadow-[inset_0_1px_0_rgb(255_255_255/0.12)]"><Icon className="size-4" /></span></div>
-    <p className={`elite-kpi-value text-2xl font-semibold sm:text-[2rem] ${empty ? "text-subtle" : emphasis ? "text-gold-pale" : "text-white"}`} title={empty ? value : undefined}>{empty ? "—" : value}</p>
-    <div className="mt-2 flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1">{trend && <span className={`elite-trend is-${trend.tone}`}><TrendIcon className="size-3" aria-hidden />{trend.text}</span>}<p className="text-xs leading-5 text-subtle">{empty ? `Sem dados suficientes · ${helper}` : helper}</p></div>
-    <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/60 to-transparent opacity-0 transition group-hover:opacity-100" />
-  </article>;
+/** Série dos últimos meses para o minigráfico do indicador (mesma base da variação ao lado). */
+function seriesOf(timeline: DashboardView["timeline"], key: "leads" | "payments" | "revenue", label: string, format: (value: number) => string = (value) => String(value)) {
+  if (timeline.length < 2) return undefined;
+  return { values: timeline.map((point) => point[key]), label: `${label} por mês: ${timeline.map((point) => `${monthLabel(point.period)} ${format(point[key])}`).join(", ")}.` };
 }
 
 /** Estado vazio que ensina o próximo passo (com o botão dele, quando a pessoa pode fazer). */
 function EmptyState({ title, description, icon: Icon = Building2, action }: { title: string; description: string; icon?: typeof Building2; action?: { label: string; onClick: () => void } }) {
-  return <div className="grid min-h-44 place-items-center px-5 py-8 text-center"><div><span className="elite-empty-icon"><Icon className="size-6" /></span><h3 className="font-semibold text-white">{title}</h3><p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-subtle">{description}</p>{action && <Button onClick={action.onClick} className="mt-5 bg-gold text-black">{action.label}</Button>}</div></div>;
+  return <div className="grid min-h-44 place-items-center px-5 py-8 text-center"><div><EmptyArt icon={Icon} /><h3 className="font-semibold text-white">{title}</h3><p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-subtle">{description}</p>{action && <Button onClick={action.onClick} className="mt-5 bg-gold text-black">{action.label}</Button>}</div></div>;
 }
 
 /** Linha de ações de uma seção: o que ela mostra (à esquerda) e os botões (à direita). */
@@ -203,15 +207,16 @@ function TodayPanel({ data, view, onGo, onFollowup, shortcuts }: { data: Dashboa
   const manage = ["Administrador", "Coordenação", "Líder"].includes(data.access.role);
   return <div className="space-y-5">
     {shortcuts.length > 0 && <nav aria-label="Atalhos do dia" className="flex flex-wrap gap-2">{shortcuts.map(({ id, label, icon: Icon, disabled, run }, index) => <Button key={id} disabled={Boolean(disabled)} title={disabled ? `Indisponível: ${disabled}` : undefined} onClick={run} variant={index === 0 ? "default" : "outline"} className={index === 0 ? "bg-gold text-black" : "border-white/10 bg-white/5 text-white"}><Icon /> {label}</Button>)}</nav>}
+    {/* Indicadores primeiro: o "painel do dia" abre pelos números. */}
+    <section className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Indicadores">
+      <Kpi label="Leads válidos" value={number(summary.validLeads)} helper={summary.organicShare === null ? "Origem dos leads ainda sem base" : `${ratio(summary.organicShare)} sem mídia paga`} icon={Megaphone} trend={trendOf(view.timeline, "leads")} series={seriesOf(view.timeline, "leads", "Leads válidos")} />
+      <Kpi label="Clientes pagos" value={number(summary.confirmedPayments)} helper="Pagamentos confirmados" icon={BadgeCheck} trend={trendOf(view.timeline, "payments")} series={seriesOf(view.timeline, "payments", "Clientes pagos")} />
+      <Kpi label="Conversão" value={ratio(summary.conversion)} helper="Pagamentos ÷ leads válidos" icon={Target} />
+      <Kpi label="Receita confirmada" value={money(summary.revenueCents, true)} helper="Somente pagamentos confirmados" icon={Banknote} emphasis trend={trendOf(view.timeline, "revenue")} series={seriesOf(view.timeline, "revenue", "Receita confirmada", (value) => money(value * 100, true))} />
+    </section>
     {agenda && (agenda.late || agenda.today) ? <AgendaBanner agenda={agenda} onAll={() => onGo("vendas/agenda")} onOpen={onFollowup} />
       : <article className="elite-card flex flex-wrap items-center gap-4 p-5"><span className="rounded-xl bg-emerald-400/10 p-3 text-emerald-300"><Check /></span><div className="mr-auto"><p className="font-semibold text-white">Nenhum retorno atrasado ou para hoje</p><p className="mt-1 text-sm text-subtle">Quando houver, eles aparecem aqui primeiro.</p></div><Button variant="outline" onClick={() => onGo("vendas/agenda")} className="border-white/10 bg-white/5 text-white">Abrir a agenda</Button></article>}
     {manage && <GettingStarted data={data} onGo={onGo} />}
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <Kpi label="Leads válidos" value={number(summary.validLeads)} helper={summary.organicShare === null ? "Origem dos leads ainda sem base" : `${ratio(summary.organicShare)} sem mídia paga`} icon={Megaphone} trend={trendOf(view.timeline, "leads")} />
-      <Kpi label="Clientes pagos" value={number(summary.confirmedPayments)} helper="Pagamentos confirmados" icon={BadgeCheck} trend={trendOf(view.timeline, "payments")} />
-      <Kpi label="Conversão" value={ratio(summary.conversion)} helper="Pagamentos ÷ leads válidos" icon={Target} />
-      <Kpi label="Receita confirmada" value={money(summary.revenueCents, true)} helper="Somente pagamentos confirmados" icon={Banknote} emphasis trend={trendOf(view.timeline, "revenue")} />
-    </section>
     {manage && <Alerts items={view.alerts} />}
     {["Administrador", "Coordenação", "Líder", "Comercial"].includes(data.access.role) && !data.access.isAdvisory && <NoticesCard />}
   </div>;
@@ -240,20 +245,30 @@ function PendingAttendances({ data, onDone }: { data: DashboardData; onDone: () 
   </article>;
 }
 
+/** Conclusão do gráfico de receita e custo, sobre o mês mais recente. */
+function revenueTakeaway(timeline: DashboardView["timeline"]) {
+  const last = timeline[timeline.length - 1];
+  const result = last.revenue - last.cost;
+  return `Em ${monthLabel(last.period)}: receita confirmada de ${money(last.revenue * 100, true)} e custo de ${money(last.cost * 100, true)} — resultado ${result >= 0 ? "positivo" : "negativo"} de ${money(Math.abs(result) * 100, true)}.`;
+}
+
 function ResultsOverview({ view, canExport }: { view: DashboardView; canExport: boolean }) {
   const summary = view.summary;
   return <div className="space-y-5">
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       <Kpi label="Cidades ativas" value={`${summary.activeCities}/${summary.plannedCities}`} helper="Operação autorizada" icon={MapPin} />
       <Kpi label="Embaixadores ativos" value={number(summary.activeAmbassadors)} helper={`${ratio(summary.activation)} de ${summary.eligibleAmbassadors} aprovados elegíveis`} icon={Users} />
-      <Kpi label="Leads válidos" value={number(summary.validLeads)} helper={summary.organicShare === null ? "Origem dos leads ainda sem base" : `${ratio(summary.organicShare)} sem mídia paga`} icon={Megaphone} trend={trendOf(view.timeline, "leads")} />
-      <Kpi label="Clientes pagos" value={number(summary.confirmedPayments)} helper={`${ratio(summary.conversion)} dos leads válidos`} icon={BadgeCheck} trend={trendOf(view.timeline, "payments")} />
-      <Kpi label="Receita confirmada" value={money(summary.revenueCents, true)} helper="Somente pagamentos confirmados" icon={Banknote} emphasis trend={trendOf(view.timeline, "revenue")} />
+      <Kpi label="Leads válidos" value={number(summary.validLeads)} helper={summary.organicShare === null ? "Origem dos leads ainda sem base" : `${ratio(summary.organicShare)} sem mídia paga`} icon={Megaphone} trend={trendOf(view.timeline, "leads")} series={seriesOf(view.timeline, "leads", "Leads válidos")} />
+      <Kpi label="Clientes pagos" value={number(summary.confirmedPayments)} helper={`${ratio(summary.conversion)} dos leads válidos`} icon={BadgeCheck} trend={trendOf(view.timeline, "payments")} series={seriesOf(view.timeline, "payments", "Clientes pagos")} />
+      <Kpi label="Receita confirmada" value={money(summary.revenueCents, true)} helper="Somente pagamentos confirmados" icon={Banknote} emphasis trend={trendOf(view.timeline, "revenue")} series={seriesOf(view.timeline, "revenue", "Receita confirmada", (value) => money(value * 100, true))} />
       <Kpi label="Custo total" value={money(summary.costCents, true)} helper={`${money(summary.cplCents)} por lead`} icon={CircleDollarSign} />
       <Kpi label="CAC" value={money(summary.cacCents)} helper="Custo por cliente pago" icon={TrendingDown} />
       <Kpi label="ROAS de mídia" value={multiple(summary.roas)} helper={`ROI total: ${ratio(summary.roi)}`} icon={Target} />
     </section>
-    <article className="elite-card p-5 sm:p-6"><div className="mb-5"><p className="section-kicker">Evolução por período</p><h3 className="text-xl font-semibold text-white">Receita confirmada e custo</h3></div>{view.timeline.length ? <ChartContainer config={chartConfig} className="h-[290px] w-full aspect-auto"><BarChart data={view.timeline} margin={{ left: 0, right: 8, top: 10 }}><CartesianGrid vertical={false} strokeDasharray="4 4" /><XAxis dataKey="period" tickLine={false} axisLine={false} tickFormatter={(value) => String(value).slice(5)} /><YAxis tickLine={false} axisLine={false} width={54} tickFormatter={(value) => `R$${Math.round(value / 1000)}k`} /><ChartTooltip content={<ChartTooltipContent />} /><defs><linearGradient id="elite-bar-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f3e3a3" /><stop offset="45%" stopColor="#c9a227" /><stop offset="100%" stopColor="#8a6d14" stopOpacity={0.85} /></linearGradient><linearGradient id="elite-bar-cost" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b95a7" /><stop offset="100%" stopColor="#3f4756" stopOpacity={0.85} /></linearGradient></defs><Bar dataKey="revenue" fill="url(#elite-bar-gold)" radius={[8, 8, 2, 2]} maxBarSize={56} /><Bar dataKey="cost" fill="url(#elite-bar-cost)" radius={[8, 8, 2, 2]} maxBarSize={56} /></BarChart></ChartContainer> : <EmptyState title="Ainda não há evolução" description="Registre atendimentos, pagamentos e custos no mesmo mês para criar a comparação." icon={Activity} />}</article>
+    {view.timeline.length ? <ChartFrame kicker="Evolução por mês" title="Estamos crescendo com lucro?" takeaway={revenueTakeaway(view.timeline)}
+      table={{ columns: ["Mês", "Receita confirmada", "Custo", "Resultado"], rows: view.timeline.map((point) => [monthLabel(point.period), money(point.revenue * 100, true), money(point.cost * 100, true), money((point.revenue - point.cost) * 100, true)]) }}>
+      <Suspense fallback={<ChartSkeleton height={300} />}><RevenueCostChart data={view.timeline} /></Suspense>
+    </ChartFrame> : <article className="elite-card"><EmptyState title="Ainda não há evolução" description="Registre atendimentos, pagamentos e custos no mesmo mês para criar a comparação." icon={Activity} /></article>}
     {canExport && <div className="flex justify-end"><Button onClick={() => { try { exportCsv(view); toast.success("Relatório exportado."); } catch { toast.error("Não foi possível exportar o relatório."); } }} variant="outline" className="border-white/10 bg-white/5 text-white"><Download /> Exportar cidades (CSV)</Button></div>}
     <CityTable cities={view.cities} />
   </div>;
@@ -297,7 +312,7 @@ function Missions({ data, onCompleteTask, saving, onCreate }: { data: DashboardD
 }
 
 function CostsPanel({ data, view, onCreate }: { data: DashboardData; view: DashboardView; onCreate?: () => void }) {
-  return <div className="space-y-5"><section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Kpi label="Custo total" value={money(view.summary.costCents, true)} helper="Todas as categorias" icon={CircleDollarSign} /><Kpi label="Mídia paga" value={money(view.summary.mediaCostCents, true)} helper="Parcela usada no ROAS" icon={Megaphone} /><Kpi label="CAC" value={money(view.summary.cacCents)} helper="Custo ÷ clientes pagos" icon={TrendingDown} /><Kpi label="ROAS" value={multiple(view.summary.roas)} helper="Receita de mídia ÷ custo de mídia" icon={Target} /></section><ChannelTable channels={view.channels} onCreate={onCreate} />{view.filteredCosts.length > 0 && <article className="elite-card overflow-hidden"><div className="border-b border-white/8 p-5"><p className="section-kicker">Lançamentos</p><h3 className="text-lg font-semibold text-white">Custos registrados</h3></div><div className="elite-table-stack overflow-x-auto"><Table><TableHeader><TableRow className="border-white/8"><TableHead>Período</TableHead><TableHead>Cidade</TableHead><TableHead>Categoria</TableHead><TableHead>Canal</TableHead><TableHead>Valor</TableHead><TableHead>Observação</TableHead></TableRow></TableHeader><TableBody>{view.filteredCosts.slice(0, 100).map((item) => <TableRow key={item.id} className="border-white/7"><TableCell data-label="Período">{item.period}</TableCell><TableCell data-label="Cidade">{data.cities.find((city) => city.id === item.cityId)?.name}</TableCell><TableCell data-label="Categoria">{item.category}</TableCell><TableCell data-label="Canal">{item.channel}</TableCell><TableCell data-label="Valor">{money(item.amountCents)}</TableCell><TableCell data-label="Observação">{item.note}</TableCell></TableRow>)}</TableBody></Table></div></article>}</div>;
+  return <div className="space-y-5"><section className="grid grid-cols-2 gap-3 lg:grid-cols-4"><Kpi label="Custo total" value={money(view.summary.costCents, true)} helper="Todas as categorias" icon={CircleDollarSign} /><Kpi label="Mídia paga" value={money(view.summary.mediaCostCents, true)} helper="Parcela usada no ROAS" icon={Megaphone} /><Kpi label="CAC" value={money(view.summary.cacCents)} helper="Custo ÷ clientes pagos" icon={TrendingDown} /><Kpi label="ROAS" value={multiple(view.summary.roas)} helper="Receita de mídia ÷ custo de mídia" icon={Target} /></section><ChannelTable channels={view.channels} onCreate={onCreate} />{view.filteredCosts.length > 0 && <article className="elite-card overflow-hidden"><div className="border-b border-white/8 p-5"><p className="section-kicker">Lançamentos</p><h3 className="text-lg font-semibold text-white">Custos registrados</h3></div><div className="elite-table-stack overflow-x-auto"><Table><TableHeader><TableRow className="border-white/8"><TableHead>Período</TableHead><TableHead>Cidade</TableHead><TableHead>Categoria</TableHead><TableHead>Canal</TableHead><TableHead>Valor</TableHead><TableHead>Observação</TableHead></TableRow></TableHeader><TableBody>{view.filteredCosts.slice(0, 100).map((item) => <TableRow key={item.id} className="border-white/7"><TableCell data-label="Período">{item.period}</TableCell><TableCell data-label="Cidade">{data.cities.find((city) => city.id === item.cityId)?.name}</TableCell><TableCell data-label="Categoria">{item.category}</TableCell><TableCell data-label="Canal">{item.channel}</TableCell><TableCell data-label="Valor">{money(item.amountCents)}</TableCell><TableCell data-label="Observação">{item.note}</TableCell></TableRow>)}</TableBody></Table></div></article>}</div>;
 }
 
 function RulesPanel({ data, view, open }: { data: DashboardData; view: DashboardView; open: (dialog: DialogState) => void }) {
@@ -315,8 +330,14 @@ function RulesPanel({ data, view, open }: { data: DashboardData; view: Dashboard
   </div>;
 }
 
+/** Gestão → Histórico: o que mudou, em linha do tempo por dia (os 50 registros mais recentes). */
 function HistoryPanel({ data }: { data: DashboardData }) {
-  return <article className="elite-card overflow-hidden">{data.auditLogs.length ? <div className="elite-table-stack overflow-x-auto"><Table><TableHeader><TableRow className="border-white/8"><TableHead>Data</TableHead><TableHead>Responsável</TableHead><TableHead>Ação</TableHead><TableHead>Registro</TableHead><TableHead>Resumo</TableHead></TableRow></TableHeader><TableBody>{data.auditLogs.slice(0, 50).map((item) => <TableRow key={item.id} className="border-white/7"><TableCell data-label="Data">{dateTime(item.createdAt)}</TableCell><TableCell data-label="Responsável">{item.actorEmail}{item.advisory && <Badge variant="outline" className="ml-2 border-gold/50 text-gold-light">Assessoria Elite</Badge>}</TableCell><TableCell data-label="Ação">{item.action}</TableCell><TableCell data-label="Registro">{item.entityType} {item.entityId ? `#${item.entityId}` : ""}</TableCell><TableCell data-label="Resumo">{item.summary}</TableCell></TableRow>)}</TableBody></Table></div> : <EmptyState title="Nenhuma alteração registrada" description="As próximas ações importantes aparecerão aqui." icon={ShieldCheck} />}</article>;
+  if (!data.auditLogs.length) return <article className="elite-card"><EmptyState title="Nenhuma alteração registrada" description="As próximas ações importantes aparecerão aqui." icon={ShieldCheck} /></article>;
+  return <article className="elite-card p-5 sm:p-6"><Timeline items={data.auditLogs.slice(0, 50).map((item) => ({
+    id: String(item.id), at: item.createdAt, tone: item.advisory ? "gold" : "neutral", title: item.summary,
+    detail: `${item.action} · ${item.entityType}${item.entityId ? ` #${item.entityId}` : ""}`,
+    meta: <>{item.actorEmail}{item.advisory && <Badge variant="outline" className="ml-2 border-gold/50 text-gold-light">Assessoria Elite</Badge>}</>,
+  }))} /></article>;
 }
 
 function AdvisoryPanel({ data }: { data: DashboardData }) {
@@ -335,9 +356,9 @@ function AmbassadorPortal({ data, view, open, saving, save }: { data: DashboardD
   const approvedContents = data.contents.filter((item) => item.status === "Aprovado");
   const pendingTasks = data.tasks.filter((item) => item.status === "Pendente");
   const qrUrl = link ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(link)}` : "";
-  return <main className="elite-grid min-h-screen bg-background text-zinc-100"><header className="border-b border-white/8 bg-background/95"><div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3"><div className="flex items-center gap-3"><img src="/elite-emblem.png" alt="Elite Frascaroli Academy — logo oficial" width={541} height={541} className="elite-brand-logo" /><div><p className="font-semibold text-white">Portal do Embaixador</p><p className="text-xs text-subtle">{ambassador.cityName} · {ambassador.code}</p></div></div><Button asChild variant="ghost" size="icon" className="text-zinc-400"><a href="/api/auth/logout" aria-label="Sair"><LogOut /></a></Button></div></header><div className="mx-auto max-w-6xl space-y-6 px-4 py-7">
+  return <main className="elite-grid min-h-screen bg-background text-zinc-100"><header className="border-b border-white/8 bg-background/95"><div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3"><div className="flex items-center gap-3"><img src="/elite-emblem-sm.png" alt="Elite Frascaroli Academy — logo oficial" width={128} height={128} className="elite-brand-logo" /><div><p className="font-semibold text-white">Portal do Embaixador</p><p className="text-xs text-subtle">{ambassador.cityName} · {ambassador.code}</p></div></div><Button asChild variant="ghost" size="icon" className="text-zinc-400"><a href="/api/auth/logout" aria-label="Sair"><LogOut /></a></Button></div></header><div className="mx-auto max-w-6xl space-y-6 px-4 py-7">
     <section className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end"><div><p className="section-kicker">Olá, {ambassador.name}</p><h1 className="text-3xl font-semibold tracking-tight text-white">Sua missão e seus resultados</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Use somente os materiais aprovados e registre contatos que autorizaram o atendimento.</p></div><div className="flex flex-wrap gap-2"><Button onClick={() => open({ name: "lead" })} className="bg-gold text-black"><Plus /> Novo atendimento</Button><Button onClick={() => open({ name: "ambassador-activity" })} variant="outline" className="border-white/10 bg-white/5 text-white"><Activity /> Registrar atividade</Button></div></section>
-    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Kpi label="Situação" value={ambassador.isActive ? "Ativo" : "Em preparação"} helper={ambassador.isActive ? "Todos os critérios de ativação foram atendidos" : "Conclua as etapas abaixo"} icon={BadgeCheck} /><Kpi label="Leads válidos" value={String(ambassador.validLeads)} helper="Contatos autorizados atribuídos a você" icon={Megaphone} /><Kpi label="Clientes pagos" value={String(ambassador.confirmedPayments)} helper={`${ratio(ambassador.conversion)} de conversão`} icon={Trophy} /><Kpi label="Receita atribuída" value={money(ambassador.revenueCents, true)} helper="Pagamentos confirmados" icon={Banknote} /></section>
+    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4"><Kpi label="Situação" value={ambassador.isActive ? "Ativo" : "Em preparação"} helper={ambassador.isActive ? "Todos os critérios de ativação foram atendidos" : "Conclua as etapas abaixo"} icon={BadgeCheck} /><Kpi label="Leads válidos" value={String(ambassador.validLeads)} helper="Contatos autorizados atribuídos a você" icon={Megaphone} /><Kpi label="Clientes pagos" value={String(ambassador.confirmedPayments)} helper={`${ratio(ambassador.conversion)} de conversão`} icon={Trophy} /><Kpi label="Receita atribuída" value={money(ambassador.revenueCents, true)} helper="Pagamentos confirmados" icon={Banknote} /></section>
     <section className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]"><article className="elite-card p-6"><p className="section-kicker">Ativação</p><h2 className="text-xl font-semibold text-white">Seu progresso</h2><div className="mt-6 space-y-5"><div><div className="mb-2 flex justify-between text-sm"><span>Treinamento</span><span>{ambassador.trainingProgress}%</span></div><Progress aria-label="Treinamento concluído" value={ambassador.trainingProgress} className="bg-white/8 [&_[data-slot=progress-indicator]]:bg-gold" /></div><div className="flex items-center justify-between gap-4 rounded-xl border border-white/8 p-4"><div><p className="font-medium text-white">Regras do programa</p><p className="mt-1 text-xs text-subtle">{ambassador.termsAcceptedAt ? `Aceitas em ${dateOnly(ambassador.termsAcceptedAt)}` : "Aceite pendente"}</p></div>{ambassador.termsAcceptedAt ? <BadgeCheck className="text-emerald-300" /> : <Button size="sm" disabled={saving} onClick={() => save("accept_terms", { ambassadorId: ambassador.id, accepted: true })} className="bg-gold text-black">Li e aceito</Button>}</div>{ambassador.trainingProgress < 100 && <Button disabled={saving} onClick={() => save("complete_training", { ambassadorId: ambassador.id })} variant="outline" className="w-full border-white/10 bg-white/5 text-white"><BookOpenCheck /> Concluir treinamento</Button>}</div></article><article className="elite-card p-6"><p className="section-kicker">Seu link</p><h2 className="text-xl font-semibold text-white">Indicação rastreada</h2>{link ? <div className="mt-5 flex flex-col gap-5 sm:flex-row"><img src={qrUrl} alt={`QR Code de ${ambassador.name}`} referrerPolicy="no-referrer" className="size-40 rounded-xl bg-white p-2" /><div className="min-w-0 flex-1"><p className="break-all rounded-xl border border-white/8 bg-black/20 p-3 text-xs leading-5 text-zinc-400">{link}</p><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" onClick={async () => { const copied = await copyText(link); if (copied) toast.success("Link copiado."); else toast.error("Não foi possível copiar. Selecione o link manualmente."); }} className="bg-gold text-black"><Copy /> Copiar link</Button><Button asChild size="sm" variant="outline" className="border-white/10 bg-white/5 text-white"><a href={qrUrl} target="_blank" rel="noreferrer"><ExternalLink /> Abrir QR</a></Button></div><p className="mt-4 text-xs leading-5 text-subtle">O QR contém somente o link e seu código. Não contém dados de leads.</p></div></div> : <EmptyState title="Link-base ainda não configurado" description="A coordenação precisa definir a página ou o WhatsApp de destino antes de divulgar." icon={Target} />}</article></section>
     <section className="grid gap-4 lg:grid-cols-2"><article className="elite-card overflow-hidden"><div className="border-b border-white/8 p-5"><p className="section-kicker">Semana atual</p><h2 className="text-lg font-semibold text-white">Missões pendentes</h2></div>{pendingTasks.length ? <div className="divide-y divide-white/7">{pendingTasks.map((item) => <div key={item.id} className="flex items-center justify-between gap-4 p-4"><div><p className="font-medium text-white">{item.title}</p><p className="mt-1 text-xs text-subtle">{item.category} · {dateOnly(item.dueDate)}</p></div><Button size="sm" disabled={saving} onClick={() => save("complete_task", { taskId: item.id })} variant="outline" className="border-white/10 bg-white/5 text-white"><Check /> Concluir</Button></div>)}</div> : <EmptyState title="Nenhuma missão pendente" description="As novas tarefas aparecerão aqui." icon={ClipboardCheck} />}</article><article className="elite-card overflow-hidden"><div className="border-b border-white/8 p-5"><p className="section-kicker">Biblioteca aprovada</p><h2 className="text-lg font-semibold text-white">Materiais para divulgar</h2></div>{approvedContents.length ? <div className="divide-y divide-white/7">{approvedContents.map((item) => <div key={item.id} className="flex items-center justify-between gap-4 p-4"><div><p className="font-medium text-white">{item.title}</p><p className="mt-1 text-xs text-subtle">{item.type} · {item.channel} · v{item.version}</p></div>{item.url && <Button asChild size="sm" variant="ghost" className="text-gold-soft"><a href={item.url} target="_blank" rel="noreferrer">Abrir <ExternalLink /></a></Button>}</div>)}</div> : <EmptyState title="Nenhum material aprovado" description="Não publique materiais que ainda estejam em revisão." icon={Library} />}</article></section>
   </div></main>;
@@ -391,6 +412,14 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const areasRef = useRef(areas);
   areasRef.current = areas;
 
+  // Depois de abrir, baixa em segundo plano as janelas e telas mais usadas.
+  useEffect(() => {
+    const w = window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    if (w.requestIdleCallback) { const id = w.requestIdleCallback(warmUp, { timeout: 4000 }); return () => w.cancelIdleCallback?.(id); }
+    const timer = setTimeout(warmUp, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Área e sub-aba ficam no endereço: links diretos e o botão voltar do navegador funcionam.
   useEffect(() => {
     const onPop = () => { const p = new URLSearchParams(window.location.search); setLocation(resolveLocation(areasRef.current, data.access, p.get("area"), p.get("ver"))); };
@@ -401,7 +430,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   function navigate(next: NavLocation, { invite = false }: { invite?: boolean } = {}) {
     setInviteRequest((value) => (invite ? value + 1 : 0));
     if (next.area === location.area && next.view === location.view) return;
-    setLocation(next);
+    // A tela nova entra com uma transição curta (a barra lateral e o topo ficam parados).
+    withViewTransition(() => flushSync(() => setLocation(next)));
     const url = new URL(window.location.href);
     url.searchParams.set("area", next.area);
     if (next.view) url.searchParams.set("ver", next.view); else url.searchParams.delete("ver");
@@ -437,7 +467,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   }
 
   if (data.access.role === "Embaixador") {
-    return <><AmbassadorPortal data={data} view={view} open={setDialog} saving={saving} save={save} /><WelcomeDialog access={data.access} onStart={() => undefined} /><ExpansionDialog dialog={dialog} data={data} saving={saving} onClose={() => setDialog(null)} onSave={save} /></>;
+    return <><AmbassadorPortal data={data} view={view} open={setDialog} saving={saving} save={save} /><WelcomeDialog access={data.access} onStart={() => undefined} />{dialog && <Suspense fallback={null}><ExpansionDialog dialog={dialog} data={data} saving={saving} onClose={() => setDialog(null)} onSave={save} /></Suspense>}</>;
   }
 
   const manage = MANAGEMENT_ROLES.includes(data.access.role);
@@ -477,8 +507,9 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const outline = "border-white/10 bg-white/5 text-white";
 
   return <>
-    <AppShell logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={{ ...(pending ? { vendas: pending } : {}), ...(data.subscriptionRequests ? { plataforma: data.subscriptionRequests } : {}) }} actions={actions} onNavigate={(next) => navigate(next)} search={<QuickSearch sales={canPipeline} onPick={(pick) => (pick.kind === "territory" ? openMapKey(pick.key) : openFollowup(pick.leadId))} />} notice={<><OfflineSync access={data.access} cities={data.cities} onSynced={refreshDashboard} /><InstallAppBanner /></>}>
-      <div className="space-y-5">
+    <AppShell logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={{ ...(pending ? { vendas: pending } : {}), ...(data.subscriptionRequests ? { plataforma: data.subscriptionRequests } : {}) }} actions={actions} onNavigate={(next) => navigate(next)} search={<QuickSearch sales={canPipeline} commands={{ areas, current: location, actions, onNavigate: (next) => navigate(next) }} onPick={(pick) => (pick.kind === "territory" ? openMapKey(pick.key) : openFollowup(pick.leadId))} />} notice={<><OfflineSync access={data.access} cities={data.cities} onSynced={refreshDashboard} /><InstallAppBanner /></>}>
+      {/* Telas que vêm sob demanda: enquanto o código delas chega, o esqueleto no formato da tela. */}
+      <Suspense fallback={<PanelSkeleton label="Carregando a tela…" />}><div className="space-y-5">
         {showFilters && <FilterBar data={data} filters={filters} onChange={setFilters} />}
         {attributionWarning && <div className="flex items-start gap-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><AlertTriangle className="mt-1 size-4 shrink-0" />Filtros por canal ou embaixador não usam fechamentos consolidados, pois eles não possuem atribuição individual. Cidades detalhadas continuam sendo calculadas normalmente.</div>}
 
@@ -516,12 +547,13 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
         {here === "plataforma/assinaturas" && <SubscriptionsPanel />}
         {here === "plataforma/pedidos" && <SubscriptionRequestsPanel onChanged={() => { refreshDashboard().catch(() => undefined); }} />}
         {here === "plataforma/assessores" && <AdvisorsPanel />}
-      </div>
+      </div></Suspense>
     </AppShell>
-    <ExpansionDialog dialog={dialog} data={data} saving={saving} onClose={() => setDialog(null)} onSave={save} />
-    <OpportunityDialog edit={opportunityEdit} data={data} onClose={() => setOpportunityEdit(null)} onSaved={() => { refreshDashboard().catch(() => toast.error("Salvo. Atualize a página para ver a lista atualizada.")); }} />
-    <HookPicker context={hookContext} onClose={() => setHookContext(null)} />
+    {/* Janelas: o código de cada uma vem quando ela abre (ou antes, em segundo plano — warmUp). */}
+    {dialog && <Suspense fallback={null}><ExpansionDialog dialog={dialog} data={data} saving={saving} onClose={() => setDialog(null)} onSave={save} /></Suspense>}
+    {opportunityEdit && <Suspense fallback={null}><OpportunityDialog edit={opportunityEdit} data={data} onClose={() => setOpportunityEdit(null)} onSaved={() => { refreshDashboard().catch(() => toast.error("Salvo. Atualize a página para ver a lista atualizada.")); }} /></Suspense>}
+    {hookContext && <Suspense fallback={null}><HookPicker context={hookContext} onClose={() => setHookContext(null)} /></Suspense>}
     <WelcomeDialog access={data.access} onStart={go} />
-    {canMap && <MappingWizard open={mappingOpen} data={data} onClose={() => setMappingOpen(false)} onSaved={refreshDashboard} />}
+    {canMap && mappingOpen && <Suspense fallback={null}><MappingWizard open data={data} onClose={() => setMappingOpen(false)} onSaved={refreshDashboard} /></Suspense>}
   </>;
 }

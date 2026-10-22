@@ -7,7 +7,7 @@
 1. **Três direções visuais prontas para você escolher** (capturas de Hoje e Mapa, no computador e no celular).
 2. **O maior problema de hoje é o lugar do mapa**: no computador, os filtros ocupam ~480 px antes do mapa aparecer; no celular, o mapa só aparece depois de rolar mais de uma tela inteira. A Etapa 2 resolve: mapa ocupando a tela, filtros numa gaveta e os modos em cima do mapa (como no protótipo).
 3. **A paleta de gráficos atual reprova** nos testes de cor (daltonismo, contraste e diferença entre cores vizinhas).
-4. **Quase todo o catálogo de gráficos dá para fazer com os dados de hoje.** Só 2 gráficos precisam de um histórico novo (começam a encher depois de implantados) e 1 tem dado fraco (sugiro cortar).
+4. **Quase todo o catálogo de gráficos dá para fazer com os dados de hoje.** Só 1 gráfico precisa de um histórico novo (a receita mensal das assinaturas, que começa a encher depois de implantada) e 1 tem dado fraco (sugiro cortar). *Correção feita na Etapa 1: o "tempo em cada etapa" tem histórico, sim (ver a tabela).*
 5. **No mapa, só a Varredura por áreas e o check-in de visita mudam o banco.** O resto usa o que já existe.
 
 ## 1. Direções visuais
@@ -75,7 +75,7 @@ As fontes pesam pouco (~15–24 KB cada peso) e ficam dentro do app, funcionando
 | Território → Cidades | cobertura e minigráficos por cidade | ✅ | locais validados ÷ mapeados; leads e vendas por cidade |
 | Vendas → Agenda | carga dos próximos 14 dias | ✅ | data do próximo retorno |
 | Vendas → Atendimentos | funil Mapeadas → Pagamento confirmado | ✅ | situação atual de cada pessoa e atendimento |
-| Vendas → Atendimentos | tempo em cada etapa | 🆕 | hoje a **troca de etapa não fica registrada com data** (o histórico guarda só os retornos). Precisa de um registro novo de mudança de etapa; recomendo criá-lo já na Etapa 1 para ir acumulando |
+| Vendas → Atendimentos | tempo em cada etapa | ✅ | **corrigido na Etapa 1:** a troca de etapa já ficava registrada, como texto, nas atividades "Etapa" (com data). A Etapa 1 criou um registro estruturado (`opportunity_stage_events`) e copiou esse histórico para ele, então o gráfico já nasce com os dados antigos |
 | Vendas → Pagamentos | confirmado × pendente por mês | ✅ | vendas com valor, situação e data do pagamento |
 | Rede → Embaixadores | ranking e funil do embaixador | ✅ | leads e vendas de cada embaixador |
 | Rede → Indicações | por origem e canal | ✅ | canal e origem dos leads; quem indicou quem |

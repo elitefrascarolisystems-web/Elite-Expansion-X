@@ -56,7 +56,7 @@ export function ClientPortal({ initialData, signOutPath }: { initialData: Portal
 
   return <main className="elite-auth min-h-screen text-zinc-100">
     <header className="sticky top-0 z-30 border-b border-white/8 bg-[#050504]/85 backdrop-blur-xl"><div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-      <div className="flex items-center gap-3"><Image src="/elite-emblem.png" alt="Elite Expansion X" width={541} height={541} className="elite-brand-logo" /><div><p className="font-semibold tracking-tight text-white">Elite Expansion X</p><p className="text-xs text-subtle">Portal do Mentorado · {m.organizationName}</p></div></div>
+      <div className="flex items-center gap-3"><Image src="/elite-emblem-sm.png" alt="Elite Expansion X" width={128} height={128} className="elite-brand-logo" /><div><p className="font-semibold tracking-tight text-white">Elite Expansion X</p><p className="text-xs text-subtle">Portal do Mentorado · {m.organizationName}</p></div></div>
       <Button asChild variant="ghost" size="icon" className="text-zinc-400 hover:bg-white/5 hover:text-white"><a href={signOutPath} aria-label="Sair"><LogOut /></a></Button>
     </div></header>
 

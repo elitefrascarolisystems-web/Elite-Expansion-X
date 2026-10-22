@@ -7,10 +7,10 @@
  * aparelho (lib/offline-queue.ts) e envia quando o sinal volta.
  * Ao sair da plataforma, as telas guardadas são apagadas.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC = `elite-static-${VERSION}`;
 const PAGES = `elite-pages-${VERSION}`;
-const SHELL = ["/offline", "/manifest.webmanifest", "/app/icon-192.png", "/elite-emblem.png"];
+const SHELL = ["/offline", "/manifest.webmanifest", "/app/icon-192.png", "/elite-emblem.png", "/elite-emblem-sm.png", "/fonts/inter.woff2", "/fonts/sora.woff2", "/fonts/space-grotesk.woff2"];
 const MAX_STATIC = 250;
 
 self.addEventListener("install", (event) => {

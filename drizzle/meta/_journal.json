@@ -176,6 +176,13 @@
       "when": 1792638479341,
       "tag": "0024_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1792708456207,
+      "tag": "0025_opportunity_stage_events",
+      "breakpoints": true
     }
   ]
 }

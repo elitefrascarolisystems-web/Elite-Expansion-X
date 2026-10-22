@@ -1,9 +1,10 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- emblema estático e pequeno, igual ao do cabeçalho anterior. */
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { BarChart3, Building2, ChevronsLeft, ChevronsRight, HandCoins, LogOut, Map, Menu, Network, Plus, Settings2, Sun, type LucideIcon } from "lucide-react";
 
 import { OrganizationSwitcher } from "@/app/organization-switcher";
+import { markInteractive } from "@/components/elite/count-up";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -37,6 +38,8 @@ export function AppShell({ logo, access, userName, signOutPath, areas, location,
   notice?: ReactNode; children: ReactNode;
 }) {
   const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
+  // Depois da primeira pintura, os números dos indicadores passam a contar ao trocar de área.
+  useEffect(() => { markInteractive(); }, []);
   const [moreOpen, setMoreOpen] = useState(false);
   const current = areas.find((area) => area.id === location.area) ?? areas[0];
   const AreaIcon = AREA_ICONS[current.id];
@@ -49,9 +52,11 @@ export function AppShell({ logo, access, userName, signOutPath, areas, location,
 
   const badge = (id: AreaId, compact = false) => badges[id] ? <span className={`elite-nav-badge ${compact ? "is-compact" : ""}`} aria-label={`${badges[id]} pendentes`}>{badges[id]}</span> : null;
 
-  return <div className={`elite-shell ${collapsed ? "is-collapsed" : ""}`}>
+  // Fundo de "painel de comando" só em Hoje e no Mapa (app/globals.css).
+  const scene = location.area === "hoje" ? "hoje" : location.area === "territorio" && location.view === "mapa" ? "mapa" : undefined;
+  return <div className={`elite-shell ${collapsed ? "is-collapsed" : ""}`} data-scene={scene}>
     <aside className="elite-sidebar" aria-label="Áreas da plataforma">
-      <div className="elite-sidebar-brand"><img src={logo ?? "/elite-emblem.png"} alt={logo ? `Logo da ${access.organizationName}` : "Elite Frascaroli Academy — logo oficial"} width={541} height={541} className="elite-brand-logo" />{!collapsed && (client
+      <div className="elite-sidebar-brand"><img src={logo ?? "/elite-emblem-sm.png"} alt={logo ? `Logo da ${access.organizationName}` : "Elite Frascaroli Academy — logo oficial"} width={128} height={128} className="elite-brand-logo" />{!collapsed && (client
         ? <div className="min-w-0"><p className="truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-subtle">Elite Expansion X</p><p className="elite-sidebar-org line-clamp-2 break-words" title={access.organizationName}>{access.organizationName}</p></div>
         : <div className="min-w-0"><p className="truncate font-semibold tracking-tight text-white">Elite Expansion X</p><p className="truncate text-xs text-subtle">{access.organizationName}</p></div>)}</div>
       <nav className="elite-sidebar-nav">{areas.map((area) => { const Icon = AREA_ICONS[area.id]; const active = area.id === current.id; return <button key={area.id} type="button" onClick={() => go(area)} aria-current={active ? "page" : undefined} title={collapsed ? area.label : undefined} className={`elite-nav-item ${active ? "is-active" : ""}`}><Icon className="size-[18px] shrink-0" />{!collapsed && <span className="flex-1 truncate text-left">{area.label}</span>}{badge(area.id, collapsed)}</button>; })}</nav>
@@ -66,7 +71,7 @@ export function AppShell({ logo, access, userName, signOutPath, areas, location,
 
     <div className="elite-shell-main">
       <header className="elite-topbar">
-        <div className="flex shrink-0 items-center lg:hidden"><img src={logo ?? "/elite-emblem.png"} alt={logo ? `Logo da ${access.organizationName}` : "Elite Frascaroli Academy — logo oficial"} width={541} height={541} className="elite-brand-logo" /></div>
+        <div className="flex shrink-0 items-center lg:hidden"><img src={logo ?? "/elite-emblem-sm.png"} alt={logo ? `Logo da ${access.organizationName}` : "Elite Frascaroli Academy — logo oficial"} width={128} height={128} className="elite-brand-logo" /></div>
         <div className="ml-auto flex min-w-0 items-center gap-2">
           {search}
           <OrganizationSwitcher access={access} />

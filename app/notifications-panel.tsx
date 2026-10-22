@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { BellRing, CircleCheck, LoaderCircle, Mail, Send, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
+import { Segmented } from "@/components/elite/segmented";
+import { PanelSkeleton } from "@/components/elite/skeletons";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { NOTIFICATION_LABEL, SEND_TIME, type EmailContent } from "@/lib/notifications";
@@ -75,14 +77,14 @@ export function NotificationsPanel() {
   }
 
   if (error) return <p role="alert" className="elite-card p-6 text-sm text-red-200">{error}</p>;
-  if (!data) return <p role="status" className="elite-card flex items-center gap-2 p-6 text-sm text-zinc-400"><LoaderCircle className="size-4 animate-spin" /> Carregando avisos…</p>;
+  if (!data) return <PanelSkeleton label="Carregando avisos…" />;
   const preview = tab === "daily" ? data.preview.daily : data.preview.weekly;
 
   return <div className="space-y-5">
     <section className={`elite-card grid gap-3 p-5 ${data.configured ? "border-emerald-400/25" : "border-amber-300/25"}`}>
       <div className="flex flex-wrap items-start gap-3">
         {data.configured ? <CircleCheck className="mt-0.5 size-5 text-emerald-300" aria-hidden /> : <TriangleAlert className="mt-0.5 size-5 text-amber-200" aria-hidden />}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[14rem] flex-1">
           <h2 className="font-semibold text-white">{data.configured ? "Envio ligado" : "Envio ainda desligado"}</h2>
           <p className="text-sm leading-6 text-zinc-400">{data.configured
             ? `Todo dia às ${SEND_TIME} (Brasília) sai o lembrete dos retornos; às segundas, também o resumo semanal da gestão.`
@@ -97,7 +99,7 @@ export function NotificationsPanel() {
     <section className="elite-card overflow-hidden">
       <div className="flex flex-wrap items-center gap-2 border-b border-white/8 px-5 py-3">
         <Mail className="size-4 text-gold-soft" aria-hidden /><h2 className="mr-auto font-semibold text-white">Como chega o e-mail</h2>
-        {(["daily", "weekly"] as const).map((key) => <Button key={key} size="sm" variant={tab === key ? "secondary" : "ghost"} onClick={() => setTab(key)}>{key === "daily" ? "Lembrete diário" : "Resumo semanal"}</Button>)}
+        <Segmented size="sm" label="Qual e-mail ver" value={tab} onChange={setTab} options={[{ value: "daily", label: "Lembrete diário" }, { value: "weekly", label: "Resumo semanal" }]} />
       </div>
       {preview ? <>
         <p className="border-b border-white/8 px-5 py-2 text-sm text-zinc-300"><span className="text-subtle">Assunto: </span>{preview.subject}</p>

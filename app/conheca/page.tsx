@@ -38,7 +38,7 @@ export default function ConhecaPage() {
       <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
         <div className="hidden sm:block"><Wordmark /></div>
         {/* No celular, o nome por extenso quebraria em três linhas ao lado do botão. */}
-        <div className="flex min-w-0 items-center gap-2 sm:hidden"><Image src="/elite-emblem.png" alt="" width={541} height={541} className="size-9 shrink-0" /><p className="truncate text-base font-semibold tracking-[0.08em] text-gold-light">ELITE EXPANSION <span className="text-gold">X</span></p></div>
+        <div className="flex min-w-0 items-center gap-2 sm:hidden"><Image src="/elite-emblem-sm.png" alt="" width={128} height={128} className="size-9 shrink-0" /><p className="truncate text-base font-semibold tracking-[0.08em] text-gold-light">ELITE EXPANSION <span className="text-gold">X</span></p></div>
         <Link href="/entrar" className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white hover:bg-white/10"><span className="sm:hidden">Entrar</span><span className="hidden sm:inline">Já sou cliente</span></Link>
       </header>
 

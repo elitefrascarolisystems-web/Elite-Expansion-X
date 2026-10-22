@@ -13,7 +13,7 @@ export function AgendaBanner({ agenda, onOpen, onAll }: { agenda: AgendaView; on
   return <section aria-label="Sua agenda" className={`elite-card overflow-hidden ${agenda.late ? "border-red-400/25" : "border-gold/25"}`}>
     <div className="relative flex flex-wrap items-center gap-3 border-b border-white/8 py-4 pl-5 pr-12">
       <AlarmClock className={`size-5 ${agenda.late ? "text-red-300" : "text-gold-soft"}`} aria-hidden />
-      <div className="mr-auto"><h2 className="font-semibold text-white">Sua agenda</h2><p className="text-sm text-zinc-400">{[agenda.late && `${agenda.late} ${agenda.late === 1 ? "retorno atrasado" : "retornos atrasados"}`, agenda.today && `${agenda.today} para hoje`, agenda.upcoming && `${agenda.upcoming} nos próximos dias`].filter(Boolean).join(" · ")}</p></div>
+      <div className="mr-auto"><h2 className="font-semibold text-white">Sua agenda{agenda.late ? <span className="elite-live ml-2 align-middle text-red-300" aria-hidden /> : null}</h2><p className="text-sm text-zinc-400">{[agenda.late && `${agenda.late} ${agenda.late === 1 ? "retorno atrasado" : "retornos atrasados"}`, agenda.today && `${agenda.today} para hoje`, agenda.upcoming && `${agenda.upcoming} nos próximos dias`].filter(Boolean).join(" · ")}</p></div>
       <Button size="sm" onClick={onAll} className="bg-gold text-black">Abrir a agenda <ArrowRight /></Button>
       <Button size="icon" variant="ghost" aria-label="Esconder até a próxima entrada" onClick={() => setHidden(true)} className="absolute right-2 top-3 text-subtle"><X /></Button>
     </div>

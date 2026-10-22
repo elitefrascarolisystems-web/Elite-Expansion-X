@@ -32,6 +32,7 @@ export const MAPPER_GUIDE: GuideSection[] = [
     items: [
       "Instale o app: no Android (Chrome), toque em “Instalar” na faixa do topo; no iPhone (Safari), Compartilhar → Adicionar à Tela de Início. O ícone Elite X abre a plataforma em tela cheia.",
       "Antes de ir a campo, abra a plataforma uma vez com internet, em Território. Assim ela abre no celular mesmo sem sinal.",
+      "Para achar alguém rápido, toque na lupa no topo (no computador, Ctrl+K): busque pessoa, local, atendimento ou cidade, ou digite o nome de uma tela (ex.: agenda) para ir até ela.",
       "Sem internet, o mapeamento guiado continua: locais e pessoas ficam guardados no celular com o aviso “Aguardando envio” e são enviados sozinhos quando o sinal voltar.",
       "Sem sinal não dá para buscar o endereço: deixe o local pendente e marque o ponto no mapa depois.",
       "Se aparecer “precisa da sua revisão” (por exemplo, nome repetido na cidade), toque em Ver e decida: enviar mesmo assim ou descartar. Envie tudo antes de sair da plataforma.",

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Copy, FileUp, LoaderCircle, MessageSquareQuote, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { PanelSkeleton } from "@/components/elite/skeletons";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { copyText } from "@/lib/copy-text";
@@ -49,7 +50,7 @@ export function HooksBank() {
   const reload = () => setRevision((value) => value + 1);
 
   if (error) return <p role="alert" className="elite-card p-6 text-sm text-amber-100">{error}</p>;
-  if (!data) return <p role="status" className="elite-card flex items-center gap-2 p-6 text-sm text-zinc-400"><LoaderCircle className="size-4 animate-spin" /> Carregando ganchos…</p>;
+  if (!data) return <PanelSkeleton label="Carregando ganchos…" />;
 
   return <div className="space-y-5">
     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">

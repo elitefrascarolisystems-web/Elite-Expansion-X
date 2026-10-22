@@ -376,6 +376,8 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
         db.prepare(`INSERT INTO commercial_activities(id,organization_id,city_id,opportunity_id,owner_email,kind,note,activity_date,created_at)
           SELECT lower(hex(randomblob(16))),organization_id,city_id,id,owner_email,'Etapa',stage||' → Ganho (pagamento confirmado)',?,?
           FROM opportunities WHERE lead_id=? AND stage NOT IN ('Ganho','Perdido')`).bind(timestamp.slice(0, 10), timestamp, leadId),
+        db.prepare(`INSERT INTO opportunity_stage_events(id,organization_id,opportunity_id,from_stage,to_stage,actor_email,source,created_at)
+          SELECT lower(hex(randomblob(16))),organization_id,id,stage,'Ganho',?,'Pagamento confirmado',? FROM opportunities WHERE lead_id=? AND stage NOT IN ('Ganho','Perdido')`).bind(access.email, timestamp, leadId),
         db.prepare("UPDATE opportunities SET stage='Ganho', updated_at=?, version=version+1 WHERE lead_id=? AND stage NOT IN ('Ganho','Perdido')").bind(timestamp, leadId),
       ]);
     }

@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Building2, Copy, LoaderCircle, Mail, MessageCircle, Trash2 } from "lucide-react";
+import { Building2, Copy, Mail, MessageCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PlanDialog } from "@/app/subscriptions-panel";
+import { PanelSkeleton } from "@/components/elite/skeletons";
 import { Button } from "@/components/ui/button";
 import { copyText } from "@/lib/copy-text";
 import { REQUEST_STATUSES, type RequestStatus, type SubscriptionRequestRow } from "@/lib/subscription-requests";
@@ -50,7 +51,7 @@ export function SubscriptionRequestsPanel({ onChanged }: { onChanged?: () => voi
   }
 
   if (error) return <p role="alert" className="elite-card p-6 text-sm text-red-200">{error}</p>;
-  if (!rows) return <p role="status" className="elite-card flex items-center gap-2 p-6 text-sm text-zinc-400"><LoaderCircle className="size-4 animate-spin" /> Carregando pedidos…</p>;
+  if (!rows) return <PanelSkeleton label="Carregando pedidos…" />;
 
   return <div className="space-y-5">
     <section className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">

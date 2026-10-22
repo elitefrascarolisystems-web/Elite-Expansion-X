@@ -11,7 +11,7 @@ export default function MapperGuidePage() {
     <main className="elite-grid min-h-screen bg-background px-4 py-8 text-zinc-100 sm:px-6 lg:py-12">
       <article className="mx-auto max-w-3xl">
         <header className="mb-8 flex items-center gap-4">
-          <Image src="/elite-emblem.png" alt="Elite Frascaroli Academy — logo oficial" width={541} height={541} className="elite-brand-logo" />
+          <Image src="/elite-emblem-sm.png" alt="Elite Frascaroli Academy — logo oficial" width={128} height={128} className="elite-brand-logo" />
           <div><p className="section-kicker">Elite Expansion X</p><h1 className="text-3xl font-semibold tracking-tight text-white">Guia do mapeador</h1><p className="mt-1 text-sm text-zinc-400">O que fazer, em que ordem e as regras do mapeamento.</p></div>
         </header>
         <div className="grid gap-4">

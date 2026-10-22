@@ -26,9 +26,11 @@ test("ships the territorial map and existing expansion identity", async () => {
   assert.match(navigation, /id: "mapa", label: "Mapa"/);
   assert.match(clientFiles, /<TerritorialMap /);
   assert.match(mapSource, /Mapa territorial/);
-  assert.match(clientFiles, /elite-emblem\.png/);
+  // Emblema oficial (a versão de 128 px nos lugares em que ele aparece pequeno).
+  assert.match(clientFiles, /elite-emblem(-sm)?\.png/);
   assert.match(await readFile(new URL("../app/brand-hero.tsx", import.meta.url), "utf8"), /elite-emblem\.png/, 'entrada usa o emblema sem fundo');
   assert.match(mapSource, /nunca na residência/);
   assert.match(mapSource, /Não informe residência/);
-  assert.match(layout, /elite-academy-official\.png/);
+  // Ícone da aba: a arte oficial em SVG (o PNG de 1080 px saiu do ícone por peso; o PNG leve é o do app).
+  assert.match(layout, /elite-academy-official\.svg/);
 });

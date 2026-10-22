@@ -107,6 +107,8 @@ export async function portalAction(access: AccessView, action: string, input: un
           .bind(opportunityId, a.organizationId, v.cityId, Number(lead.id), str(owner.email).toLowerCase(), `Contatar indicação de ${firstName}${v.note ? `: ${v.note}` : ""}`.slice(0, 500), spDay(), a.email, now, now),
         db.prepare("INSERT INTO commercial_activities(id,organization_id,city_id,opportunity_id,owner_email,kind,note,activity_date,created_at) VALUES(?,?,?,?,?,'Etapa',?,?,?)")
           .bind(crypto.randomUUID(), a.organizationId, v.cityId, opportunityId, str(owner.email).toLowerCase(), `Indicação recebida pelo portal (${firstName})`, now.slice(0, 10), now),
+        db.prepare("INSERT INTO opportunity_stage_events(id,organization_id,opportunity_id,from_stage,to_stage,actor_email,source,created_at) VALUES(?,?,?,NULL,'Novo',?,'Indicação',?)")
+          .bind(crypto.randomUUID(), a.organizationId, opportunityId, a.email, now),
       ]);
     }
     await audit(db, a.organizationId, a.email, "portal_referral", "lead", Number(lead?.id ?? 0), `Indicação recebida pelo portal: ${v.name}.`);

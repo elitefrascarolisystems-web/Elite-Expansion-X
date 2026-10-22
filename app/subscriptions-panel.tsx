@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Building2, CircleDollarSign, ExternalLink, LoaderCircle, Pause, Pencil, Play, Plus, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
+import { Meter } from "@/components/elite/meter";
+import { PanelSkeleton } from "@/components/elite/skeletons";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -96,7 +98,7 @@ export function SubscriptionsPanel() {
   }, [data]);
 
   if (error) return <p role="alert" className="elite-card p-6 text-sm text-red-200">{error}</p>;
-  if (!data) return <p role="status" className="elite-card flex items-center gap-2 p-6 text-sm text-zinc-400"><LoaderCircle className="size-4 animate-spin" /> Carregando assinaturas…</p>;
+  if (!data) return <PanelSkeleton label="Carregando assinaturas…" />;
   const names = new Map(data.subscribers.map((s) => [s.id, s.name]));
 
   return <div className="space-y-5">
@@ -225,7 +227,7 @@ function StatusDialog({ target, onClose, onSaved }: { target: SubscriberRow | nu
 
 /** O plano visto pela própria empresa assinante (Gestão → Plano). */
 export function PlanCard({ plan, organization }: { plan: PlanUsage; organization: string }) {
-  const meter = (used: number, limit: number | null, label: string) => <div><div className="flex justify-between text-xs"><span className="text-zinc-400">{label}</span><span className={limit !== null && used >= limit ? "text-amber-200" : "text-white"}>{used}{limit !== null ? ` de ${limit}` : " · sem limite"}</span></div>{limit !== null && <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/8"><div className="h-full rounded-full bg-gold" style={{ width: `${Math.min(100, Math.round((used / Math.max(limit, 1)) * 100))}%` }} /></div>}</div>;
+  const meter = (used: number, limit: number | null, label: string) => <div><div className="flex justify-between text-xs"><span className="text-zinc-400">{label}</span><span className={limit !== null && used >= limit ? "text-amber-200" : "text-white"}>{used}{limit !== null ? ` de ${limit}` : " · sem limite"}</span></div>{limit !== null && <div className="mt-1.5"><Meter variant="bar" value={used} max={Math.max(limit, 1)} label={label} valueText={`${used} de ${limit}`} /></div>}</div>;
   return <article className="elite-card grid gap-5 p-6 lg:grid-cols-[1fr_1fr]">
     <div><p className="section-kicker">Assinatura</p><h3 className="text-xl font-semibold text-white">{plan.plan || `Plano da ${organization}`}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">A plataforma de expansão completa, só da {organization}. Mentorados não ocupam vaga da equipe. Para ampliar o plano, fale com a Elite.</p>
       <ul className="mt-3 grid gap-1 text-sm">{PLAN_FEATURES.map(([key, label]) => <li key={key} className={plan[key] ? "text-zinc-200" : "text-subtle line-through"}>{plan[key] ? "✓" : "—"} {label}</li>)}</ul></div>

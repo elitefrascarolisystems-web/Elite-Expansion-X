@@ -4,7 +4,7 @@ import { ArrowRight, BookOpen, Check, Compass, LoaderCircle, MapPin, ShieldCheck
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
+import { Meter } from "@/components/elite/meter";
 import { isPortalRole, type AccessView, type DashboardData } from "@/lib/expansion-types";
 import { tenantFetch } from "@/lib/tenant-request";
 
@@ -40,9 +40,9 @@ export function GettingStarted({ data, onGo }: { data: DashboardData; onGo: (tab
   const next = steps.find((step) => !step.done);
   const [open, setOpen] = useState(done < steps.length);
   return <section className="elite-card overflow-hidden" aria-label="Primeiros passos">
-    <div className="flex flex-wrap items-center gap-4 p-5"><div className="mr-auto"><p className="section-kicker">Primeiros passos</p><h2 className="text-xl font-semibold text-white">{next ? `Próximo passo: ${next.title.toLowerCase()}` : "Base pronta: siga mapeando e vendendo"}</h2><p className="mt-1 text-sm text-zinc-400">{done} de {steps.length} etapas concluídas. Siga nesta ordem: cada etapa usa o que foi cadastrado na anterior.</p></div>
+    <div className="flex flex-wrap items-center gap-4 p-5"><Meter value={done} max={steps.length} label="Primeiros passos concluídos" valueText={`${done}/${steps.length}`} size={60} /><div className="mr-auto min-w-0"><p className="section-kicker">Primeiros passos</p><h2 className="text-xl font-semibold text-white">{next ? `Próximo passo: ${next.title.toLowerCase()}` : "Base pronta: siga mapeando e vendendo"}</h2><p className="mt-1 text-sm text-zinc-400">{done} de {steps.length} etapas concluídas. Siga nesta ordem: cada etapa usa o que foi cadastrado na anterior.</p></div>
       <div className="flex flex-wrap gap-2">{next && <Button onClick={() => onGo(next.tab)} className="bg-gold text-black">{next.action} <ArrowRight /></Button>}<Button asChild variant="outline" className="border-white/10 bg-white/5 text-white"><a href={GUIDE_PATH} target="_blank" rel="noreferrer"><BookOpen /> Guia do mapeador</a></Button><Button variant="ghost" className="text-zinc-400" onClick={() => setOpen((value) => !value)} aria-expanded={open}>{open ? "Recolher" : "Ver etapas"}</Button></div>
-      <Progress aria-label="Primeiros passos concluídos" value={(done / steps.length) * 100} className="h-1.5 w-full bg-white/8" /></div>
+    </div>
     {open && <ol className="grid gap-px border-t border-white/8 bg-white/8 sm:grid-cols-2 xl:grid-cols-4">{steps.map((step, index) => <li key={step.title} className="flex flex-col gap-2 bg-surface p-4">
       <div className="flex items-center gap-2"><span className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold ${step.done ? "bg-emerald-400/15 text-emerald-300" : step === next ? "bg-gold text-black" : "bg-white/8 text-zinc-400"}`}>{step.done ? <Check className="size-3.5" /> : index + 1}</span><h3 className="font-medium text-white">{step.title}</h3></div>
       <p className="flex-1 text-xs leading-5 text-zinc-400">{step.detail}</p>

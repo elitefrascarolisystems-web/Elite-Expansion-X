@@ -329,6 +329,11 @@ export const commercialActivities = sqliteTable('commercial_activities', {
  id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),cityId:integer('city_id').notNull().references(()=>cities.id),
  opportunityId:text('opportunity_id').references(()=>opportunities.id),ownerEmail:text('owner_email').notNull(),kind:text('kind').notNull(),note:text('note').notNull(),activityDate:text('activity_date').notNull(),createdAt:text('created_at').notNull(),
 },t=>[index('commercial_activity_day').on(t.organizationId,t.ownerEmail,t.activityDate)]);
+/** Cada troca de etapa de um atendimento, com data e autor — base do gráfico "tempo em cada etapa". */
+export const opportunityStageEvents = sqliteTable('opportunity_stage_events', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),opportunityId:text('opportunity_id').notNull().references(()=>opportunities.id),
+ fromStage:text('from_stage'),toStage:text('to_stage').notNull(),actorEmail:text('actor_email').notNull(),source:text('source').notNull(),createdAt:text('created_at').notNull(),
+},t=>[index('opportunity_stage_events_scope').on(t.organizationId,t.opportunityId,t.createdAt)]);
 export const sellerGoals = sqliteTable('seller_goals', {
  id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),cityId:integer('city_id').notNull().references(()=>cities.id),ownerEmail:text('owner_email').notNull(),day:text('day').notNull(),cold:integer('cold').notNull(),hot:integer('hot').notNull(),contacts:integer('contacts').notNull(),updatedBy:text('updated_by').notNull(),updatedAt:text('updated_at').notNull(),
 },t=>[uniqueIndex('seller_goals_day').on(t.organizationId,t.cityId,t.ownerEmail,t.day)]);
