@@ -21,7 +21,9 @@
     "backup": "node scripts/backup.js",
     "backup:restore": "node scripts/restore.js",
     "db:local": "node scripts/pg-local.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "ref:baixar": "node scripts/referencias.js baixar",
+    "ref:quadros": "node scripts/referencias.js quadros"
   },
   "license": "UNLICENSED",
   "dependencies": {
