@@ -122,3 +122,10 @@ Há ainda um alerta de **contraste**: o azul-petróleo some no fundo escuro. A E
 4. **Foto da fachada**: agora, depois ou nunca (tem custo de armazenamento).
 
 Com essas respostas, sigo para a **Etapa 1 (fundação futurista)**.
+
+## Decisões (22/10/2026)
+
+- **Visual:** A (Noite Dourada 2.0) como base de toda a plataforma; estilo C (Sala de Comando) só na tela da TV e nos números grandes dos indicadores.
+- **Busca de endereço em campo e em lote:** usar a chave do MapTiler, a mesma do satélite, com cache.
+- **Mapa de calor dia × hora:** cortado.
+- **Foto da fachada:** depois, decidida com o uso real dos modos do mapa.
