@@ -56,8 +56,8 @@ export function navigationFor(access: AccessView, { hasAdvisors }: NavOptions): 
       ] : [],
     },
     {
-      id: "plataforma", label: "Plataforma", description: "Empresas assinantes e a equipe de assessoria da Elite.",
-      views: access.isPlatformOwner ? [{ id: "assinaturas", label: "Assinaturas" }, { id: "assessores", label: "Assessores" }] : [],
+      id: "plataforma", label: "Plataforma", description: "Empresas assinantes, pedidos vindos da página pública e a equipe de assessoria da Elite.",
+      views: access.isPlatformOwner ? [{ id: "assinaturas", label: "Assinaturas" }, { id: "pedidos", label: "Pedidos de assinatura" }, { id: "assessores", label: "Assessores" }] : [],
     },
   ];
   // "Hoje" não tem sub-abas; as outras áreas só aparecem se tiverem alguma.

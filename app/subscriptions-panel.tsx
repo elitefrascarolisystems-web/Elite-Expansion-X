@@ -144,7 +144,8 @@ export function SubscriptionsPanel() {
   </div>;
 }
 
-function PlanDialog({ target, onClose, onSaved }: { target: SubscriberRow | "new" | null; onClose: () => void; onSaved: (data: SubscriptionsData, created: boolean) => void }) {
+/** `prefill`: dados vindos de um pedido da página /conheca (Plataforma → Pedidos de assinatura). */
+export function PlanDialog({ target, prefill, onClose, onSaved }: { target: SubscriberRow | "new" | null; prefill?: { name: string; ownerName: string; ownerEmail: string; notes: string }; onClose: () => void; onSaved: (data: SubscriptionsData, created: boolean, organizationId?: number) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [requestId] = useState(() => crypto.randomUUID());
@@ -166,7 +167,7 @@ function PlanDialog({ target, onClose, onSaved }: { target: SubscriberRow | "new
       const result = isNew
         ? await post("create", { ...plan, requestId, name: f.get("name"), ownerName: f.get("ownerName"), ownerEmail: f.get("ownerEmail") })
         : await post("save", { ...plan, organizationId: row!.id });
-      onSaved(result.data, isNew);
+      onSaved(result.data, isNew, result.result?.organizationId);
     } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível salvar. Confira a conexão e tente de novo."); }
     finally { setBusy(false); }
   }
@@ -175,9 +176,9 @@ function PlanDialog({ target, onClose, onSaved }: { target: SubscriberRow | "new
     <DialogHeader><DialogTitle>{isNew ? "Nova empresa assinante" : `Plano da ${row?.name ?? ""}`}</DialogTitle><DialogDescription className="text-zinc-400">{isNew ? "Cria o ambiente da empresa, vazio e só dela, já com o plano. Depois você entra nele e gera o link de acesso do responsável." : "Os limites valem na hora. Quem já está cadastrado continua com acesso; só não entram pessoas ou cidades novas além do limite."}</DialogDescription></DialogHeader>
     {target && <form key={row?.id ?? "new"} onSubmit={submit} className="grid gap-3 text-sm">
       {isNew && <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid gap-1 sm:col-span-2">Nome da empresa<input name="name" required minLength={2} maxLength={120} className="commercial-input" placeholder="Ex.: Academia Horizonte" /></label>
-        <label className="grid gap-1">Nome do responsável<input name="ownerName" required minLength={2} maxLength={120} className="commercial-input" /></label>
-        <label className="grid gap-1">E-mail do responsável<input name="ownerEmail" type="email" required maxLength={254} className="commercial-input" /></label>
+        <label className="grid gap-1 sm:col-span-2">Nome da empresa<input name="name" required minLength={2} maxLength={120} defaultValue={prefill?.name} className="commercial-input" placeholder="Ex.: Academia Horizonte" /></label>
+        <label className="grid gap-1">Nome do responsável<input name="ownerName" required minLength={2} maxLength={120} defaultValue={prefill?.ownerName} className="commercial-input" /></label>
+        <label className="grid gap-1">E-mail do responsável<input name="ownerEmail" type="email" required maxLength={254} defaultValue={prefill?.ownerEmail} className="commercial-input" /></label>
       </div>}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1">Plano<input name="plan" maxLength={60} defaultValue={row?.plan ?? ""} placeholder="Ex.: Expansão Pro" className="commercial-input" /></label>
@@ -188,7 +189,7 @@ function PlanDialog({ target, onClose, onSaved }: { target: SubscriberRow | "new
         <label className="grid gap-1">Cidades ativas<input name="cityLimit" type="number" min={1} max={100000} defaultValue={row?.cityLimit ?? ""} placeholder="Sem limite" className="commercial-input" /><span className="text-xs text-subtle">Cidades planejadas não contam.{row ? ` Hoje: ${row.cities}.` : ""}</span></label>
       </div>
       <fieldset className="grid gap-2 rounded-lg border border-white/8 p-3"><legend className="px-1 text-xs text-zinc-400">Recursos incluídos</legend>{PLAN_FEATURES.map(([key, label]) => <label key={key} className="flex items-center gap-2 text-zinc-200"><input type="checkbox" name={key} defaultChecked={row ? row[key] : true} />{label}</label>)}<p className="text-xs text-subtle">Mapa, cidades, equipe, vendas, portal de mentorados e indicadores fazem parte de todo plano.</p></fieldset>
-      <label className="grid gap-1">Anotações internas<Textarea name="notes" maxLength={1000} defaultValue={row?.notes ?? ""} placeholder="Forma de pagamento, contato financeiro, combinados…" className="commercial-input min-h-20" /></label>
+      <label className="grid gap-1">Anotações internas<Textarea name="notes" maxLength={1000} defaultValue={row?.notes ?? prefill?.notes ?? ""} placeholder="Forma de pagamento, contato financeiro, combinados…" className="commercial-input min-h-20" /></label>
       {error && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-red-200">{error}</p>}
       <div className="flex justify-end gap-2"><Button type="button" variant="ghost" disabled={busy} onClick={onClose}>Cancelar</Button><Button type="submit" disabled={busy} className="bg-gold text-black">{busy && <LoaderCircle className="animate-spin" />} {isNew ? "Criar empresa" : "Salvar plano"}</Button></div>
     </form>}

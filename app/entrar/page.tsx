@@ -12,6 +12,7 @@ export default async function SignInPage() {
   return (
     <AuthShell kicker="Acesso seguro" title="Entrar na plataforma" description="Use o e-mail cadastrado pela sua organização e a sua senha.">
       <LoginForm />
+      <p className="mt-6 text-center text-sm text-zinc-400">Sua empresa ainda não usa? <a href="/conheca" className="font-medium text-gold-soft hover:underline">Conheça a Elite Expansion X</a></p>
     </AuthShell>
   );
 }

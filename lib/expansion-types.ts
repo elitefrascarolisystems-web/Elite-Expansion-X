@@ -276,6 +276,8 @@ export type DashboardData = {
   plan?: PlanUsage;
   /** Logo da empresa assinante: versão (data da troca) ou null sem logo. */
   logoVersion?: string | null;
+  /** Donos da plataforma: pedidos novos vindos da página pública /conheca. */
+  subscriptionRequests?: number;
   access: AccessView;
   settings: SettingsView;
   cities: CityRecord[];

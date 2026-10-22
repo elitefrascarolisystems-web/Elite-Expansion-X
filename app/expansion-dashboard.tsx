@@ -22,6 +22,7 @@ import { MappingStatsPanel } from "@/app/mapping-stats";
 import { PeopleImport } from "@/app/people-import";
 import { AgendaBanner } from "@/app/agenda-banner";
 import { PortalAdmin } from "@/app/portal-admin";
+import { SubscriptionRequestsPanel } from "@/app/subscription-requests-panel";
 import { PlanCard, SubscriptionsPanel } from "@/app/subscriptions-panel";
 /* eslint-disable @next/next/no-img-element -- QR remoto gerado somente após o administrador configurar o link-base. */
 
@@ -473,7 +474,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const outline = "border-white/10 bg-white/5 text-white";
 
   return <>
-    <AppShell logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={pending ? { vendas: pending } : {}} actions={actions} onNavigate={(next) => navigate(next)} search={<QuickSearch sales={canPipeline} onPick={(pick) => (pick.kind === "territory" ? openMapKey(pick.key) : openFollowup(pick.leadId))} />} notice={<><OfflineSync access={data.access} cities={data.cities} onSynced={refreshDashboard} /><InstallAppBanner /></>}>
+    <AppShell logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={{ ...(pending ? { vendas: pending } : {}), ...(data.subscriptionRequests ? { plataforma: data.subscriptionRequests } : {}) }} actions={actions} onNavigate={(next) => navigate(next)} search={<QuickSearch sales={canPipeline} onPick={(pick) => (pick.kind === "territory" ? openMapKey(pick.key) : openFollowup(pick.leadId))} />} notice={<><OfflineSync access={data.access} cities={data.cities} onSynced={refreshDashboard} /><InstallAppBanner /></>}>
       <div className="space-y-5">
         {showFilters && <FilterBar data={data} filters={filters} onChange={setFilters} />}
         {attributionWarning && <div className="flex items-start gap-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><AlertTriangle className="mt-1 size-4 shrink-0" />Filtros por canal ou embaixador não usam fechamentos consolidados, pois eles não possuem atribuição individual. Cidades detalhadas continuam sendo calculadas normalmente.</div>}
@@ -509,6 +510,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
         {here === "gestao/assessoria" && <AdvisoryPanel data={data} />}
 
         {here === "plataforma/assinaturas" && <SubscriptionsPanel />}
+        {here === "plataforma/pedidos" && <SubscriptionRequestsPanel onChanged={() => { refreshDashboard().catch(() => undefined); }} />}
         {here === "plataforma/assessores" && <AdvisorsPanel />}
       </div>
     </AppShell>

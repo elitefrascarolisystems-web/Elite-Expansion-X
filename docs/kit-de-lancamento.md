@@ -95,6 +95,12 @@ A Elite Expansion X é independente de qualquer outra plataforma da Elite (como 
 5. **Plano e limites** — em *Plataforma → Assinaturas* → *Plano*: usuários da equipe (mentorados não contam), cidades ativas (as planejadas não contam), e se a empresa pode importar planilhas, exportar relatórios e usar mapas de satélite/Street View. Os limites valem na hora, no servidor: quem já está cadastrado continua; só não entram pessoas ou cidades novas além do limite, com uma mensagem pedindo para falar com a Elite. A empresa vê o próprio plano e o uso em *Gestão → Plano*.
 6. **Cobrança e suspensão** — a cobrança é feita fora da plataforma. Em *Assinaturas* você vê a receita mensal, quem está com o pagamento vencido e quem vence nos próximos 7 dias. Quem não pagou: *Suspender* (com o motivo). Ninguém da empresa entra (nem a Assessoria Elite) e todos veem o aviso "assinatura suspensa"; os dados ficam guardados. *Reativar* devolve o acesso como estava. Tudo fica no histórico das assinaturas.
 
+### Página de vendas e pedidos de assinatura
+
+- **Página pública** — `/conheca` (link também na tela de entrada): apresenta a plataforma, como funciona e o que o plano define, e tem o formulário *Pedir uma apresentação* (empresa, nome, cidade, e-mail, WhatsApp, tamanho da equipe e autorização de contato). Os valores não aparecem: são apresentados na conversa.
+- **Pedidos** — caem em *Plataforma → Pedidos de assinatura*, só para os donos da plataforma, com aviso na área. Em cada pedido: e-mail e WhatsApp clicáveis, *Copiar contato*, andamento (*Novo*, *Em conversa*, *Virou assinante*, *Descartado*) e anotação. *Criar empresa assinante* abre o cadastro já preenchido com os dados do pedido e, ao criar, marca o pedido como *Virou assinante*. Pedido descartado pode ser apagado.
+- **Proteções** — o envio só é aceito pela própria página, robôs são barrados por um campo invisível e o mesmo endereço pode mandar até 5 pedidos por hora. O IP não é guardado (só um código que muda a cada dia).
+
 ## 10. Onde fica cada coisa (navegação por áreas)
 
 A plataforma da equipe é organizada em áreas, na barra lateral (computador) ou na barra de baixo (celular). O botão **+ Novo**, no topo, reúne as ações do dia a dia (mapear, atendimento, venda e pagamento) e os cadastros.

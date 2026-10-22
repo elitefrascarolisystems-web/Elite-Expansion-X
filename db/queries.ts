@@ -21,6 +21,7 @@ import { getMappingStats } from "@/db/mapping-stats";
 import { getAgenda } from "@/db/agenda";
 import { getPlan } from "@/db/plan";
 import { logoVersion } from "@/db/identity";
+import { newRequestCount } from "@/db/subscription-requests";
 import { asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runtime";
 
 type Scope = { where: string; values: Array<string | number> };
@@ -356,6 +357,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     agenda: await getAgenda(access),
     plan: await getPlan(access.organizationId),
     logoVersion: await logoVersion(access.organizationId),
+    subscriptionRequests: await newRequestCount(access),
     access,
     settings,
     cities,

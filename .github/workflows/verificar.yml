@@ -49,6 +49,7 @@ jobs:
             tests/portal.test.mjs \
             tests/privacy.test.mjs \
             tests/rendered-html.test.mjs \
+            tests/subscription-requests.test.mjs \
             tests/subscriptions.test.mjs \
             tests/team.test.mjs \
             tests/territory-integration.test.mjs \

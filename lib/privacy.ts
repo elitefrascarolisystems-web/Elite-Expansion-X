@@ -22,7 +22,7 @@ const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Informe a data do pedido.")
 
 export const privacyRequestSchema = z.object({
   subject,
-  channel: z.enum(PRIVACY_CHANNELS, { message: "Informe por onde o pedido chegou." }),
+  channel: z.enum(PRIVACY_CHANNELS, { errorMap: () => ({ message: "Informe por onde o pedido chegou." }) }),
   receivedAt: day,
   note: z.string().trim().max(300, "Observação: no máximo 300 caracteres.").default(""),
 });
@@ -32,7 +32,7 @@ export const correctionSchema = privacyRequestSchema.extend({
   whatsapp: z.string().trim().max(40).optional().refine((v) => !v || /^\d{10,13}$/.test(v.replace(/\D/g, "")), "WhatsApp: DDD e número (10 a 13 dígitos)."),
 });
 export const anonymizeSchema = privacyRequestSchema.extend({
-  confirm: z.literal(true, { message: "Confirme que entende que a anonimização não pode ser desfeita." }),
+  confirm: z.literal(true, { errorMap: () => ({ message: "Confirme que entende que a anonimização não pode ser desfeita." }) }),
 });
 
 export type PrivacySubject = { ref: string; name: string; city: string; place: string; sources: string[]; anonymized: boolean };

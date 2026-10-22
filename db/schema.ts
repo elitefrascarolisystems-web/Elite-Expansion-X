@@ -416,3 +416,14 @@ export const privacyRequests = sqliteTable('privacy_requests', {
  channel:text('channel').notNull(),receivedAt:text('received_at').notNull(),completedAt:text('completed_at').notNull(),
  note:text('note').notNull().default(''),actorEmail:text('actor_email').notNull(),
 },(t)=>[index('privacy_requests_org_idx').on(t.organizationId,t.completedAt),index('privacy_requests_subject_idx').on(t.organizationId,t.subjectRef)]);
+/**
+ * Pedidos vindos da página pública /conheca: empresas interessadas na plataforma.
+ * Só os donos da plataforma veem. ip_hash (IP + dia, com hash) só limita envios repetidos.
+ */
+export const subscriptionRequests = sqliteTable('subscription_requests', {
+ id:text('id').primaryKey(),company:text('company').notNull(),contactName:text('contact_name').notNull(),email:text('email').notNull(),
+ whatsapp:text('whatsapp').notNull(),city:text('city').notNull(),teamSize:text('team_size').notNull(),message:text('message').notNull().default(''),
+ consentAt:text('consent_at').notNull(),ipHash:text('ip_hash').notNull(),status:text('status').notNull().default('Novo'),note:text('note').notNull().default(''),
+ organizationId:integer('organization_id').references(()=>organizations.id),handledBy:text('handled_by').notNull().default(''),
+ createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
+},(t)=>[index('subscription_requests_status_idx').on(t.status,t.createdAt),index('subscription_requests_ip_idx').on(t.ipHash,t.createdAt)]);
