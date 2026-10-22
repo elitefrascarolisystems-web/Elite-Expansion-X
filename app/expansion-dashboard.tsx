@@ -16,6 +16,7 @@ import { copyText } from "@/lib/copy-text";
 import { GettingStarted, WelcomeDialog } from "@/app/getting-started";
 import { TeamPanel } from "@/app/team-panel";
 import { MappingWizard } from "@/app/mapping-wizard";
+import { NoticesCard, NotificationsPanel } from "@/app/notifications-panel";
 import { OfflineSync } from "@/app/offline-sync";
 import { PrivacyPanel } from "@/app/privacy-panel";
 import { MappingStatsPanel } from "@/app/mapping-stats";
@@ -211,6 +212,7 @@ function TodayPanel({ data, view, onGo, onFollowup, shortcuts }: { data: Dashboa
       <Kpi label="Receita confirmada" value={money(summary.revenueCents, true)} helper="Somente pagamentos confirmados" icon={Banknote} emphasis trend={trendOf(view.timeline, "revenue")} />
     </section>
     {manage && <Alerts items={view.alerts} />}
+    {["Administrador", "Coordenação", "Líder", "Comercial"].includes(data.access.role) && !data.access.isAdvisory && <NoticesCard />}
   </div>;
 }
 
@@ -507,6 +509,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
         {here === "gestao/plano" && data.plan && <PlanCard plan={data.plan} organization={data.access.organizationName} />}
         {here === "gestao/historico" && <HistoryPanel data={data} />}
         {here === "gestao/privacidade" && <PrivacyPanel />}
+        {here === "gestao/avisos" && <NotificationsPanel />}
         {here === "gestao/assessoria" && <AdvisoryPanel data={data} />}
 
         {here === "plataforma/assinaturas" && <SubscriptionsPanel />}

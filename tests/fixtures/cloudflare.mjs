@@ -1,1 +1,1 @@
-export const env = { get DB() { return globalThis.__eliteTestD1; } };
+export const env = { get DB() { return globalThis.__eliteTestD1; }, get RESEND_API_KEY() { return globalThis.__eliteTestEnv?.RESEND_API_KEY; }, get EMAIL_FROM() { return globalThis.__eliteTestEnv?.EMAIL_FROM; }, get PUBLIC_APP_URL() { return globalThis.__eliteTestEnv?.PUBLIC_APP_URL; } };

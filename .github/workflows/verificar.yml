@@ -43,6 +43,7 @@ jobs:
             tests/followup-integration.test.mjs \
             tests/hooks.test.mjs \
             tests/navigation.test.mjs \
+            tests/notifications.test.mjs \
             tests/offline-queue.test.mjs \
             tests/password-login.test.mjs \
             tests/places.test.mjs \

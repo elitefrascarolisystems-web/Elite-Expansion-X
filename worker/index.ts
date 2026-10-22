@@ -2,6 +2,7 @@
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
 import { ORGANIZATION_HEADER } from "../lib/tenant-request";
+import { runNotifications } from "../db/notifications";
 
 interface Env {
   ASSETS: Fetcher;
@@ -62,6 +63,12 @@ const worker = {
     }
 
     return handler.fetch(request, env, ctx);
+  },
+
+  // Avisos por e-mail: a rodada diária (7h30 de Brasília; às segundas inclui o resumo semanal).
+  async scheduled(): Promise<void> {
+    try { console.log("Avisos por e-mail:", JSON.stringify(await runNotifications())); }
+    catch (error) { console.error("Avisos por e-mail:", error); }
   },
 };
 

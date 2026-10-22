@@ -112,7 +112,7 @@ A plataforma da equipe é organizada em áreas, na barra lateral (computador) ou
 | **Vendas** | Agenda · Atendimentos · Método F.E.C.H.A. · Pagamentos · Pós-venda | Toda a equipe |
 | **Rede** | Embaixadores · Indicações · Mentorados · Parceiros e eventos · Materiais | Gestão (Comercial: Indicações) |
 | **Resultados** | Visão geral · Metas e rotina · Mapeamento · Custos e canais | Gestão (Comercial: Metas e rotina) |
-| **Gestão** | Time e acessos · Regras e cálculos · Identidade · Plano · Histórico · Privacidade (LGPD) · Assessoria Elite | Administrador |
+| **Gestão** | Time e acessos · Regras e cálculos · Identidade · Plano · Histórico · Privacidade (LGPD) · Avisos por e-mail · Assessoria Elite | Administrador |
 | **Plataforma** | Assinaturas · Assessores | Donos da plataforma |
 
 Em *Hoje* ficam também os atalhos do dia: *Mapear local e pessoas*, *Novo atendimento* e *Registrar venda e pagamento*. Os nomes dos botões são os mesmos das janelas que eles abrem, e o glossário fica em *Gestão → Regras e cálculos*.
@@ -128,7 +128,19 @@ Cada função abre onde mais trabalha: Comercial em *Vendas → Agenda*, Coorden
 - **Identidade da empresa assinante** — *Gestão → Identidade*: nome e logo (PNG, JPEG ou WebP, até 150 KB). A logo aparece na barra lateral e no mapa impresso.
 - **App no celular** — a plataforma pode ser instalada como aplicativo: no Android (Chrome), botão *Instalar* na faixa do topo; no iPhone (Safari), *Compartilhar → Adicionar à Tela de Início*. Abre em tela cheia com o ícone Elite X. Ao sair da plataforma, as telas guardadas no aparelho são apagadas.
 - **Mapeamento sem internet** — depois de abrir a plataforma uma vez com sinal, ela abre em campo sem internet na última tela usada. O *Mapear local e pessoas* continua funcionando: locais e pessoas ficam guardados no celular (*Aguardando envio*) e são enviados sozinhos quando o sinal volta. A faixa do topo mostra quantos estão guardados; em *Ver*, a pessoa resolve os que precisam de revisão (nome repetido: *enviar mesmo assim* ou *descartar*). Sem sinal não há busca de endereço: o local fica pendente para marcar no mapa depois. Cada cadastro guardado é só de quem o fez; outra pessoa entrando no mesmo aparelho não o envia.
+- **Avisos por e-mail** — todo dia às 7h30 (Brasília), quem atende recebe o *lembrete diário* com os retornos atrasados e os de hoje (sem retorno no dia, não chega e-mail). Às segundas, o administrador recebe também o *resumo semanal*: pessoas mapeadas, locais novos, atendimentos abertos, vendas confirmadas e quem tem retorno atrasado (os donos da plataforma veem ainda os pedidos de assinatura e os pagamentos vencidos). Cada pessoa liga ou desliga os próprios avisos no cartão *Avisos por e-mail* em *Hoje* ou pelo link no fim do e-mail; o administrador vê a prévia e ajusta a equipe em *Gestão → Avisos por e-mail*. Cada aviso sai uma vez por dia (ou semana), mesmo se a rodada repetir.
 - **Privacidade (LGPD)** — *Gestão → Privacidade (LGPD)*, só para o administrador. Busque a pessoa pelo nome, e-mail ou WhatsApp: a ficha junta o cadastro no mapa, o contato, o atendimento, a venda e o cadastro de embaixador. Ações: *Cópia dos dados* (arquivo para enviar à pessoa), *Corrigir dados* (nome, e-mail e WhatsApp em todos os cadastros), *Revogar autorização* (encerra o atendimento e tira da agenda) e *Excluir (anonimizar)* (apaga nome, contatos, local, papéis, ponto no mapa e anotações; ficam só números sem identificação e a venda, exigida pela contabilidade; não pode ser desfeita). Cada pedido fica registrado com a data em que chegou, o canal e se foi atendido no prazo de 15 dias. Se a pessoa também tiver login na plataforma, a ficha avisa para desativar o acesso em *Gestão → Time e acessos*.
+
+### Para ligar o envio dos avisos por e-mail
+
+Tudo já está pronto; falta só o serviço de e-mail, que depende do endereço oficial (domínio) da plataforma:
+
+1. Criar a conta no Resend (resend.com) e verificar o domínio oficial (registros DNS que o Resend mostra).
+2. No Cloudflare, em *Workers → (worker da plataforma) → Settings → Variables and Secrets*, criar três **segredos** (tipo *Secret*, para não serem apagados a cada publicação):
+   - `RESEND_API_KEY` — a chave criada no Resend;
+   - `EMAIL_FROM` — o remetente, por exemplo `Elite Expansion X <avisos@dominio-oficial>`;
+   - `PUBLIC_APP_URL` — o endereço da plataforma, por exemplo `https://app.dominio-oficial` (usado nos links dos e-mails).
+3. Em *Gestão → Avisos por e-mail*, conferir “Envio ligado” e usar *Enviar teste para mim*.
 
 ## 12. Pendências para depois do lançamento
 
@@ -136,3 +148,5 @@ Cada função abre onde mais trabalha: Comercial em *Vendas → Agenda*, Coorden
 - Decidir se este endereço de teste vira o oficial ou se criamos um endereço definitivo.
 - Conteúdo do Sistema de Prospecção Elite 1.0: cadastrar os ganchos no Banco de Ganchos (a estrutura está pronta).
 - Cobrança automática da assinatura (boleto/Pix/cartão): depende da escolha do provedor de pagamento.
+- Ligar os avisos por e-mail: conta no Resend e domínio oficial verificado (passo a passo acima).
+- Página de vendas: nomes e preços dos planos (se forem aparecer) e o WhatsApp da Elite para contato direto.

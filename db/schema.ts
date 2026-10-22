@@ -427,3 +427,22 @@ export const subscriptionRequests = sqliteTable('subscription_requests', {
  organizationId:integer('organization_id').references(()=>organizations.id),handledBy:text('handled_by').notNull().default(''),
  createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
 },(t)=>[index('subscription_requests_status_idx').on(t.status,t.createdAt),index('subscription_requests_ip_idx').on(t.ipHash,t.createdAt)]);
+/**
+ * Avisos por e-mail: o que cada pessoa quer receber em cada empresa. token serve
+ * para o link "parar de receber" do próprio e-mail, sem precisar entrar.
+ */
+export const notificationPrefs = sqliteTable('notification_prefs', {
+ organizationId:integer('organization_id').notNull().references(()=>organizations.id),email:text('email').notNull(),
+ daily:integer('daily').notNull(),weekly:integer('weekly').notNull(),token:text('token').notNull(),
+ updatedBy:text('updated_by').notNull(),updatedAt:text('updated_at').notNull(),
+},(t)=>[uniqueIndex('notification_prefs_pk').on(t.organizationId,t.email),uniqueIndex('notification_prefs_token').on(t.token)]);
+/** Um envio por pessoa, tipo e período: o aviso não sai duas vezes no mesmo dia (ou semana). */
+export const notificationLog = sqliteTable('notification_log', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),email:text('email').notNull(),
+ kind:text('kind').notNull(),period:text('period').notNull(),status:text('status').notNull(),detail:text('detail').notNull().default(''),createdAt:text('created_at').notNull(),
+},(t)=>[uniqueIndex('notification_log_once').on(t.organizationId,t.email,t.kind,t.period),index('notification_log_created_idx').on(t.createdAt)]);
+/** Cada rodada automática, para a gestão ver quando rodou e o que aconteceu. */
+export const notificationRuns = sqliteTable('notification_runs', {
+ id:text('id').primaryKey(),ranAt:text('ran_at').notNull(),configured:integer('configured').notNull(),
+ sent:integer('sent').notNull(),failed:integer('failed').notNull(),skipped:integer('skipped').notNull(),detail:text('detail').notNull().default(''),
+});

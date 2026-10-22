@@ -30,6 +30,8 @@ const localBindingConfig = {
   ...(Object.keys(deployVars).length ? { vars: deployVars } : {}),
   // O worker/index.ts lê os arquivos estáticos (logo, imagens) por env.ASSETS.
   assets: { binding: "ASSETS" },
+  // Avisos por e-mail: todo dia às 10h30 UTC = 7h30 de Brasília (db/notifications.ts).
+  triggers: { crons: ["30 10 * * *"] },
   d1_databases: d1
     ? [
         {
