@@ -4,10 +4,12 @@ import {rowDue,type Followup} from '@/lib/followup';
 import { database, brazilTimestamp } from '@/db/runtime';
 import { featureBlocked } from '@/db/plan';
 import { canAccessCity } from '@/lib/expansion-permissions';
+import { STAGES, TEMPERATURES } from '@/lib/commercial';
+import { scope as commercialScope } from '@/db/commercial';
 import { cityReference } from '@/lib/territorial-map';
 import { locationSchema, personSchema, activitySchema, roleSchema, displayedCoordinates, importPersonSchema } from '@/lib/territory-validation';
 import type { AccessView } from '@/lib/expansion-types';
-import type { TerritoryRecord, TerritoryResponse } from '@/lib/territory-types';
+import type { MapDeal, MapSpot, TerritoryPlacesResponse, TerritoryRecord, TerritoryResponse } from '@/lib/territory-types';
 
 export class TerritoryError extends Error { constructor(message: string, public status = 400, public duplicate = false) { super(message); } }
 const dbRows = async (sql:string, args:(string|number|null)[] = []) => (await database().prepare(sql).bind(...args).all()).results;
@@ -56,6 +58,9 @@ function coordinateSql(axis:'latitude'|'longitude') {
  const refs=[['Esmeraldas',-19.7628,-44.3131],['Belo Horizonte',-19.9167,-43.9345],['Contagem',-19.9317,-44.0536],['Betim',-19.9678,-44.1983]];
  return `CASE WHEN g.source IS NOT NULL THEN CASE WHEN g.validated=1 THEN g.${axis} ELSE NULL END ELSE CASE ${refs.map(r=>`WHEN lower(c.name)=lower('${r[0]}') AND upper(c.state)='MG' THEN ${r[axis==='latitude'?1:2]}`).join(' ')} ELSE NULL END END`;
 }
+/** Pontos do mapa por consulta (o motor agrupa no próprio mapa) e locais dos modos de ver. */
+const POINT_LIMIT=5000,PLACE_LIMIT=5000,DEAL_LIMIT=20000;
+const round6=(v:number)=>Math.round(v*1e6)/1e6;
 function bounds(value:string|null) {if(!value)return null;const b=value.split(',').map(Number);if(b.length!==4||!b.every(Number.isFinite)||b[0]<-180||b[2]>180||b[1]<-85||b[3]>85||b[0]>b[2]||b[1]>b[3])throw new TerritoryError('Área geográfica inválida.');return b;}
 export async function getTerritory(a:AccessView, params:URLSearchParams):Promise<TerritoryResponse> {
   const s=scope(a); const conditions=[s.sql]; const args:(string|number)[]=[...s.values];
@@ -85,8 +90,8 @@ export async function getTerritory(a:AccessView, params:URLSearchParams):Promise
   const count=await dbRows(recordsSql+`SELECT COUNT(*) AS total,SUM(r.kind='person') AS people,SUM((${coordinateSql('latitude')}) IS NULL) AS pending,SUM(instr(','||r.roles||',',',Mentor,')>0) AS mentors,SUM(instr(','||r.roles||',',',Mentorado,')>0) AS members,SUM(instr(','||r.roles||',',',Embaixador,')>0) AS ambassadors,SUM(instr(','||r.roles||',',',Líder,')>0) AS leaders ${join}`,[a.role,...args]);
   const viewport=bounds(params.get('viewport'));const vp=viewport?'WHERE longitude BETWEEN ? AND ? AND latitude BETWEEN ? AND ?':'WHERE latitude IS NOT NULL AND longitude IS NOT NULL';
   const vpArgs=viewport?[viewport[0],viewport[2],viewport[1],viewport[3]]:[];
-  const located=recordsSql+`, located AS (SELECT r.entity_key,r.kind,r.roles,r.status,${coordinateSql('latitude')} AS latitude,${coordinateSql('longitude')} AS longitude ${join}) `;
-  const points=await dbRows(located+`SELECT latitude,longitude,COUNT(*) AS count,SUM(kind='person') AS people,MIN(entity_key) AS entity_key,MIN(kind) AS kind,MIN(roles) AS roles,MIN(status) AS status FROM located ${vp} GROUP BY latitude,longitude ORDER BY latitude,longitude LIMIT 1001`,[a.role,...args,...vpArgs]);
+  const located=recordsSql+`, located AS (SELECT r.entity_key,r.kind,r.roles,r.status,r.name,${coordinateSql('latitude')} AS latitude,${coordinateSql('longitude')} AS longitude ${join}) `;
+  const points=await dbRows(located+`SELECT latitude,longitude,COUNT(*) AS count,SUM(kind='person') AS people,MIN(entity_key) AS entity_key,MIN(kind) AS kind,MIN(roles) AS roles,MIN(status) AS status,CASE WHEN COUNT(*)=1 THEN MIN(name) ELSE '' END AS name FROM located ${vp} GROUP BY latitude,longitude ORDER BY latitude,longitude LIMIT ${POINT_LIMIT+1}`,[a.role,...args,...vpArgs]);
   const inView=await dbRows(located+`SELECT COUNT(*) AS total FROM located ${vp}`,[a.role,...args,...vpArgs]);
   const records:TerritoryRecord[]=result.slice(0,200).map(row=>{
     const reference=cityReference(str(row.city_name),str(row.state));
@@ -107,7 +112,75 @@ export async function getTerritory(a:AccessView, params:URLSearchParams):Promise
   }
   // Local vinculado de cada pessoa (para a ficha e para editar), em lotes pelo limite do D1.
   for(let i=0;i<personIds.length;i+=80){const batch=personIds.slice(i,i+80);for(const p of await dbRows(`SELECT tp.id,tp.place_id,tp.place_link,b.name AS place_name,b.place_type FROM territory_people tp JOIN businesses b ON b.id=tp.place_id AND b.organization_id=? WHERE tp.id IN (${batch.map(()=>'?').join(',')})`,[a.organizationId,...batch])){const record=records.find(r=>r.kind==='person'&&r.id===str(p.id));if(record)record.place={id:str(p.place_id),name:str(p.place_name),type:str(p.place_type),link:str(p.place_link)};}}
-  return {roleCounts:{Mentor:Number(count[0]?.mentors??0),Mentorado:Number(count[0]?.members??0),Embaixador:Number(count[0]?.ambassadors??0),Líder:Number(count[0]?.leaders??0)},points:points.slice(0,1000).map(p=>({latitude:Number(p.latitude),longitude:Number(p.longitude),count:Number(p.count),people:Number(p.people),key:str(p.entity_key),kind:str(p.kind) as TerritoryRecord['kind'],roles:str(p.roles).split(','),status:str(p.status)})),pointsCapped:points.length>1000,inView:Number(inView[0]?.total??0),people:Number(count[0]?.people??0),pending:Number(count[0]?.pending??0),records,total:Number(count[0]?.total??0),hasMore:result.length>200,nextOffset:result.length>200?offset+200:null,updatedAt:brazilTimestamp(),canEdit:mapper(a)};
+  return {roleCounts:{Mentor:Number(count[0]?.mentors??0),Mentorado:Number(count[0]?.members??0),Embaixador:Number(count[0]?.ambassadors??0),Líder:Number(count[0]?.leaders??0)},points:points.slice(0,POINT_LIMIT).map(p=>({latitude:Number(p.latitude),longitude:Number(p.longitude),count:Number(p.count),people:Number(p.people),key:str(p.entity_key),kind:str(p.kind) as TerritoryRecord['kind'],roles:str(p.roles).split(','),status:str(p.status),name:str(p.name)})),pointsCapped:points.length>POINT_LIMIT,inView:Number(inView[0]?.total??0),people:Number(count[0]?.people??0),pending:Number(count[0]?.pending??0),records,total:Number(count[0]?.total??0),hasMore:result.length>200,nextOffset:result.length>200?offset+200:null,updatedAt:brazilTimestamp(),canEdit:mapper(a)};
+}
+/** Pessoas que aparecem no mapa (a mesma regra da lista): sem consentimento revogado, ou com papel ativo na rede. */
+const visiblePersonSql=(alias:string)=>`(NOT EXISTS(SELECT 1 FROM leads lr WHERE lr.person_id=${alias}.id AND lr.consent_revoked_at IS NOT NULL) OR ${alias}.leader=1 OR EXISTS(SELECT 1 FROM ambassadors ab WHERE ab.person_id=${alias}.id) OR EXISTS(SELECT 1 FROM territory_roles tr WHERE tr.person_id=${alias}.id AND tr.status NOT IN ('Desligado','Inativo')))`;
+/** Locais e ações que cada função vê nos modos: os mesmos do Explorar. */
+function placeScope(a:AccessView,alias:string,ownerColumn:'owner_email'|'created_by') {
+  if (a.role === 'Administrador') return {sql:'1=1',values:[] as (string|number)[]};
+  if (['Coordenação','Líder'].includes(a.role) && a.cityId !== null) return {sql:`${alias}.city_id=?`,values:[a.cityId] as (string|number)[]};
+  if (a.role === 'Comercial') return {sql:`lower(${alias}.${ownerColumn})=lower(?)`,values:[a.email] as (string|number)[]};
+  return {sql:'1=0',values:[] as (string|number)[]};
+}
+/**
+ * Locais e centros de cidade para os modos do mapa (calor, cobertura, funil, linha do tempo e cidade acesa).
+ * Só locais validados e centros de cidade, nunca a posição de uma pessoa: cada atendimento e cada ação fica
+ * no local ligado a ele (o do atendimento ou o da pessoa) ou, sem local, no centro da cidade.
+ * Cada função vê o mesmo que já vê no mapa e nos atendimentos.
+ */
+export async function getTerritoryPlaces(a:AccessView,params:URLSearchParams):Promise<TerritoryPlacesResponse> {
+  const updatedAt=brazilTimestamp();
+  if(!mapper(a)) return {spots:[],deals:[],capped:false,unplaced:0,updatedAt};
+  // Filtros que valem para locais: cidade, estado e tipo ou setor do local.
+  const cityWhere=['c.organization_id=?'],cityArgs:(string|number)[]=[a.organizationId];
+  const city=params.get('city');if(city&&/^\d+$/.test(city)){cityWhere.push('c.id=?');cityArgs.push(Number(city));}
+  const state=params.get('state')?.trim();if(state){cityWhere.push('upper(c.state)=upper(?)');cityArgs.push(state.slice(0,2));}
+  if(a.role!=='Administrador'&&a.role!=='Comercial'){cityWhere.push('c.id=?');cityArgs.push(a.cityId??-1);}
+  const cities=cityWhere.join(' AND ');
+  const category=params.get('category')??'';
+  const kindFilter=(PLACE_TYPES as readonly string[]).includes(category)?{sql:" AND COALESCE(NULLIF(b.place_type,''),'Empresa')=?",values:[category]}:(SECTORS as readonly string[]).includes(category)?{sql:' AND b.sector=?',values:[category]}:null;
+  const own=placeScope(a,'b','owner_email');
+  const peopleScope=a.role==='Comercial'?{sql:' AND (EXISTS(SELECT 1 FROM leads lc WHERE lc.person_id=tp.id AND lower(lc.assigned_to_email)=lower(?) AND lc.consent_revoked_at IS NULL) OR lower(tp.created_by)=lower(?))',values:[a.email,a.email]}:{sql:'',values:[] as string[]};
+  const placeRows=await dbRows(`SELECT b.id,b.name,b.city_id,COALESCE(NULLIF(b.place_type,''),'Empresa') AS place_type,b.sector,b.created_at,g.latitude,g.longitude,(SELECT COUNT(*) FROM territory_people tp WHERE tp.place_id=b.id AND ${visiblePersonSql('tp')}${peopleScope.sql}) AS people FROM businesses b JOIN cities c ON c.id=b.city_id JOIN territory_locations g ON g.entity_key='business:'||b.id AND g.validated=1 AND g.latitude IS NOT NULL AND g.longitude IS NOT NULL AND (g.visibility='Equipe' OR ?='Administrador') WHERE b.organization_id=? AND ${cities} AND (${own.sql})${kindFilter?.sql??''} ORDER BY b.created_at,b.id LIMIT ${PLACE_LIMIT+1}`,[...peopleScope.values,a.role,a.organizationId,...cityArgs,...own.values,...(kindFilter?.values??[])]);
+  const today=updatedAt.slice(0,10),since=new Date(Date.parse(today+'T12:00:00Z')-30*864e5).toISOString().slice(0,10);
+  const spots:MapSpot[]=placeRows.slice(0,PLACE_LIMIT).map(r=>({key:'business:'+str(r.id),kind:'business',name:str(r.name),latitude:round6(Number(r.latitude)),longitude:round6(Number(r.longitude)),cityId:Number(r.city_id),type:str(r.place_type),sector:str(r.sector),mapped:str(r.created_at).slice(0,10),people:Number(r.people??0),recent:Number(str(r.created_at).slice(0,10)>=since)}));
+  const byBusiness=new Map(spots.map((spot,i)=>[spot.key.slice('business:'.length),i]));
+  // Centro de cada cidade: o ponto validado da cidade ou a sede municipal de referência.
+  const cityPoint=new Map<number,{name:string;latitude:number;longitude:number}>();
+  if(!kindFilter)for(const c of await dbRows(`SELECT c.id,c.name,c.state,g.source,g.validated,g.latitude,g.longitude FROM cities c LEFT JOIN territory_locations g ON g.entity_key='city:'||c.id AND (g.visibility='Equipe' OR ?='Administrador') WHERE ${cities}`,[a.role,...cityArgs])){
+    const reference=cityReference(str(c.name),str(c.state));
+    const point=c.source!=null?(Number(c.validated)===1&&c.latitude!=null&&c.longitude!=null?{latitude:Number(c.latitude),longitude:Number(c.longitude)}:null):reference;
+    if(point)cityPoint.set(Number(c.id),{name:str(c.name),latitude:point.latitude,longitude:point.longitude});
+  }
+  const cityIndex=new Map<number,number>();
+  /** Onde fica um atendimento ou uma ação: no local dele, no local da pessoa ou no centro da cidade. */
+  function spotFor(businessId:unknown,placeId:unknown,cityId:number):number|null {
+    for(const id of [businessId,placeId]){const i=id?byBusiness.get(str(id)):undefined;if(i!==undefined)return i;}
+    if(kindFilter)return null;
+    const known=cityIndex.get(cityId);if(known!==undefined)return known;
+    const p=cityPoint.get(cityId);if(!p)return null;
+    cityIndex.set(cityId,spots.push({key:'city:'+cityId,kind:'city',name:p.name,latitude:round6(p.latitude),longitude:round6(p.longitude),cityId,type:'Cidade',sector:'',mapped:'',people:0,recent:0})-1);
+    return cityIndex.get(cityId)!;
+  }
+  // Atendimentos com o mesmo escopo da tela de atendimentos (o Comercial vê só os dele).
+  const deal=commercialScope(a,'o'),touch=commercialScope(a,'r');
+  const live=a.role==='Comercial'?{sql:' AND lower(l.assigned_to_email)=lower(?)',values:[a.email]}:{sql:'',values:[] as string[]};
+  const dealRows=await dbRows(`SELECT o.business_id,tp.place_id,o.city_id,o.stage,o.temperature,substr(o.created_at,1,7) AS opened,CASE WHEN s.status='Pagamento confirmado' AND s.paid_at IS NOT NULL THEN substr(s.paid_at,1,7) ELSE '' END AS paid,COUNT(*) AS total FROM opportunities o JOIN leads l ON l.id=o.lead_id LEFT JOIN territory_people tp ON tp.id=l.person_id LEFT JOIN sales s ON s.lead_id=o.lead_id WHERE ${deal.sql}${live.sql} AND l.consent_revoked_at IS NULL AND l.status<>'Cancelado' AND o.city_id IN (SELECT c.id FROM cities c WHERE ${cities}) GROUP BY o.business_id,tp.place_id,o.city_id,o.stage,o.temperature,opened,paid LIMIT ${DEAL_LIMIT+1}`,[...deal.args,...live.values,...cityArgs] as (string|number)[]);
+  const deals=new Map<string,MapDeal>();let unplaced=0;
+  for(const r of dealRows.slice(0,DEAL_LIMIT)){
+    const stage=(STAGES as readonly string[]).indexOf(str(r.stage)),temperature=(TEMPERATURES as readonly string[]).indexOf(str(r.temperature));if(stage<0||temperature<0)continue;
+    const total=Number(r.total),i=spotFor(r.business_id,r.place_id,Number(r.city_id));
+    if(i===null){if(!kindFilter)unplaced+=total;continue;}
+    const id=[i,stage,temperature,str(r.opened),str(r.paid)].join('|'),known=deals.get(id);
+    if(known)known[5]+=total;else deals.set(id,[i,stage,temperature,str(r.opened),str(r.paid),total]);
+  }
+  // Atividade dos últimos 30 dias: atendimentos registrados e ações realizadas (o cadastro do local já contou acima).
+  const actions=placeScope(a,'t','created_by');
+  const touches=await dbRows(`SELECT o.business_id,tp.place_id,o.city_id,COUNT(*) AS total FROM commercial_activities r JOIN opportunities o ON o.id=r.opportunity_id JOIN leads l ON l.id=o.lead_id LEFT JOIN territory_people tp ON tp.id=l.person_id WHERE ${touch.sql}${live.sql} AND r.activity_date BETWEEN ? AND ? AND l.consent_revoked_at IS NULL AND l.status<>'Cancelado' AND o.city_id IN (SELECT c.id FROM cities c WHERE ${cities}) GROUP BY o.business_id,tp.place_id,o.city_id`,[...touch.args,...live.values,since,today,...cityArgs] as (string|number)[]);
+  const done=await dbRows(`SELECT tp.place_id,t.city_id,COUNT(*) AS total FROM territory_actions t LEFT JOIN territory_people tp ON tp.id=t.person_id WHERE t.status='Realizado' AND COALESCE(NULLIF(t.due_date,''),substr(t.updated_at,1,10)) BETWEEN ? AND ? AND t.city_id IN (SELECT c.id FROM cities c WHERE ${cities}) AND (${actions.sql}) GROUP BY tp.place_id,t.city_id`,[since,today,...cityArgs,...actions.values]);
+  for(const r of [...touches,...done]){const i=spotFor(r.business_id,r.place_id,Number(r.city_id));if(i!==null)spots[i].recent+=Number(r.total);}
+  return {spots,deals:[...deals.values()],capped:placeRows.length>PLACE_LIMIT||dealRows.length>DEAL_LIMIT,unplaced,updatedAt};
 }
 async function allowedCity(a:AccessView,cityId:number) {
   if(!mapper(a)||!canAccessCity(a,cityId)) throw new TerritoryError('Registro fora do seu acesso.',403);

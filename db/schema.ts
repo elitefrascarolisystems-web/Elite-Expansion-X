@@ -287,7 +287,7 @@ export const territoryPeople = sqliteTable("territory_people", {
   // Local (empresa, escritório, network) ao qual a pessoa se liga; no mapa ela aparece ali, nunca na residência.
   placeId: text("place_id"), placeLink: text("place_link").notNull().default(""),
   createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
-}, t => [index("territory_people_city_idx").on(t.cityId), index("territory_people_referrer_idx").on(t.referrerId)]);
+}, t => [index("territory_people_city_idx").on(t.cityId), index("territory_people_referrer_idx").on(t.referrerId), index("territory_people_place_idx").on(t.placeId)]);
 export const territoryLocations = sqliteTable("territory_locations", {
   entityKey: text("entity_key").primaryKey(), cityId: integer("city_id").notNull().references(() => cities.id),
   latitude: real("latitude"), longitude: real("longitude"), region: text("region").notNull().default(""),

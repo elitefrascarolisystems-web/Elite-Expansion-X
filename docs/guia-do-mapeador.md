@@ -39,7 +39,10 @@ O que fazer, em que ordem e as regras do mapeamento. A mesma versão fica na pla
 
 - Locais: dourado = Escritório · roxo = Network / comunidade · azul = Empresa (o ícone mostra o setor) · verde-azulado = Instituição de ensino · marrom = Ponto de encontro.
 - Pessoas: o ícone mostra o papel principal (Líder, Embaixador, Mentorado, Cliente assinante, Lead...).
-- Use os filtros de categoria (Pessoas, Locais, Setores) para ver um grupo de cada vez.
+- Círculos dourados com número juntam vários cadastros: clique para abrir. Passe o mouse para ver o que há em cada ponto.
+- Modos de ver, no alto do mapa: Explorar (o padrão), Calor (onde está a força), Cobertura (hexágonos: os tracejados vazios mostram onde mapear a seguir), Funil (cada local na etapa mais avançada dos atendimentos), Linha do tempo (a expansão mês a mês, com play) e Cidade acesa (torres de luz em 3D).
+- O modo fica no endereço da página: copie o link para mostrar o mesmo modo a alguém.
+- Os filtros ficam no botão Filtros; a legenda e os números de cada modo ficam sobre o mapa (no celular, no botão Legenda). A lista ao lado mostra os mesmos dados para quem prefere ler.
 
 ## Dúvidas
 

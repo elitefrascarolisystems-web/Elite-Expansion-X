@@ -1,0 +1,1 @@
+CREATE INDEX `territory_people_place_idx` ON `territory_people` (`place_id`);
