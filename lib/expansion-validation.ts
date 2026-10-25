@@ -109,6 +109,8 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
   }),
   create_lead: z.object({
     personId: z.string().uuid().optional(),
+    /** Quem indicou (pessoa do mapa na mesma cidade): entra na rede de indicações. */
+    referrerId: z.string().uuid().nullable().optional(),
     cityId: id,
     ambassadorId: optionalId,
     partnerId: optionalId,

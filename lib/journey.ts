@@ -14,6 +14,8 @@ const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Informe a data no formato A
  */
 export const startAttendanceSchema = z.object({
   personId: z.string().uuid(),
+  /** Quem indicou (pessoa do mapa na mesma cidade). */
+  referrerId: z.string().uuid().nullable().default(null),
   email: z.union([z.string().trim().toLowerCase().email().max(254), z.literal("")]).default(""),
   whatsapp: z.string().trim().max(30).default(""),
   channel: z.enum(LEAD_CHANNELS).default("Orgânico"),

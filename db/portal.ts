@@ -1,7 +1,8 @@
 import { audit, brazilTimestamp, database } from "@/db/runtime";
 import { canPerform } from "@/lib/expansion-permissions";
 import { isPortalRole, type AccessView } from "@/lib/expansion-types";
-import { PORTAL_AUDIENCE, MAX_REFERRALS_PER_DAY, memberSchema, referSchema, stepSchema, stepToggleSchema, type PortalAdminData, type PortalData } from "@/lib/portal";
+import { PORTAL_AUDIENCE, MAX_REFERRALS_PER_DAY, mapMemberSchema, memberSchema, referSchema, stepSchema, stepToggleSchema, type PortalAdminData, type PortalData } from "@/lib/portal";
+import { ensurePortalPerson } from "@/db/portal-person";
 
 type Value = string | number | null;
 const rows = async (sql: string, args: Value[] = []) => (await database().prepare(sql).bind(...args).all()).results;
@@ -163,6 +164,17 @@ export async function portalAdminAction(access: AccessView, action: string, inpu
       db.prepare("UPDATE portal_steps SET position=? WHERE id=?").bind(Number(neighbor.position), Number(step.id)),
       db.prepare("UPDATE portal_steps SET position=? WHERE id=?").bind(Number(step.position), Number(neighbor.id)),
     ]);
+    return {};
+  }
+  if (action === "map_member") {
+    // Coloca no mapa um mentorado cadastrado antes desta regra (liga à pessoa de mesmo nome ou cria uma).
+    const v = mapMemberSchema.parse(input);
+    const user = await first("SELECT id,name,city_id,person_id FROM app_users WHERE id=? AND organization_id=? AND role='Mentorado'", [v.userId, a.organizationId]);
+    if (!user) throw new PortalError("Membro do portal não encontrado.", 404);
+    if (user.person_id) return {};
+    if (user.city_id === null || user.city_id === undefined) throw new PortalError("Defina a cidade do mentorado em Gestão → Time e acessos antes de colocá-lo no mapa.", 400);
+    await ensurePortalPerson(access, Number(user.id), Number(user.city_id), str(user.name), now);
+    await audit(db, a.organizationId, a.email, "portal_member_map", "app_user", v.userId, "Mentorado colocado no mapa.");
     return {};
   }
   if (action === "set_member") {

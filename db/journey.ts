@@ -42,7 +42,7 @@ export async function startAttendance(access: AccessView, input: unknown) {
   } else {
     const place = person.place_id ? await first("SELECT name FROM businesses WHERE id=?", [String(person.place_id)]) : null;
     const data = parseActionPayload("create_lead", {
-      personId: v.personId, cityId, name: String(person.name), email: v.email, whatsapp: v.whatsapp,
+      personId: v.personId, referrerId: v.referrerId, cityId, name: String(person.name), email: v.email, whatsapp: v.whatsapp,
       status: "Lead válido", channel: v.channel, sourceLabel: place ? `Mapeamento · ${String(place.name)}` : "Mapeamento",
       campaign: "", utmSource: "", utmMedium: "", utmCampaign: "",
       consentAccepted: true, consentSource: v.consentSource, consentPurpose: v.consentPurpose, assignedToEmail: v.ownerEmail,

@@ -10,6 +10,7 @@ import type { DashboardData } from "@/lib/expansion-types";
 import { defaultOwnerEmail, eligibleOwners } from "@/lib/owners";
 import { LEAD_CHANNELS } from "@/lib/journey";
 import { tenantFetch } from "@/lib/tenant-request";
+import { TerritoryPersonPicker } from "@/app/territory-person-picker";
 
 export type AttendancePerson = { id: string; name: string; cityId: number; cityName?: string; placeName?: string };
 
@@ -39,7 +40,7 @@ export function StartAttendanceDialog({ person, data, onClose, onStarted }: { pe
     setBusy(true); setError(null);
     try {
       const response = await tenantFetch("/api/journey", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "start", data: {
-        personId: person.id, whatsapp: f.get("whatsapp"), email: f.get("email"), channel: f.get("channel"),
+        personId: person.id, referrerId: f.get("referrerId") || null, whatsapp: f.get("whatsapp"), email: f.get("email"), channel: f.get("channel"),
         consentAccepted: f.get("consent") === "on", consentSource: f.get("consentSource"), consentPurpose: f.get("consentPurpose"),
         ownerEmail: f.get("ownerEmail") || defaultOwnerEmail(data, person.cityId), temperature: f.get("temperature"), nextAction: f.get("nextAction"), dueDate: f.get("dueDate"),
       } }) });
@@ -58,6 +59,7 @@ export function StartAttendanceDialog({ person, data, onClose, onStarted }: { pe
         <label className="grid gap-1">WhatsApp<input name="whatsapp" inputMode="tel" maxLength={30} placeholder="(31) 9 9999-9999" className="commercial-input" /></label>
         <label className="grid gap-1">E-mail<input name="email" type="email" maxLength={254} placeholder="opcional se tiver WhatsApp" className="commercial-input" /></label>
         <label className="grid gap-1">Como chegou<select name="channel" defaultValue="Orgânico" className="commercial-input">{LEAD_CHANNELS.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <div className="grid gap-1 sm:col-span-2"><span>Quem indicou (opcional)</span><TerritoryPersonPicker cityId={person.cityId} name="referrerId" excludeId={person.id} /><span className="text-xs text-subtle">Pessoa do mapa na mesma cidade. A rede de indicações e o ícone de quem indicou se atualizam sozinhos.</span></div>
         <label className="grid gap-1">Temperatura<select name="temperature" defaultValue="Morno" className="commercial-input">{TEMPERATURES.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="grid gap-1 sm:col-span-2">Próximo passo<input name="nextAction" required minLength={3} maxLength={500} defaultValue="Primeiro contato pelo WhatsApp" className="commercial-input" /></label>
         <label className="grid gap-1">Quando<input name="dueDate" type="date" required defaultValue={today()} className="commercial-input" /></label>

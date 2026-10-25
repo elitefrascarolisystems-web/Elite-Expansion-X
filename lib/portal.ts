@@ -26,6 +26,7 @@ export const stepSchema = z.object({
   title: z.string().trim().min(3).max(120),
   description: z.string().trim().max(600).default(""),
 });
+export const mapMemberSchema = z.object({ userId: z.number().int().positive() });
 export const memberSchema = z.object({
   userId: z.number().int().positive(),
   personId: z.string().uuid().nullable().default(null),

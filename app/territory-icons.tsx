@@ -1,9 +1,9 @@
-import {Building2,Flag,Shield,Compass,GraduationCap,Users,Handshake,Store,CalendarDays,Target,UserPlus,BadgeCheck,Clock,MapPin,UserRound,Gem,Waypoints,Crown,Network,School,MapPinned,ShoppingBag,UtensilsCrossed,HeartPulse,Sparkles,BookOpen,Cpu,Factory,HardHat,House,Landmark,Wheat,Briefcase,Truck,Car,Ticket,Dumbbell,Church,Building,Scale} from 'lucide-react';
+import {Award,Trophy,Building2,Flag,Shield,Compass,GraduationCap,Users,Handshake,Store,CalendarDays,Target,UserPlus,BadgeCheck,Clock,MapPin,UserRound,Gem,Waypoints,Crown,Network,School,MapPinned,ShoppingBag,UtensilsCrossed,HeartPulse,Sparkles,BookOpen,Cpu,Factory,HardHat,House,Landmark,Wheat,Briefcase,Truck,Car,Ticket,Dumbbell,Church,Building,Scale} from 'lucide-react';
 import {primaryRole} from '@/lib/territory-appearance';
 import {placeIconLabel} from '@/lib/places';
 
-/** Pessoas: ícone pelo papel principal. */
-export const personIcons={Líder:Flag,Embaixador:Shield,Mentor:Compass,Mentorado:GraduationCap,"Cliente assinante":Gem,Equipe:Users,Vendedor:UserRound,Parceiro:Handshake,Network:Waypoints,Cliente:BadgeCheck,Lead:UserPlus,Pessoa:UserRound};
+/** Pessoas: ícone pelo papel principal. Os níveis da rede (quem comprou, quem indicou, quem multiplicou) vêm primeiro. */
+export const personIcons={Multiplicador:Trophy,Indicador:Award,Cliente:BadgeCheck,Lead:UserPlus,Líder:Flag,Embaixador:Shield,Mentor:Compass,Mentorado:GraduationCap,"Cliente assinante":Gem,Equipe:Users,Vendedor:UserRound,Parceiro:Handshake,Network:Waypoints,Pessoa:UserRound};
 /** Locais que não são empresa: ícone pelo tipo. */
 export const placeTypeIcons={'Escritório':Crown,'Network / comunidade':Network,'Instituição de ensino':School,'Ponto de encontro':MapPinned};
 /** Empresas: ícone pelo setor. */

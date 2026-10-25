@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, CalendarClock, LoaderCircle, Pencil, Plus, RefreshCcw, Trash2, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarClock, LoaderCircle, MapPin, Pencil, Plus, RefreshCcw, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { TerritoryPersonPicker } from "@/app/territory-person-picker";
@@ -109,10 +109,10 @@ export function PortalAdmin({ data, onGo }: { data: DashboardData; onGo: (tab: s
     {admin && <>
       <article className="elite-card overflow-hidden"><div className="border-b border-white/8 p-5"><p className="section-kicker">Membros</p><h3 className="text-lg font-semibold text-white">{admin.members.length} no portal</h3></div>
         {admin.members.length ? <ul className="divide-y divide-white/6">{admin.members.map((m) => { const pct = m.total ? Math.round((m.done / m.total) * 100) : 0; return <li key={m.userId} className="grid gap-3 p-4 sm:grid-cols-[1.4fr_1fr_1fr_auto] sm:items-center">
-          <div className="min-w-0"><p className="font-medium text-white">{m.name}</p><p className="truncate text-xs text-subtle">{`Mentorado(a)${m.personName ? ` · ${m.personName}` : ""}`}{m.hasPassword ? "" : " · ainda sem senha"}</p></div>
+          <div className="min-w-0"><p className="font-medium text-white">{m.name}</p><p className="truncate text-xs text-subtle">{`Mentorado(a)${m.personName ? ` · no mapa como ${m.personName}` : " · ainda fora do mapa"}`}{m.hasPassword ? "" : " · ainda sem senha"}</p></div>
           <div className="text-xs text-zinc-400"><p>Contato: <span className="text-zinc-200">{ownerName(m.ownerEmail)}</span></p><p className="flex items-center gap-1"><CalendarClock className="size-3.5" /> {meetingLabel(m.nextMeetingAt)}</p></div>
           <div className="text-xs text-zinc-400"><p>Jornada: {m.total ? `${m.done}/${m.total}` : "sem etapas"}</p>{m.total > 0 && <Progress aria-label="Jornada concluída" value={pct} className="mt-1 h-1 bg-white/8" />}<p className="mt-1">Indicações: {m.referrals}</p></div>
-          <Button size="sm" variant="outline" className="border-white/10 bg-white/5 text-white" onClick={() => setEditing(m)}><Pencil /> Editar</Button>
+          <div className="flex flex-wrap gap-2">{!m.personId && <Button size="sm" variant="outline" className="border-gold/30 bg-gold/10 text-gold-pale" title={m.cityId ? "Cria (ou liga) a pessoa no mapa com o papel Mentorado; as indicações dela passam a entrar na rede." : "Defina a cidade em Gestão → Time e acessos."} disabled={!m.cityId} onClick={async () => { try { await post("map_member", { userId: m.userId }); toast.success("Mentorado no mapa."); await load(); } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível colocar no mapa."); } }}><MapPin /> Colocar no mapa</Button>}<Button size="sm" variant="outline" className="border-white/10 bg-white/5 text-white" onClick={() => setEditing(m)}><Pencil /> Editar</Button></div>
         </li>; })}</ul> : <p className="p-5 text-sm leading-6 text-zinc-400">Ninguém no portal ainda. Em <strong className="text-zinc-200">Gestão → Time e acessos</strong>, convide com a função <strong className="text-zinc-200">Mentorado</strong>; o link de acesso vai com uma mensagem própria do portal.</p>}
       </article>
       <div className="grid max-w-3xl gap-5">{PORTAL_AUDIENCES.map((audience) => <JourneyEditor key={audience} audience={audience} steps={admin.steps.filter((s) => s.audience === audience)} onChange={load} />)}</div>

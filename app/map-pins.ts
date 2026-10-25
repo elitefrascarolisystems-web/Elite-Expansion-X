@@ -11,10 +11,14 @@ import { iconLabel, territoryIcons } from "@/app/territory-icons";
  */
 export const STATUS_CODES: Record<string, string> = { Ativo: "AT", Ativa: "AT", Pausado: "PA", Inativo: "IN", "Em treinamento": "TR", Convidado: "CO", Cliente: "PG" };
 
-type Palette = { fill: string; stroke: string; ink: string; shape: "circle" | "square" };
+type Palette = { fill: string; stroke: string; ink: string; shape: "circle" | "square"; ring?: string };
 // As mesmas cores dos pinos de antes: pessoas e cidades em círculo escuro; locais em quadrado colorido.
 const PALETTES: Record<string, Palette> = {
   person: { fill: "#111111", stroke: "#ffffff", ink: "#edd374", shape: "circle" },
+  // Níveis da rede: quem comprou acende em dourado; quem indicou e quem multiplicou ganham tons mais claros e um anel.
+  Cliente: { fill: "#c9a227", stroke: "#fff6cf", ink: "#111111", shape: "circle" },
+  Indicador: { fill: "#e2c35a", stroke: "#fff6cf", ink: "#111111", shape: "circle", ring: "#e2c35a" },
+  Multiplicador: { fill: "#f3e3a3", stroke: "#ffffff", ink: "#111111", shape: "circle", ring: "#f3e3a3" },
   city: { fill: "#111111", stroke: "#ffffff", ink: "#edd374", shape: "circle" },
   partner: { fill: "#235d48", stroke: "#ffffff", ink: "#ffffff", shape: "square" },
   event: { fill: "#354884", stroke: "#ffffff", ink: "#ffffff", shape: "square" },
@@ -28,8 +32,9 @@ const PALETTES: Record<string, Palette> = {
 
 /** Nome da imagem de um pino: "pin|paleta|ícone|situação|+". */
 export function pinImageId(record: { kind: string; roles: string[]; status: string }, roleFilter = ""): string {
-  const palette = record.kind === "business" ? (PALETTES[record.roles[0]] ? record.roles[0] : "Empresa") : PALETTES[record.kind] ? record.kind : "person";
-  return ["pin", palette, iconLabel(record.roles, record.kind, roleFilter), STATUS_CODES[record.status] ?? "", record.roles.length > 2 ? "+" : ""].join("|");
+  const label = iconLabel(record.roles, record.kind, roleFilter);
+  const palette = record.kind === "business" ? (PALETTES[record.roles[0]] ? record.roles[0] : "Empresa") : record.kind === "person" && PALETTES[label]?.shape === "circle" && label !== "person" ? label : PALETTES[record.kind] ? record.kind : "person";
+  return ["pin", palette, label, STATUS_CODES[record.status] ?? "", record.roles.length > 2 ? "+" : ""].join("|");
 }
 
 export type IconShape = { tag: string; attrs: Record<string, string> };
@@ -97,6 +102,7 @@ export function drawPin(id: string, ratio = 2): ImageData | null {
   ctx.fillStyle = palette.fill; ctx.fill();
   ctx.restore();
   ctx.lineWidth = 2; ctx.strokeStyle = palette.stroke; ctx.stroke();
+  if (palette.ring) { ctx.beginPath(); ctx.arc(center, center, half + 4.5, 0, Math.PI * 2); ctx.lineWidth = 1.5; ctx.strokeStyle = palette.ring; ctx.stroke(); }
   // Ícone de 19 px no centro, com o traço do lucide.
   ctx.save();
   const scale = 19 / 24;

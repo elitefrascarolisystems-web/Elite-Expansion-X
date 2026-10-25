@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { enqueue, useOfflineQueue, useOnline } from "@/app/offline-sync";
 import { StartAttendanceDialog, type AttendancePerson } from "@/app/start-attendance";
+import { TerritoryPersonPicker } from "@/app/territory-person-picker";
 import type { DashboardData } from "@/lib/expansion-types";
 import { defaultOwnerEmail } from "@/lib/owners";
 import { nameKey, PERSON_ROLES, PLACE_LINKS, PLACE_TYPES, SECTORS } from "@/lib/places";
@@ -45,7 +46,7 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
   const [added, setAdded] = useState<Added[]>([]);
   const [duplicate, setDuplicate] = useState<{ message: string; payload: Record<string, unknown>; role: string } | null>(null);
   const [form, setForm] = useState({ placeType: "Empresa", name: "", sector: "", segment: "", district: "", address: "", confirm: false });
-  const [personForm, setPersonForm] = useState({ name: "", link: "", role: "" });
+  const [personForm, setPersonForm] = useState({ name: "", link: "", role: "", referrerId: "" });
   const [authorized, setAuthorized] = useState(false);
   const [attend, setAttend] = useState<AttendancePerson | null>(null);
   const online = useOnline();
@@ -66,7 +67,7 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
 
   function reset() {
     setStep(0); setPlace(null); setMode("existing"); setFilter(""); setError(""); setLocate(null); setAdded([]); setDuplicate(null);
-    setForm({ placeType: "Empresa", name: "", sector: "", segment: "", district: "", address: "", confirm: false }); setPersonForm({ name: "", link: "", role: "" });
+    setForm({ placeType: "Empresa", name: "", sector: "", segment: "", district: "", address: "", confirm: false }); setPersonForm({ name: "", link: "", role: "", referrerId: "" });
   }
   async function close() {
     if (busy) return;
@@ -121,13 +122,13 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
 
   async function savePerson(confirmDuplicate = false, retry?: { payload: Record<string, unknown>; role: string }) {
     if (!cityId) return;
-    const payload = retry?.payload ?? { requestId: crypto.randomUUID(), cityId, name: personForm.name.trim(), leader: false, referrerId: null, placeId: place?.id ?? null, placeLink: place ? personForm.link : "", authorized: true };
+    const payload = retry?.payload ?? { requestId: crypto.randomUUID(), cityId, name: personForm.name.trim(), leader: false, referrerId: personForm.referrerId || null, placeId: place?.id ?? null, placeLink: place ? personForm.link : "", authorized: true };
     const role = retry?.role ?? personForm.role;
     setBusy(true); setError(""); setDuplicate(null);
     const keep = () => {
       enqueue({ ...base(), kind: "person", id: String(payload.requestId), cityId, label: String(payload.name), placeId: place?.id ?? null, data: payload, role, responsible: data.access.name || data.access.email, confirmDuplicate });
       setAdded((list) => [...list, { id: String(payload.requestId), name: String(payload.name), link: String(payload.placeLink || ""), role, queued: true }]);
-      setPersonForm({ name: "", link: personForm.link, role: personForm.role });
+      setPersonForm({ name: "", link: personForm.link, role: personForm.role, referrerId: "" });
     };
     try {
       // Local ainda guardado no aparelho: a pessoa vai junto, depois dele.
@@ -136,7 +137,7 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
       const id = String(result.result?.id ?? "");
       if (role && id) await post("/api/territory", { action: "role", data: { personId: id, role, status: "Ativo", responsible: data.access.name || data.access.email, source: "Mapeamento guiado", authorized: true } });
       setAdded((list) => [...list, { id, name: String(payload.name), link: String(payload.placeLink || ""), role }]);
-      setPersonForm({ name: "", link: personForm.link, role: personForm.role });
+      setPersonForm({ name: "", link: personForm.link, role: personForm.role, referrerId: "" });
     } catch (e) {
       const err = e as SendError;
       if (err.offline) { try { keep(); } catch (stored) { setError(stored instanceof Error ? stored.message : "Não foi possível guardar neste aparelho."); } }
@@ -201,6 +202,7 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
         <label className="grid gap-1 text-sm">Vínculo{!place && " (sem local)"}<select className="commercial-input" disabled={!place} value={personForm.link} onChange={(e) => setPersonForm({ ...personForm, link: e.target.value })}><option value="">Selecione</option>{PLACE_LINKS.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="grid gap-1 text-sm">Papel (opcional)<select className="commercial-input" value={personForm.role} onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}><option value="">Nenhum</option>{PERSON_ROLES.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
+      {cityId !== null && <div className="grid gap-1 text-sm"><span>Quem indicou (opcional)</span><TerritoryPersonPicker key={`ref-${cityId}-${added.length}`} cityId={cityId} name="referrerId" onChange={(id) => setPersonForm((form) => ({ ...form, referrerId: id }))} /></div>}
       {duplicate && <div role="alert" className="grid gap-2 rounded-lg border border-amber-300/30 bg-amber-300/10 p-3 text-sm text-amber-100"><p>{duplicate.message}</p><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" className="border-white/10 bg-white/5 text-white" disabled={busy} onClick={() => savePerson(true, duplicate)}>É outra pessoa: salvar mesmo assim</Button><Button size="sm" variant="ghost" onClick={() => setDuplicate(null)}>Não salvar</Button></div></div>}
       <div className="flex justify-end"><Button disabled={busy || !personReady} onClick={() => savePerson()} className="bg-gold text-black">{busy ? <LoaderCircle className="animate-spin" /> : <UserPlus />} Adicionar pessoa</Button></div>
       {added.length > 0 && <ul className="grid gap-1 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-3 text-sm" aria-label="Pessoas cadastradas agora">{added.map((item) => <li key={item.id} className="flex flex-wrap items-center gap-2">{item.queued ? <CloudOff className="size-4 text-amber-200" aria-label="Guardado no aparelho" /> : <Check className="size-4 text-emerald-300" />}{item.name}<span className="text-xs text-zinc-400">{[item.link, item.role].filter(Boolean).join(" · ")}</span>{item.queued ? <span className="ml-auto text-xs text-amber-200">Aguardando envio</span> : data.access.canManagePipeline && (item.attending ? <span className="ml-auto text-xs text-emerald-300">Em atendimento</span> : <Button size="sm" variant="ghost" className="ml-auto h-7 px-2 text-xs text-gold-soft" onClick={() => setAttend({ id: item.id, name: item.name, cityId: cityId!, cityName: city?.name, placeName: place?.name })}>Iniciar atendimento</Button>)}</li>)}</ul>}

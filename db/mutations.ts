@@ -3,6 +3,7 @@ import type { ActionName } from "@/lib/expansion-permissions";
 import { canAccessAmbassador, canAccessCity, canAccessLead, canPerform } from "@/lib/expansion-permissions";
 import { audit, asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runtime";
 import { citySlotBlocked, seatBlocked } from "@/db/plan";
+import { ensurePortalPerson } from "@/db/portal-person";
 
 export class ActionError extends Error {}
 
@@ -316,7 +317,17 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       text(input, "utmMedium"), text(input, "utmCampaign"), timestamp, text(input, "consentSource"),
       text(input, "consentPurpose"), assignedToEmail, timestamp, access.email, timestamp,
     );
-    const result = (await db.batch([person.statement, insert]))[1];
+    // Quem indicou: a pessoa entra na rede de indicações (sem criar ciclo e sem trocar um indicador já registrado).
+    const statements = [person.statement];
+    const referrerId = typeof input.referrerId === "string" && input.referrerId ? input.referrerId : null;
+    if (referrerId) {
+      if (referrerId === person.id) throw new ActionError("A pessoa não pode indicar a si mesma.");
+      const referrer = (await db.prepare("SELECT p.id FROM territory_people p JOIN cities c ON c.id=p.city_id WHERE p.id=? AND p.city_id=? AND c.organization_id=?").bind(referrerId, cityId, access.organizationId).all()).results[0];
+      if (!referrer) throw new ActionError("Quem indicou precisa estar cadastrado no mapa, na mesma cidade.");
+      statements.push(db.prepare(`WITH RECURSIVE ancestors(id,referrer_id) AS (SELECT id,referrer_id FROM territory_people WHERE id=? UNION SELECT p.id,p.referrer_id FROM territory_people p JOIN ancestors a ON p.id=a.referrer_id) UPDATE territory_people SET referrer_id=?,updated_at=? WHERE id=? AND referrer_id IS NULL AND NOT EXISTS(SELECT 1 FROM ancestors WHERE id=?)`).bind(referrerId, referrerId, timestamp, person.id, person.id));
+    }
+    const batch = await db.batch([...statements, insert]);
+    const result = batch[batch.length - 1];
     const entityId = asNumber(result.meta.last_row_id);
     if (ambassadorId !== null) await refreshAmbassadorActivation(ambassadorId, timestamp);
     await audit(db, access.organizationId, access.email, action, "lead", entityId, `Lead autorizado registrado pelo canal ${channel}.`);
@@ -579,6 +590,8 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       `).bind(access.organizationId,email, text(input, "name"), text(input, "role"), cityId, ambassadorId, text(input, "title"), asNumber(input.mentorshipCycle), access.email, timestamp).run();
       entityId = asNumber(result.meta.last_row_id);
     }
+    // Mentorado com cidade entra no mapa na hora (pessoa + papel), para as indicações dele já nascerem ligadas.
+    if (text(input, "role") === "Mentorado" && cityId !== null) await ensurePortalPerson(access, entityId, cityId, text(input, "name"), timestamp);
     await audit(db, access.organizationId, access.email, action, "app_user", entityId, `Perfil interno preparado para ${email}; nenhum convite foi enviado.`);
     return;
   }

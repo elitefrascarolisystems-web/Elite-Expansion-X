@@ -8,7 +8,7 @@ import { validationMessage } from "@/lib/validation-message";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store" };
-const ADMIN_ACTIONS = new Set(["save_step", "delete_step", "move_step", "set_member"]);
+const ADMIN_ACTIONS = new Set(["save_step", "delete_step", "move_step", "set_member", "map_member"]);
 
 async function access(request: Request) {
   const user = await getCurrentUser();

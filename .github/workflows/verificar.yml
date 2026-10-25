@@ -46,6 +46,7 @@ jobs:
             tests/hooks.test.mjs \
             tests/map-modes.test.mjs \
             tests/navigation.test.mjs \
+            tests/network-levels.test.mjs \
             tests/notifications.test.mjs \
             tests/offline-queue.test.mjs \
             tests/password-login.test.mjs \
