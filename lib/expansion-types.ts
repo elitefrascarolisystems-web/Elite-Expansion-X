@@ -266,6 +266,8 @@ export type DashboardData = {
   people?: Array<{id: string; cityId: number; name: string}>;
   /** Empresas, escritórios e networks para vincular pessoas a um local. */
   places?: Array<{id: string; cityId: number; name: string; placeType: string}>;
+  /** Bairros das cidades autorizadas (para o campo "Bairro"); `located` diz se já tem ponto no mapa. */
+  regions?: Array<{id: string; cityId: number; name: string; located: boolean}>;
   /** Pessoas no mapa e quantas estão ligadas a um local (para os Primeiros passos). */
   mapping?: { people: number; linked: number };
   /** Indicadores do mapeamento por cidade e por pessoa da equipe (só para a gestão). */

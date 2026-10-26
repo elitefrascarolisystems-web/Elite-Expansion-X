@@ -16,6 +16,7 @@ export const referSchema = z.object({
   whatsapp: z.string().trim().max(30).default(""),
   email: z.union([z.string().trim().toLowerCase().email().max(254), z.literal("")]).default(""),
   cityId: z.number().int().positive(),
+  regionId: z.string().uuid().nullable().default(null),
   note: z.string().trim().max(500).default(""),
   consent: z.literal(true, { message: "Confirme que a pessoa autorizou o contato." }),
 }).refine((v) => Boolean(v.whatsapp.replace(/\D/g, "") || v.email), { message: "Informe o WhatsApp ou o e-mail de quem você está indicando.", path: ["whatsapp"] });
@@ -45,6 +46,8 @@ export type PortalData = {
   materials: { id: number; title: string; type: string; url: string; instructions: string }[];
   referrals: { name: string; createdAt: string; status: "Recebida" | "Em conversa" | "Virou cliente" }[];
   cities: { id: number; name: string }[];
+  /** Bairros cadastrados por cidade, para a indicação cair no lugar certo do mapa. */
+  regions: { id: string; cityId: number; name: string }[];
 };
 export type PortalAdminData = {
   steps: (Omit<PortalStep, "doneAt"> & { audience: string; position: number })[];

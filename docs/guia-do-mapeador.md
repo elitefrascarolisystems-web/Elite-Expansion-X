@@ -13,13 +13,14 @@ O que fazer, em que ordem e as regras do mapeamento. A mesma versão fica na pla
 1. Cidade: confira se a cidade já está cadastrada (Território → Cidades). Se não estiver, peça ao administrador.
 2. Local: use “+ Novo → Mapear local e pessoas”, no topo. Escolha a cidade e depois o local: um já cadastrado ou um novo, com tipo (Empresa, Escritório, Network / comunidade, Instituição de ensino ou Ponto de encontro), setor e endereço comercial.
 3. Ponto no mapa: busque o endereço e escolha o resultado certo. Se não achar, deixe pendente e valide depois em Mapa → local → “Validar localização”.
-4. Pessoas: no mesmo passo a passo, adicione as pessoas do local com o vínculo (sócio/dono, colaborador, mentorado, membro do network, responsável ou frequenta) e, se quiser, o papel (Mentorado, Mentor, Parceiro, Cliente assinante, Network...).
-5. Nome repetido: se aparecer o aviso de que já existe alguém com esse nome na cidade, confira no mapa. Só salve se for mesmo outra pessoa.
-6. Muitos de uma vez: use as planilhas “Importar empresas e locais” (Território → Locais) e “Importar pessoas” (Território → Mapa). Importe os locais antes das pessoas. Para trazer a rede inteira de uma vez (mentorados, quem indicou, contato e vendas já feitas), use “Importar a rede por planilha” em Rede → Indicações: uma linha por pessoa, e o mapa e a rede ficam prontos.
-7. Quem indicou: ao cadastrar a pessoa ou ao iniciar o atendimento, escolha “Quem indicou”. A rede de indicações e o ícone de quem indicou se atualizam sozinhos.
-8. Venda: na ficha da pessoa no mapa, “Registrar venda”. Com o pagamento confirmado o círculo fica dourado (Cliente); se ela indicar alguém vira Indicador; se a indicação comprar, Multiplicador.
-9. Atendimento: se a pessoa autorizou o contato, use “Iniciar atendimento” (na ficha do mapa ou logo depois de cadastrá-la). O atendimento começa com o primeiro retorno já marcado na agenda. Depois siga em Vendas → Agenda com o roteiro do Método F.E.C.H.A.; ao confirmar o pagamento, a oportunidade fecha sozinha como Ganho.
-8. Agenda: ao entrar, “Sua agenda” mostra seus retornos atrasados e os de hoje. Comece por eles.
+4. Bairro: pessoa sem local ganha um bairro e aparece no centro dele (nunca na residência). Escolha na lista ou cadastre na hora; a gestão confere o ponto em Território → Cidades → Bairros.
+5. Pessoas: no mesmo passo a passo, adicione as pessoas do local com o vínculo (sócio/dono, colaborador, mentorado, membro do network, responsável ou frequenta) e, se quiser, o papel (Mentorado, Mentor, Parceiro, Cliente assinante, Network...).
+6. Nome repetido: se aparecer o aviso de que já existe alguém com esse nome na cidade, confira no mapa. Só salve se for mesmo outra pessoa.
+7. Muitos de uma vez: use as planilhas “Importar empresas e locais” (Território → Locais) e “Importar pessoas” (Território → Mapa). Importe os locais antes das pessoas. Para trazer a rede inteira de uma vez (mentorados, quem indicou, contato e vendas já feitas), use “Importar a rede por planilha” em Rede → Indicações: uma linha por pessoa, e o mapa e a rede ficam prontos.
+8. Quem indicou: ao cadastrar a pessoa ou ao iniciar o atendimento, escolha “Quem indicou”. A rede de indicações e o ícone de quem indicou se atualizam sozinhos.
+9. Venda: na ficha da pessoa no mapa, “Registrar venda”. Com o pagamento confirmado o círculo fica dourado (Cliente); se ela indicar alguém vira Indicador; se a indicação comprar, Multiplicador.
+10. Atendimento: se a pessoa autorizou o contato, use “Iniciar atendimento” (na ficha do mapa ou logo depois de cadastrá-la). O atendimento começa com o primeiro retorno já marcado na agenda. Depois siga em Vendas → Agenda com o roteiro do Método F.E.C.H.A.; ao confirmar o pagamento, a oportunidade fecha sozinha como Ganho.
+11. Agenda: ao entrar, “Sua agenda” mostra seus retornos atrasados e os de hoje. Comece por eles.
 
 ## No celular e sem internet
 

@@ -31,7 +31,7 @@ export async function getPortalData(access: AccessView): Promise<PortalData> {
     FROM app_users u JOIN organizations o ON o.id=u.organization_id LEFT JOIN cities c ON c.id=u.city_id WHERE u.id=? AND u.organization_id=?`, [a.id, a.organizationId]);
   if (!user) throw new PortalError("Perfil não encontrado.", 404);
   const ownerEmail = str(user.portal_owner_email);
-  const [owner, place, steps, materials, referrals, cities] = await Promise.all([
+  const [owner, place, steps, materials, referrals, cities, regions] = await Promise.all([
     ownerEmail ? first("SELECT name,email,title FROM app_users WHERE organization_id=? AND lower(email)=lower(?) AND active=1", [a.organizationId, ownerEmail]) : Promise.resolve(undefined),
     user.person_id ? first("SELECT b.name,p.place_link FROM territory_people p JOIN businesses b ON b.id=p.place_id WHERE p.id=? AND b.organization_id=?", [str(user.person_id), a.organizationId]) : Promise.resolve(undefined),
     rows(`SELECT s.id,s.title,s.description,pp.done_at FROM portal_steps s LEFT JOIN portal_progress pp ON pp.step_id=s.id AND pp.user_id=?
@@ -43,6 +43,7 @@ export async function getPortalData(access: AccessView): Promise<PortalData> {
       EXISTS(SELECT 1 FROM opportunities o WHERE o.lead_id=l.id AND o.stage NOT IN ('Novo')) AS talking
       FROM leads l JOIN cities c ON c.id=l.city_id WHERE c.organization_id=? AND lower(l.created_by)=lower(?) AND l.channel='Indicação' ORDER BY l.created_at DESC LIMIT 100`, [a.organizationId, a.email]),
     rows("SELECT id,name FROM cities WHERE organization_id=? ORDER BY name", [a.organizationId]),
+    rows("SELECT rg.id,rg.city_id,rg.name FROM territory_regions rg JOIN cities c ON c.id=rg.city_id WHERE c.organization_id=? ORDER BY rg.name LIMIT 2000", [a.organizationId]),
   ]);
   const meetingAt = user.next_meeting_at ? str(user.next_meeting_at) : "";
   return {
@@ -54,6 +55,7 @@ export async function getPortalData(access: AccessView): Promise<PortalData> {
     materials: materials.map((m) => ({ id: Number(m.id), title: str(m.title), type: str(m.type), url: str(m.url), instructions: str(m.instructions) })),
     referrals: referrals.map((r) => ({ name: str(r.name), createdAt: str(r.created_at), status: Number(r.paid) ? "Virou cliente" : Number(r.talking) ? "Em conversa" : "Recebida" })),
     cities: cities.map((c) => ({ id: Number(c.id), name: str(c.name) })),
+    regions: regions.map((r) => ({ id: str(r.id), cityId: Number(r.city_id), name: str(r.name) })),
   };
 }
 
@@ -87,12 +89,13 @@ export async function portalAction(access: AccessView, action: string, input: un
     const user = await first("SELECT name,person_id,portal_owner_email FROM app_users WHERE id=?", [a.id]);
     // Quem indicou fica registrado na rede de indicações quando a pessoa dele está na mesma cidade.
     const referrer = user?.person_id ? await first("SELECT id FROM territory_people WHERE id=? AND city_id=?", [str(user.person_id), v.cityId]) : null;
+    const region = v.regionId ? await first("SELECT id FROM territory_regions WHERE id=? AND city_id=?", [v.regionId, v.cityId]) : null;
     const ownerEmail = str(user?.portal_owner_email).toLowerCase();
     const owner = ownerEmail ? await first(`SELECT email FROM app_users WHERE organization_id=? AND lower(email)=? AND active=1 AND role IN ('Administrador','Coordenação','Líder','Comercial')
       AND (city_id=? OR (city_id IS NULL AND role IN ('Administrador','Comercial')))`, [a.organizationId, ownerEmail, v.cityId]) : null;
     const personId = crypto.randomUUID(), firstName = str(user?.name).split(" ")[0] || "membro";
     const statements = [
-      db.prepare("INSERT INTO territory_people(id,city_id,name,referrer_id,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?)").bind(personId, v.cityId, v.name, referrer ? str(referrer.id) : null, a.email, now, now),
+      db.prepare("INSERT INTO territory_people(id,city_id,name,referrer_id,region_id,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(personId, v.cityId, v.name, referrer ? str(referrer.id) : null, region ? str(region.id) : null, a.email, now, now),
       db.prepare(`INSERT INTO leads(person_id,city_id,name,email,whatsapp,normalized_email,normalized_whatsapp,status,channel,source_label,campaign,utm_source,utm_medium,utm_campaign,consent_at,consent_source,consent_purpose,assigned_to_email,updated_at,created_by,created_at)
         VALUES(?,?,?,?,?,?,?,'Lead informado','Indicação',?,'','','','',?,?,?,?,?,?,?)`).bind(personId, v.cityId, v.name, v.email, v.whatsapp, normalizedEmail, normalizedWhatsapp,
         `Indicação de ${str(user?.name) || a.email} (mentorado)`, now,

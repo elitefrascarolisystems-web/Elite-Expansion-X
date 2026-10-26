@@ -26,7 +26,7 @@ export async function POST(request:Request){
    const results=found.map(f=>({name:f.display_name??'Local encontrado',latitude:Number(f.lat),longitude:Number(f.lon)})).filter(r=>Number.isFinite(r.latitude)&&Number.isFinite(r.longitude));
    return Response.json({results,attribution:'© OpenStreetMap'},{headers});
   }
-  const suffix=body.kind==='person'?'&types=neighbourhood,locality,municipality':'';
+  const suffix=body.kind==='region'?'&types=neighbourhood,locality,place':'';
   const upstream=await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(`${query}, ${c.name}, ${c.state}, Brasil`)}.json?key=${encodeURIComponent(key)}&country=br&limit=5&language=pt${suffix}`,{signal:AbortSignal.timeout(7000)});
   if(!upstream.ok)throw new Error('provider');
   const result=await upstream.json() as {features?:Array<{place_name?:string;text?:string;geometry?:{coordinates:number[]}}>};

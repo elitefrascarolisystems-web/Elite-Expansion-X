@@ -54,6 +54,7 @@ jobs:
             tests/places.test.mjs \
             tests/portal.test.mjs \
             tests/privacy.test.mjs \
+            tests/regions.test.mjs \
             tests/rendered-html.test.mjs \
             tests/stage-events.test.mjs \
             tests/subscription-requests.test.mjs \

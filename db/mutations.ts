@@ -326,6 +326,11 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       if (!referrer) throw new ActionError("Quem indicou precisa estar cadastrado no mapa, na mesma cidade.");
       statements.push(db.prepare(`WITH RECURSIVE ancestors(id,referrer_id) AS (SELECT id,referrer_id FROM territory_people WHERE id=? UNION SELECT p.id,p.referrer_id FROM territory_people p JOIN ancestors a ON p.id=a.referrer_id) UPDATE territory_people SET referrer_id=?,updated_at=? WHERE id=? AND referrer_id IS NULL AND NOT EXISTS(SELECT 1 FROM ancestors WHERE id=?)`).bind(referrerId, referrerId, timestamp, person.id, person.id));
     }
+    const regionId = typeof input.regionId === "string" && input.regionId ? input.regionId : null;
+    if (regionId) {
+      if (!(await db.prepare("SELECT id FROM territory_regions WHERE id=? AND city_id=?").bind(regionId, cityId).all()).results[0]) throw new ActionError("O bairro deve ser da mesma cidade.");
+      statements.push(db.prepare("UPDATE territory_people SET region_id=?,updated_at=? WHERE id=? AND region_id IS NULL").bind(regionId, timestamp, person.id));
+    }
     const batch = await db.batch([...statements, insert]);
     const result = batch[batch.length - 1];
     const entityId = asNumber(result.meta.last_row_id);

@@ -8,6 +8,7 @@ import { nameKey } from "@/lib/places";
 export const NETWORK_COLUMNS = [
   ["name", "Nome", ["nome", "pessoa", "nome completo"]],
   ["city", "Cidade", ["cidade", "municipio"]],
+  ["region", "Bairro", ["bairro", "regiao", "bairro regiao"]],
   ["whatsapp", "WhatsApp", ["whatsapp", "telefone", "celular", "fone", "zap"]],
   ["email", "E-mail", ["e mail", "email"]],
   ["referrer", "Quem indicou", ["quem indicou", "indicado por", "indicador", "indicacao", "indicou"]],
@@ -22,10 +23,10 @@ export const NETWORK_COLUMNS = [
 export type NetworkColumn = (typeof NETWORK_COLUMNS)[number][0];
 
 export const NETWORK_TEMPLATE =
-  "﻿Nome;Cidade;WhatsApp;E-mail;Quem indicou;Papel;Produto;Valor;Data do pagamento;Situação da venda\r\n" +
-  "Ana Souza;Esmeraldas;31 99999-0001;ana@exemplo.com;;Mentorado;Mentoria Elite;1.500,00;10/03/2026;Pagamento confirmado\r\n" +
-  "Bruno Lima;Esmeraldas;31 99999-0002;;Ana Souza;Mentorado;Mentoria Elite;1.500,00;22/04/2026;Pagamento confirmado\r\n" +
-  "Carla Dias;Esmeraldas;31 99999-0003;;Bruno Lima;;;;;\r\n";
+  "﻿Nome;Cidade;Bairro;WhatsApp;E-mail;Quem indicou;Papel;Produto;Valor;Data do pagamento;Situação da venda\r\n" +
+  "Ana Souza;Esmeraldas;Centro;31 99999-0001;ana@exemplo.com;;Mentorado;Mentoria Elite;1.500,00;10/03/2026;Pagamento confirmado\r\n" +
+  "Bruno Lima;Esmeraldas;Novo Retiro;31 99999-0002;;Ana Souza;Mentorado;Mentoria Elite;1.500,00;22/04/2026;Pagamento confirmado\r\n" +
+  "Carla Dias;Esmeraldas;;31 99999-0003;;Bruno Lima;;;;;\r\n";
 
 export const SALE_STATUSES = ["Em negociação", "Venda confirmada", "Pagamento confirmado", "Cancelada", "Reembolsada"] as const;
 export type SaleStatus = (typeof SALE_STATUSES)[number];
@@ -35,6 +36,8 @@ export type NetworkRow = {
   line: number;
   cityId: number;
   name: string;
+  /** Bairro (texto da planilha): é cadastrado na cidade se ainda não existir. */
+  region: string;
   whatsapp: string;
   email: string;
   referrer: string;
@@ -135,7 +138,7 @@ export function buildNetworkRows(grid: string[][], cities: CityLike[], defaultCi
     if (saleStatus && !whatsapp && !email) return fail("Para registrar a venda, informe o WhatsApp ou o e-mail (o atendimento precisa de um contato autorizado).");
     const referrer = value(cells, "referrer");
     if (referrer && nameKey(referrer) === nameKey(name)) return fail("A pessoa não pode indicar a si mesma.");
-    rows.push({ line, cityId: city.id, name, whatsapp, email, referrer, role: value(cells, "role"), place: value(cells, "place"), link: value(cells, "link"), product, amountCents, paidAt, saleStatus });
+    rows.push({ line, cityId: city.id, name, region: value(cells, "region"), whatsapp, email, referrer, role: value(cells, "role"), place: value(cells, "place"), link: value(cells, "link"), product, amountCents, paidAt, saleStatus });
   });
   return { rows, problems };
 }
@@ -201,6 +204,7 @@ export function describeRow(row: NetworkRow, outcome?: NetworkOutcome) {
   const parts: string[] = [];
   parts.push(outcome?.person === "existente" ? "Já no mapa" : "Nova no mapa");
   if (row.role) parts.push(row.role);
+  if (row.region) parts.push(`Bairro ${row.region}`);
   if (row.referrer) parts.push(outcome?.referrer === "mantido" ? `Indicador já registrado (mantido)` : `Indicada por ${row.referrer}`);
   if (row.whatsapp || row.email) parts.push("Atendimento");
   if (row.saleStatus) parts.push(`${row.saleStatus === "Pagamento confirmado" ? "Venda paga" : row.saleStatus}${row.amountCents ? ` R$ ${(row.amountCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : ""}${row.paidAt ? ` em ${row.paidAt.slice(8, 10)}/${row.paidAt.slice(5, 7)}/${row.paidAt.slice(0, 4)}` : ""}`);

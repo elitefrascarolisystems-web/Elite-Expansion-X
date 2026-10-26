@@ -26,6 +26,7 @@ export function ClientPortal({ initialData, signOutPath }: { initialData: Portal
   const [data, setData] = useState(initialData);
   const [busyStep, setBusyStep] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
+  const [referCity, setReferCity] = useState("");
   const [showWelcome, setShowWelcome] = useState(!initialData.member.welcomed);
   const m = data.member, firstName = m.name.split(" ")[0];
   const done = data.steps.filter((s) => s.doneAt).length;
@@ -46,7 +47,7 @@ export function ClientPortal({ initialData, signOutPath }: { initialData: Portal
     const form = event.currentTarget, f = new FormData(form);
     setSending(true);
     try {
-      await post("refer", { name: f.get("name"), whatsapp: f.get("whatsapp"), email: f.get("email"), cityId: Number(f.get("cityId")), note: f.get("note"), consent: f.get("consent") === "on" });
+      await post("refer", { name: f.get("name"), whatsapp: f.get("whatsapp"), email: f.get("email"), cityId: Number(f.get("cityId")), regionId: f.get("regionId") || null, note: f.get("note"), consent: f.get("consent") === "on" });
       form.reset(); await reload();
       toast.success(`Indicação enviada. A equipe ${m.organizationName} vai entrar em contato. Obrigado!`);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível enviar."); }
@@ -109,7 +110,7 @@ export function ClientPortal({ initialData, signOutPath }: { initialData: Portal
             <form onSubmit={refer} className="mt-4 grid gap-3 text-sm">
               <label className="grid gap-1">Nome<input name="name" required minLength={2} maxLength={120} className="commercial-input" /></label>
               <div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1">WhatsApp<input name="whatsapp" inputMode="tel" maxLength={30} placeholder="(31) 9 9999-9999" className="commercial-input" /></label><label className="grid gap-1">E-mail<input name="email" type="email" maxLength={254} className="commercial-input" /></label></div>
-              <label className="grid gap-1">Cidade<select name="cityId" required defaultValue={data.cities.find((c) => c.name === m.cityName)?.id ?? data.cities[0]?.id} className="commercial-input">{data.cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+              <div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1">Cidade<select name="cityId" required value={referCity || String(data.cities.find((c) => c.name === m.cityName)?.id ?? data.cities[0]?.id ?? "")} onChange={(e) => setReferCity(e.target.value)} className="commercial-input">{data.cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label className="grid gap-1">Bairro (opcional)<select name="regionId" className="commercial-input"><option value="">Não sei</option>{data.regions.filter((r) => r.cityId === Number(referCity || data.cities.find((c) => c.name === m.cityName)?.id || data.cities[0]?.id)).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></label></div>
               <label className="grid gap-1">Algo que ajude o primeiro contato (opcional)<input name="note" maxLength={500} placeholder="Ex.: tem uma loja e quer expandir" className="commercial-input" /></label>
               <label className="flex items-start gap-2 text-zinc-300"><input name="consent" type="checkbox" required className="mt-1" />Essa pessoa sabe da indicação e autorizou o contato da {m.organizationName}.</label>
               <Button type="submit" disabled={sending} className="bg-gold text-black">{sending ? <LoaderCircle className="animate-spin" /> : <Send />} Enviar indicação</Button>

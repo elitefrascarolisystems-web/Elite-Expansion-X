@@ -59,12 +59,13 @@ export const HEAT_METRICS = [
   { id: "abertos", label: "Atendimentos abertos", unit: ["atendimento aberto", "atendimentos abertos"] },
   { id: "vendas", label: "Vendas confirmadas", unit: ["venda confirmada", "vendas confirmadas"] },
   { id: "atividade", label: "Atividade (30 dias)", unit: ["registro nos últimos 30 dias", "registros nos últimos 30 dias"] },
+  { id: "pessoas", label: "Pessoas", unit: ["pessoa ligada (local ou bairro)", "pessoas ligadas (local ou bairro)"] },
 ] as const;
 export type HeatMetric = (typeof HEAT_METRICS)[number]["id"];
 
 /** Peso de cada local no calor, pela medida escolhida. */
 export function heatWeights(data: TerritoryPlacesResponse, metric: HeatMetric): number[] {
-  const weights = data.spots.map((spot) => metric === "locais" ? Number(spot.kind === "business") : metric === "atividade" ? spot.recent : 0);
+  const weights = data.spots.map((spot) => metric === "locais" ? Number(spot.kind === "business") : metric === "atividade" ? spot.recent : metric === "pessoas" ? spot.people : 0);
   if (metric === "abertos" || metric === "vendas") {
     for (const [spot, stage, , , paid, count] of data.deals) if (metric === "abertos" ? isOpen(stage) : paid !== "") weights[spot] += count;
   }

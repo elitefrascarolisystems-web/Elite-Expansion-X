@@ -59,7 +59,7 @@ export function PlacesNotes({ capped, loading, error }: { capped: boolean; loadi
     {loading && <p className="territory-legend-hint" role="status">Carregando os locais…</p>}
     {error && <p className="territory-legend-hint text-amber-200" role="alert">{error}</p>}
     {capped && <p className="territory-legend-hint" role="status">Mostrando os primeiros 5.000 locais. Escolha uma cidade para ver todos.</p>}
-    <p className="territory-legend-hint">Só locais e centros de cidade, nunca a posição de uma pessoa. Aqui valem a cidade, o estado e o tipo ou setor do local.</p>
+    <p className="territory-legend-hint">Só locais, centros de bairro e centros de cidade, nunca a posição de uma pessoa. Aqui valem a cidade, o estado e o tipo ou setor do local.</p>
   </>;
 }
 

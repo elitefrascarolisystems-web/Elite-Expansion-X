@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { enqueue, useOfflineQueue, useOnline } from "@/app/offline-sync";
 import { StartAttendanceDialog, type AttendancePerson } from "@/app/start-attendance";
 import { TerritoryPersonPicker } from "@/app/territory-person-picker";
+import { RegionSelect } from "@/app/region-select";
 import type { DashboardData } from "@/lib/expansion-types";
 import { defaultOwnerEmail } from "@/lib/owners";
 import { nameKey, PERSON_ROLES, PLACE_LINKS, PLACE_TYPES, SECTORS } from "@/lib/places";
@@ -46,7 +47,7 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
   const [added, setAdded] = useState<Added[]>([]);
   const [duplicate, setDuplicate] = useState<{ message: string; payload: Record<string, unknown>; role: string } | null>(null);
   const [form, setForm] = useState({ placeType: "Empresa", name: "", sector: "", segment: "", district: "", address: "", confirm: false });
-  const [personForm, setPersonForm] = useState({ name: "", link: "", role: "", referrerId: "" });
+  const [personForm, setPersonForm] = useState({ name: "", link: "", role: "", referrerId: "", regionId: "" });
   const [authorized, setAuthorized] = useState(false);
   const [attend, setAttend] = useState<AttendancePerson | null>(null);
   const online = useOnline();
@@ -67,7 +68,7 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
 
   function reset() {
     setStep(0); setPlace(null); setMode("existing"); setFilter(""); setError(""); setLocate(null); setAdded([]); setDuplicate(null);
-    setForm({ placeType: "Empresa", name: "", sector: "", segment: "", district: "", address: "", confirm: false }); setPersonForm({ name: "", link: "", role: "", referrerId: "" });
+    setForm({ placeType: "Empresa", name: "", sector: "", segment: "", district: "", address: "", confirm: false }); setPersonForm({ name: "", link: "", role: "", referrerId: "", regionId: "" });
   }
   async function close() {
     if (busy) return;
@@ -122,13 +123,13 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
 
   async function savePerson(confirmDuplicate = false, retry?: { payload: Record<string, unknown>; role: string }) {
     if (!cityId) return;
-    const payload = retry?.payload ?? { requestId: crypto.randomUUID(), cityId, name: personForm.name.trim(), leader: false, referrerId: personForm.referrerId || null, placeId: place?.id ?? null, placeLink: place ? personForm.link : "", authorized: true };
+    const payload = retry?.payload ?? { requestId: crypto.randomUUID(), cityId, name: personForm.name.trim(), leader: false, referrerId: personForm.referrerId || null, regionId: place ? null : personForm.regionId || null, placeId: place?.id ?? null, placeLink: place ? personForm.link : "", authorized: true };
     const role = retry?.role ?? personForm.role;
     setBusy(true); setError(""); setDuplicate(null);
     const keep = () => {
       enqueue({ ...base(), kind: "person", id: String(payload.requestId), cityId, label: String(payload.name), placeId: place?.id ?? null, data: payload, role, responsible: data.access.name || data.access.email, confirmDuplicate });
       setAdded((list) => [...list, { id: String(payload.requestId), name: String(payload.name), link: String(payload.placeLink || ""), role, queued: true }]);
-      setPersonForm({ name: "", link: personForm.link, role: personForm.role, referrerId: "" });
+      setPersonForm({ name: "", link: personForm.link, role: personForm.role, referrerId: "", regionId: personForm.regionId });
     };
     try {
       // Local ainda guardado no aparelho: a pessoa vai junto, depois dele.
@@ -137,7 +138,7 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
       const id = String(result.result?.id ?? "");
       if (role && id) await post("/api/territory", { action: "role", data: { personId: id, role, status: "Ativo", responsible: data.access.name || data.access.email, source: "Mapeamento guiado", authorized: true } });
       setAdded((list) => [...list, { id, name: String(payload.name), link: String(payload.placeLink || ""), role }]);
-      setPersonForm({ name: "", link: personForm.link, role: personForm.role, referrerId: "" });
+      setPersonForm({ name: "", link: personForm.link, role: personForm.role, referrerId: "", regionId: personForm.regionId });
     } catch (e) {
       const err = e as SendError;
       if (err.offline) { try { keep(); } catch (stored) { setError(stored instanceof Error ? stored.message : "Não foi possível guardar neste aparelho."); } }
@@ -195,13 +196,14 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
     </div>}
 
     {step === 2 && <div className="grid gap-3">
-      <p className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-zinc-300">{city?.name} · {place ? <>ligadas a <strong className="text-white">{place.name}</strong></> : "sem local (centro da cidade)"}</p>
+      <p className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-zinc-300">{city?.name} · {place ? <>ligadas a <strong className="text-white">{place.name}</strong></> : "sem local (centro do bairro ou da cidade)"}</p>
       <label className="flex items-start gap-2 text-sm text-zinc-300"><input type="checkbox" className="mt-1" checked={authorized} onChange={(e) => setAuthorized(e.target.checked)} />Confirmo que posso registrar estas pessoas só com nome, cidade e vínculo (sem dados de residência).</label>
       <div className="grid gap-3 sm:grid-cols-[1.4fr_1fr_1fr]">
         <label className="grid gap-1 text-sm">Nome<input className="commercial-input" value={personForm.name} maxLength={200} onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter" && personReady && !busy) { e.preventDefault(); savePerson(); } }} /></label>
         <label className="grid gap-1 text-sm">Vínculo{!place && " (sem local)"}<select className="commercial-input" disabled={!place} value={personForm.link} onChange={(e) => setPersonForm({ ...personForm, link: e.target.value })}><option value="">Selecione</option>{PLACE_LINKS.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="grid gap-1 text-sm">Papel (opcional)<select className="commercial-input" value={personForm.role} onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}><option value="">Nenhum</option>{PERSON_ROLES.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
+      {cityId !== null && !place && <div className="grid gap-1 text-sm"><span>Bairro (opcional · a pessoa aparece no centro do bairro, nunca na residência)</span><RegionSelect key={`reg-${cityId}`} regions={data.regions ?? []} cityId={cityId} initialValue={personForm.regionId} onChange={(id) => setPersonForm((form) => ({ ...form, regionId: id }))} canAdd /></div>}
       {cityId !== null && <div className="grid gap-1 text-sm"><span>Quem indicou (opcional)</span><TerritoryPersonPicker key={`ref-${cityId}-${added.length}`} cityId={cityId} name="referrerId" onChange={(id) => setPersonForm((form) => ({ ...form, referrerId: id }))} /></div>}
       {duplicate && <div role="alert" className="grid gap-2 rounded-lg border border-amber-300/30 bg-amber-300/10 p-3 text-sm text-amber-100"><p>{duplicate.message}</p><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" className="border-white/10 bg-white/5 text-white" disabled={busy} onClick={() => savePerson(true, duplicate)}>É outra pessoa: salvar mesmo assim</Button><Button size="sm" variant="ghost" onClick={() => setDuplicate(null)}>Não salvar</Button></div></div>}
       <div className="flex justify-end"><Button disabled={busy || !personReady} onClick={() => savePerson()} className="bg-gold text-black">{busy ? <LoaderCircle className="animate-spin" /> : <UserPlus />} Adicionar pessoa</Button></div>

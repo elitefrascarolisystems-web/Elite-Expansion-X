@@ -14,6 +14,8 @@ export type TerritoryRecord = {
   referred?: { name: string; client: boolean }[];
   /** Local (empresa, escritório, network) ao qual a pessoa se liga. */
   place?: { id: string; name: string; type: string; link: string };
+  /** Bairro da pessoa; `located` diz se o bairro já tem ponto no mapa. */
+  region?: { id: string; name: string; located: boolean };
 };
 export type TerritoryPoint={latitude:number;longitude:number;count:number;people:number;key:string;kind:TerritoryKind;roles:string[];status:string;
  /** Nome do cadastro quando o ponto tem um só (para o cartão ao passar o mouse). */
@@ -24,8 +26,8 @@ export type TerritoryResponse = {
   updatedAt: string; canEdit: boolean;
 };
 /** Um local (empresa, escritório, network…) ou o centro de uma cidade, para os modos do mapa. Nunca a posição de uma pessoa. */
-export type MapSpot={key:string;kind:'business'|'city';name:string;latitude:number;longitude:number;cityId:number;
- /** Tipo do local ("Empresa", "Escritório"…) ou "Cidade". */
+export type MapSpot={key:string;kind:'business'|'city'|'region';name:string;latitude:number;longitude:number;cityId:number;
+ /** Tipo do local ("Empresa", "Escritório"…), "Bairro" ou "Cidade". */
  type:string;sector:string;
  /** Dia em que o local foi cadastrado (AAAA-MM-DD); vazio no centro da cidade. */
  mapped:string;

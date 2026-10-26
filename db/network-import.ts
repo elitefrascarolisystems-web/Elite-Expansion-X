@@ -75,6 +75,13 @@ export async function importNetwork(a: AccessView, input: unknown) {
         if (!link) throw new TerritoryError(`Vínculo "${r.link}" não reconhecido. Use: ${PLACE_LINKS.join(", ")}.`);
         placeId = found[0].id; placeLink = link;
       }
+      // Bairro: usa o já cadastrado na cidade ou cadastra sem ponto (a gestão localiza depois em Território → Cidades).
+      let regionId: string | null = null;
+      if (r.region) {
+        const found = (await rows("SELECT id FROM territory_regions WHERE city_id=? AND name_key=?", [r.cityId, nameKey(r.region)]))[0];
+        if (found) regionId = str(found.id);
+        else if (commit) { regionId = crypto.randomUUID(); await db.prepare("INSERT INTO territory_regions(id,city_id,name,name_key,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?)").bind(regionId, r.cityId, r.region, nameKey(r.region), a.email, brazilTimestamp(), brazilTimestamp()).run(); }
+      }
       const role = r.role ? personRoleFromText(r.role) : null;
       if (r.role && !role) throw new TerritoryError(`Papel "${r.role}" não reconhecido. Use: ${PERSON_ROLES.join(", ")}.`);
 
@@ -114,12 +121,13 @@ export async function importNetwork(a: AccessView, input: unknown) {
 
       if (commit) {
         if (!person) {
-          const saved = await mutateTerritory(a, "person", { requestId: crypto.randomUUID(), cityId: r.cityId, name: r.name, placeId, placeLink, referrerId, authorized: true, confirmDuplicate: true }) as { id: string };
+          const saved = await mutateTerritory(a, "person", { requestId: crypto.randomUUID(), cityId: r.cityId, name: r.name, placeId, placeLink, referrerId, regionId, authorized: true, confirmDuplicate: true }) as { id: string };
           person = { id: saved.id, name: r.name, referrerId };
         } else if (referrerId && !person.referrerId) {
           const result = await db.prepare(`WITH RECURSIVE ancestors(id,referrer_id) AS (SELECT id,referrer_id FROM territory_people WHERE id=? UNION SELECT p.id,p.referrer_id FROM territory_people p JOIN ancestors x ON p.id=x.referrer_id) UPDATE territory_people SET referrer_id=?,updated_at=? WHERE id=? AND referrer_id IS NULL AND NOT EXISTS(SELECT 1 FROM ancestors WHERE id=?)`).bind(referrerId, referrerId, brazilTimestamp(), person.id, person.id).run();
           if (!result.meta.changes) throw new TerritoryError("A indicação criaria um ciclo (a pessoa já está acima de quem a indicou). Confira a planilha.");
         }
+        if (regionId && same[0]) await db.prepare("UPDATE territory_people SET region_id=?,updated_at=? WHERE id=? AND region_id IS NULL").bind(regionId, brazilTimestamp(), person.id).run();
         if (role) await mutateTerritory(a, "role", { personId: person.id, role, status: "Ativo", responsible: a.name || a.email, source: "Importação da rede por planilha", authorized: true });
         if (hasContact && !leadId) {
           await executeAction("create_lead", parseActionPayload("create_lead", { personId: person.id, cityId: r.cityId, name: r.name, email: r.email, whatsapp: r.whatsapp, status: "Lead válido", channel: r.referrer ? "Indicação" : "Outro", sourceLabel: "Importação da rede por planilha", consentAccepted: true, consentSource: `Planilha importada por ${a.name || a.email}`, consentPurpose: "Atendimento e mentoria" }), a);

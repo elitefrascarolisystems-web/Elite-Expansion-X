@@ -4,10 +4,11 @@ Objetivo: em uma semana, ter no mapa quem já existe (mentorados, vendas e indic
 
 ## Dia 1 — Trazer o que já existe (administrador, 1 hora)
 
-1. Monte uma planilha com uma linha por pessoa: **Nome, Cidade, WhatsApp, E-mail, Quem indicou, Papel, Produto, Valor, Data do pagamento, Situação da venda**. Baixe o modelo em *Rede → Indicações → Importar a rede por planilha*. Só o nome é obrigatório; “Quem indicou” é o nome de outra pessoa da planilha ou que já está no mapa.
+1. Monte uma planilha com uma linha por pessoa: **Nome, Cidade, Bairro, WhatsApp, E-mail, Quem indicou, Papel, Produto, Valor, Data do pagamento, Situação da venda**. O bairro é o que faz o mapa mostrar onde a rede está forte; sem bairro, a pessoa fica no centro da cidade. Baixe o modelo em *Rede → Indicações → Importar a rede por planilha*. Só o nome é obrigatório; “Quem indicou” é o nome de outra pessoa da planilha ou que já está no mapa.
 2. Marque a confirmação de que as pessoas autorizaram o contato e toque em **Conferir**. A prévia mostra o que acontece com cada linha (nova no mapa, indicada por quem, atendimento, venda paga e a data). As linhas com problema ficam separadas, com o motivo: corrija na planilha e importe só elas depois.
 3. Toque em **Importar**. Pronto: abra **Ver no mapa** e **Ver a rede**. Quem comprou está dourado; quem indicou e a indicação comprou aparece como Multiplicador.
-4. Em *Rede → Mentorados*, confira se cada mentorado está “no mapa como …”. Se estiver “ainda fora do mapa”, toque em **Colocar no mapa**.
+4. Em *Território → Cidades → Bairros*, confira os bairros que vieram da planilha: os “sem ponto no mapa” precisam de um clique em **Localizar**.
+5. Em *Rede → Mentorados*, confira se cada mentorado está “no mapa como …”. Se estiver “ainda fora do mapa”, toque em **Colocar no mapa**.
 
 ## Dia 2 — Convidar e instalar (administrador + equipe, 30 min)
 

@@ -4,7 +4,7 @@ import { PERSON_ROLES, PLACE_LINKS } from './places';
 const text = z.string().trim().max(200);
 const id = z.number().int().positive();
 export const locationSchema = z.object({
-  key: z.string().regex(/^(city|partner|event):[1-9][0-9]*$|^(person|action|business):[a-f0-9-]{36}$/),
+  key: z.string().regex(/^(city|partner|event):[1-9][0-9]*$|^(person|action|business|region):[a-f0-9-]{36}$/),
   latitude: z.number().finite().min(-85).max(85).nullable(),
   longitude: z.number().finite().min(-180).max(180).nullable(),
   region: text.default(''),
@@ -20,6 +20,8 @@ export const personSchema = z.object({
   id: z.string().uuid().optional(), requestId: z.string().uuid().optional(), cityId: id, name: text.min(2),
   leader: z.boolean().default(false), referrerId: z.string().uuid().nullable().default(null),
   placeId: z.string().uuid().nullable().default(null), placeLink: z.union([z.enum(PLACE_LINKS), z.literal('')]).default(''),
+  /** Bairro (região) da pessoa: sem local, ela aparece no centro do bairro. */
+  regionId: z.string().uuid().nullable().default(null),
   authorized: z.literal(true),
   /** A pessoa já foi avisada de que existe alguém com o mesmo nome na cidade e confirmou que é outra. */
   confirmDuplicate: z.boolean().default(false),
@@ -46,7 +48,7 @@ export const importPersonSchema = z.object({
 /** Linha da importação da rede (já interpretada no navegador por lib/network-import.ts). */
 export const importNetworkRowSchema = z.object({
   line: z.number().int().positive(),
-  cityId: id, name: text.min(2),
+  cityId: id, name: text.min(2), region: z.string().trim().max(120).default(''),
   whatsapp: z.string().trim().max(30).default(''), email: z.union([z.literal(''), z.string().trim().email().max(254)]).default(''),
   referrer: text.default(''), role: z.string().trim().max(80).default(''),
   place: text.default(''), link: z.string().trim().max(80).default(''),
@@ -54,3 +56,11 @@ export const importNetworkRowSchema = z.object({
   paidAt: z.union([z.literal(''), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).default(''),
   saleStatus: z.enum(['', 'Em negociação', 'Venda confirmada', 'Pagamento confirmado', 'Cancelada', 'Reembolsada']).default(''),
 });
+
+/** Bairro de uma cidade; com ponto, grava o centro do bairro (nunca uma residência). */
+export const regionSchema = z.object({
+  id: z.string().uuid().optional(), cityId: id, name: text.min(2),
+  latitude: z.number().finite().min(-85).max(85).nullable().default(null),
+  longitude: z.number().finite().min(-180).max(180).nullable().default(null),
+  source: text.default(''),
+}).refine((v) => (v.latitude === null) === (v.longitude === null), { message: 'Informe latitude e longitude juntas.' });
