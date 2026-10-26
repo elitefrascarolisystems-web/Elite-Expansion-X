@@ -42,3 +42,15 @@ export const importPersonSchema = z.object({
   cityId: id, name: text.min(2),
   place: z.string().trim().max(200).default(''), link: z.string().trim().max(80).default(''), role: z.string().trim().max(80).default(''),
 });
+
+/** Linha da importação da rede (já interpretada no navegador por lib/network-import.ts). */
+export const importNetworkRowSchema = z.object({
+  line: z.number().int().positive(),
+  cityId: id, name: text.min(2),
+  whatsapp: z.string().trim().max(30).default(''), email: z.union([z.literal(''), z.string().trim().email().max(254)]).default(''),
+  referrer: text.default(''), role: z.string().trim().max(80).default(''),
+  place: text.default(''), link: z.string().trim().max(80).default(''),
+  product: z.string().trim().max(160).default(''), amountCents: z.number().int().min(0).default(0),
+  paidAt: z.union([z.literal(''), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).default(''),
+  saleStatus: z.enum(['', 'Em negociação', 'Venda confirmada', 'Pagamento confirmado', 'Cancelada', 'Reembolsada']).default(''),
+});

@@ -2,6 +2,7 @@ import {organizationFromRequest} from '@/lib/tenant-request';
 import {getCurrentUser} from '@/app/auth';
 import { getTeamAccess } from '@/db/access';
 import { getTerritory, mutateTerritory, TerritoryError } from '@/db/territory';
+import { importNetwork } from '@/db/network-import';
 import { ZodError } from 'zod';
 import { validationMessage } from "@/lib/validation-message";
 export const dynamic='force-dynamic';
@@ -11,5 +12,5 @@ function failure(e:unknown){return Response.json({error:e instanceof ZodError?va
 export async function GET(request:Request){try{return Response.json(await getTerritory(await access(request),new URL(request.url).searchParams),{headers});}catch(e){return failure(e);}}
 export async function POST(request:Request){try{
  if(request.headers.get('origin')!==new URL(request.url).origin) throw new TerritoryError('Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo.',403);
- const a=await access(request);const payload=await request.json();const result=await mutateTerritory(a,payload.action,payload.data);return Response.json({ok:true,result},{headers});
+ const a=await access(request);const payload=await request.json();const result=payload.action==='import_network'?await importNetwork(a,payload.data):await mutateTerritory(a,payload.action,payload.data);return Response.json({ok:true,result},{headers});
 }catch(e){return failure(e);}}
