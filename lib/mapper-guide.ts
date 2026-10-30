@@ -44,7 +44,7 @@ export const MAPPER_GUIDE: GuideSection[] = [
   {
     title: "Regras que não mudam (LGPD)",
     items: [
-      "Nunca cadastre o endereço da casa de ninguém. A pessoa aparece no local ligado a ela ou no centro da cidade.",
+      "Nunca cadastre o endereço da casa de ninguém. A pessoa aparece no local ligado a ela, no centro do bairro ou no centro da cidade.",
       "Registre só o necessário para o trabalho: nome, cidade, local e vínculo.",
       "Lead só com autorização de contato. Se a pessoa pedir para sair, avise o administrador e registre.",
       "Antes de cadastrar, procure no mapa ou na lista para não duplicar.",

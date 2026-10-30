@@ -52,7 +52,7 @@ Tudo o que é preciso para colocar a equipe para mapear e vender na plataforma.
 
 ## 6. Regras que não mudam (LGPD)
 
-- Pessoa nunca é marcada na residência: aparece no local ligado a ela ou no centro da cidade.
+- Pessoa nunca é marcada na residência: aparece no local ligado a ela, no centro do bairro ou no centro da cidade.
 - Registrar só o necessário: nome, cidade, local e vínculo.
 - Atendimento/lead só com autorização de contato.
 - Cada pessoa usa o próprio login; tudo fica registrado no histórico.

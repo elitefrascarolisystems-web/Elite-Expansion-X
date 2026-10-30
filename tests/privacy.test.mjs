@@ -59,6 +59,7 @@ test('LGPD: cópia dos dados traz tudo o que está guardado e registra o pedido 
  const {data}=await p.exportSubject(admin,req('lead:'+one('SELECT id FROM leads').id,{channel:'WhatsApp'}));
  assert.equal(data.titular.nome,'Maria Titular Souza');
  assert.equal(data.mapa.local,'Padaria Central');assert.equal(data.mapa.papeis[0].papel,'Mentorado');assert.equal(data.mapa.acoes.length,1);
+ assert.equal(data.mapa.exibidoNoMapa,'No local ligado à pessoa');assert.deepEqual(data.mapa.rede,{foiIndicada:false,pessoasIndicadas:0});assert.equal(data.mapa.bairro,null);
  assert.equal(data.contato.email,'maria@exemplo.invalid');assert.equal(data.contato.autorizacao.finalidade,'Contato comercial');
  assert.equal(data.atendimento.atividades[0].nota,'Maria pediu desconto');assert.equal(data.atendimento.historico.length,1);
  assert.equal(data.venda.valor,1500);assert.equal(data.embaixador.codigo,'MARIA1');assert.equal(data.embaixador.atualizacoes.length,1);
@@ -85,7 +86,9 @@ test('LGPD: correção atualiza nome e contatos em todos os cadastros; revogaç�
 
 test('LGPD: anonimização tira tudo o que identifica, mantém os números e não pode ser repetida',async()=>{
  const p=await privacy();const {admin,lead,amb}=await seed();
- await p.exportSubject(admin,req('person:'+PERSON,{note:'Pedido enviado pela Maria'}));
+ const reg=crypto.randomUUID();sqlite.prepare("INSERT INTO territory_regions(id,city_id,name,name_key,created_by,created_at,updated_at) VALUES(?,(SELECT city_id FROM territory_people WHERE id=?),'Centro','centro','t','2026-10-01','2026-10-01')").run(reg,PERSON);sqlite.prepare('UPDATE territory_people SET region_id=? WHERE id=?').run(reg,PERSON);
+ const copy=(await p.exportSubject(admin,req('person:'+PERSON,{note:'Pedido enviado pela Maria'}))).data;
+ assert.equal(copy.mapa.bairro,'Centro','a cópia traz o bairro');
  await assert.rejects(p.anonymizeSubject(admin,req('person:'+PERSON)),/Confirme/);
  const {label}=await p.anonymizeSubject(admin,req('person:'+PERSON,{confirm:true}));
  assert.match(label,/^Titular anonimizado [0-9A-F]{6}$/);
@@ -94,6 +97,7 @@ test('LGPD: anonimização tira tudo o que identifica, mantém os números e nã
   +JSON.stringify(sqlite.prepare("SELECT * FROM ambassador_updates").all())+JSON.stringify(sqlite.prepare("SELECT * FROM territory_actions").all())+JSON.stringify(sqlite.prepare("SELECT * FROM audit_logs").all())+JSON.stringify(sqlite.prepare("SELECT * FROM privacy_requests").all());
  for(const trace of ['Maria','maria@','99999','Sócio','-19.9'])assert.ok(!dump.includes(trace),'sobrou: '+trace);
  assert.equal(one('SELECT place_id FROM territory_people').place_id,null);
+ assert.equal(one('SELECT region_id FROM territory_people').region_id,null,'o bairro sai junto com o resto');
  assert.equal(one('SELECT COUNT(*) AS n FROM territory_roles').n,0);assert.equal(one('SELECT COUNT(*) AS n FROM territory_locations').n,0);
  assert.deepEqual({...one('SELECT amount_cents,status FROM sales WHERE lead_id=?',lead)},{amount_cents:150000,status:'Pagamento confirmado'},'a venda fica para a contabilidade');
  assert.equal(one('SELECT status FROM ambassadors WHERE id=?',amb).status,'Desligado');

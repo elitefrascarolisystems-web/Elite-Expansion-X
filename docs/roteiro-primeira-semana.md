@@ -42,6 +42,6 @@ Para cada pessoa que usou, três perguntas: onde travou, o que não entendeu, o 
 
 ## Regras que valem sempre
 
-- Nunca cadastre endereço de residência: pessoas aparecem no local de trabalho ou no centro da cidade.
+- Nunca cadastre endereço de residência: pessoas aparecem no local de trabalho, no centro do bairro ou no centro da cidade.
 - Contato (WhatsApp ou e-mail) só com autorização da pessoa; na importação, a confirmação vale para a planilha inteira.
 - Os links de acesso são pessoais. Quem sair da equipe é desativado em *Time e acessos*.

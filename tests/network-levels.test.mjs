@@ -52,6 +52,16 @@ test('níveis da rede no mapa: Lead → Cliente → Indicador → Multiplicador,
  const byName=Object.fromEntries(net.records.map(p=>[p.name,p]));
  assert.equal(byName['Ana Mentora'].role,'Multiplicador');assert.equal(byName['Ana Mentora'].children_names,'Bia Indicada');
  assert.equal(byName['Bia Indicada'].role,'Indicador');assert.equal(byName['Caio Indicado'].role,'Lead');
+ // Comercial: "Indicou" conta só quem está no acesso dele.
+ const seller={...m.access,role:'Comercial',email:'vendas@example.invalid',cityId:null};
+ sqlite.prepare("UPDATE territory_people SET created_by='vendas@example.invalid' WHERE id=?").run(ana.id);
+ let anaSeen=(await m.getTerritory(seller,new URLSearchParams({q:'Ana Mentora',category:'person'}))).records[0];
+ assert.ok(anaSeen,'o Comercial vê quem ele cadastrou');
+ assert.equal(anaSeen.referred?.length??0,0,'Bia está fora do acesso dele e não entra na contagem');
+ sqlite.prepare("UPDATE leads SET assigned_to_email='vendas@example.invalid' WHERE person_id=?").run(bia.id);
+ anaSeen=(await m.getTerritory(seller,new URLSearchParams({q:'Ana Mentora',category:'person'}))).records[0];
+ assert.deepEqual(anaSeen.referred,[{name:'',client:true}],'com Bia no acesso dele, conta (sem o nome)');
+ sqlite.prepare("UPDATE leads SET assigned_to_email='' WHERE person_id=?").run(bia.id);
  // Vincular depois, sem observação obrigatória.
  const eva=await m.mutateTerritory(m.access,'person',person('Eva Nova'));
  await m.linkReferral(m.access,{personId:eva.id,referrerId:caio.id});

@@ -54,7 +54,7 @@ type Subject = { ref: string; refs: string[]; person: Row | null; lead: Row | nu
 async function resolve(a: AccessView, ref: string): Promise<Subject> {
   const [kind, id] = ref.split(":");
   const org = a.organizationId;
-  const personById = async (personId: unknown) => personId ? (await rows("SELECT p.*,c.name AS city_name,b.name AS place_name FROM territory_people p JOIN cities c ON c.id=p.city_id LEFT JOIN businesses b ON b.id=p.place_id WHERE p.id=? AND c.organization_id=?", [personId, org]))[0] ?? null : null;
+  const personById = async (personId: unknown) => personId ? (await rows("SELECT p.*,c.name AS city_name,b.name AS place_name,rg.name AS region_name,(SELECT COUNT(*) FROM territory_people ch WHERE ch.referrer_id=p.id) AS referred_count FROM territory_people p JOIN cities c ON c.id=p.city_id LEFT JOIN businesses b ON b.id=p.place_id LEFT JOIN territory_regions rg ON rg.id=p.region_id WHERE p.id=? AND c.organization_id=?", [personId, org]))[0] ?? null : null;
   let person: Row | null = null, lead: Row | null = null, ambassador: Row | null = null;
   if (kind === "person") person = await personById(id);
   if (kind === "lead") lead = (await rows("SELECT l.*,c.name AS city_name FROM leads l JOIN cities c ON c.id=l.city_id WHERE l.id=? AND c.organization_id=?", [Number(id), org]))[0] ?? null;
@@ -119,11 +119,13 @@ export async function exportSubject(a: AccessView, input: unknown) {
   const p = s.person, l = s.lead, m = s.ambassador;
   const data = {
     geradoEm: now, empresa: a.organizationName,
-    observacao: "Dados pessoais tratados por esta empresa na plataforma Elite Expansion X. Endereço residencial nunca é registrado: a pessoa aparece no local ligado a ela ou no centro da cidade.",
+    observacao: "Dados pessoais tratados por esta empresa na plataforma Elite Expansion X. Endereço residencial nunca é registrado: a pessoa aparece no local ligado a ela, no centro do bairro ou no centro da cidade.",
     titular: { nome: nameOf(s), cidade: s.city },
     mapa: p ? {
-      nome: str(p.name), cidade: str(p.city_name), local: str(p.place_name) || null, vinculo: str(p.place_link) || null,
-      exibidoNoMapa: p.place_id ? "No local ligado à pessoa" : "No centro da cidade", lider: Boolean(Number(p.leader)),
+      nome: str(p.name), cidade: str(p.city_name), bairro: str(p.region_name) || null, local: str(p.place_name) || null, vinculo: str(p.place_link) || null,
+      exibidoNoMapa: p.place_id ? "No local ligado à pessoa" : p.region_id ? "No centro do bairro" : "No centro da cidade", lider: Boolean(Number(p.leader)),
+      // Rede: só se a pessoa foi indicada e quantas indicou; nomes de outras pessoas não entram na cópia.
+      rede: { foiIndicada: Boolean(p.referrer_id), pessoasIndicadas: Number(p.referred_count ?? 0) },
       cadastradoPor: str(p.created_by), cadastradoEm: str(p.created_at), atualizadoEm: str(p.updated_at),
       papeis: r.roles.map((x) => ({ papel: str(x.role), status: str(x.status), responsavel: str(x.responsible), origem: str(x.source), desde: str(x.created_at) })),
       acoes: r.actions.map((x) => ({ acao: str(x.name), categoria: str(x.category), status: str(x.status), responsavel: str(x.responsible), prazo: str(x.due_date) })),
@@ -195,7 +197,7 @@ export async function anonymizeSubject(a: AccessView, input: unknown) {
   if (s.person) {
     const id = s.person.id;
     statements.push(
-      db.prepare("UPDATE territory_people SET name=?,place_id=NULL,place_link='',referrer_id=NULL,leader=0,updated_at=? WHERE id=?").bind(label, now, id),
+      db.prepare("UPDATE territory_people SET name=?,place_id=NULL,place_link='',region_id=NULL,referrer_id=NULL,leader=0,updated_at=? WHERE id=?").bind(label, now, id),
       db.prepare("DELETE FROM territory_roles WHERE person_id=?").bind(id),
       db.prepare("DELETE FROM territory_locations WHERE entity_key=?").bind(`person:${id}`),
       db.prepare("UPDATE territory_actions SET name=?,updated_at=? WHERE person_id=?").bind(REMOVED_NOTE, now, id),
