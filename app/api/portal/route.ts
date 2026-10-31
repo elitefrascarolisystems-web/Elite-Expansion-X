@@ -36,9 +36,11 @@ export async function POST(request: Request) {
   if (!sameOrigin(request)) return Response.json({ error: "Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo." }, { status: 403, headers });
   try {
     const a = await access(request);
-    const body = await request.json().catch(() => null) as { action?: unknown; data?: unknown } | null;
+    const body = await request.json().catch(() => null) as { action?: unknown; data?: unknown; key?: unknown } | null;
     const action = String(body?.action ?? "");
-    const result = ADMIN_ACTIONS.has(action) ? await portalAdminAction(a, action, body?.data) : await portalAction(a, action, body?.data);
+    // O "já vi" do guia aceita a chave solta ({action, key}), como em /api/team, ou dentro de data.
+    const data = body?.data ?? (body?.key !== undefined ? { key: body.key } : undefined);
+    const result = ADMIN_ACTIONS.has(action) ? await portalAdminAction(a, action, data) : await portalAction(a, action, data);
     return Response.json({ ok: true, result }, { headers });
   } catch (error) { return failure(error); }
 }

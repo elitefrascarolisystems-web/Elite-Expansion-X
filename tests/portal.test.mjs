@@ -145,6 +145,9 @@ test('guia do portal: o mentorado grava o "já vi" dele pelo portal e só a chav
  const r=await route.POST(req('/api/portal','POST',{action:'guide_seen',data:{key:'portal:mentorado'}}));assert.equal(r.status,200);
  assert.equal(sqlite.prepare("SELECT guides_seen g FROM app_users WHERE email='mentorado@cliente.invalid'").get().g,'portal:mentorado');
  assert.equal((await route.POST(req('/api/portal','POST',{action:'guide_seen',data:{key:'nada'}}))).status,400);
+ assert.equal((await route.POST(req('/api/portal','POST',{action:'guides_reset'}))).status,200);
+ assert.equal((await route.POST(req('/api/portal','POST',{action:'guide_seen',key:'portal:mentorado'}))).status,200,'aceita {action, key} como /api/team');
+ assert.equal(sqlite.prepare("SELECT guides_seen g FROM app_users WHERE email='mentorado@cliente.invalid'").get().g,'portal:mentorado');
 });
 
 test('convite: o e-mail do exemplo (@exemplo.com) nunca vira acesso',async()=>{

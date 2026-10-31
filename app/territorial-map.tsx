@@ -175,6 +175,7 @@ export function TerritorialMap({view,data,focusLeadId,focusPersonId,focusKey,onF
    {!listOnly&&<div className="territory-map-area">
     {/* Sobre o mapa: modos, opções do modo e legenda (no celular, a legenda abre numa gaveta). */}
     <div className="territory-overlay territory-float">
+     {guideChip&&<div className="territory-guide-chip">{guideChip}</div>}
      <ModeBar mode={mode} onChange={changeMode}/>
      {mode==='calor'&&<HeatOptions metric={heatMetric} onChange={setHeatMetric}/>}
      {mode==='funil'&&<FunnelOptions temperature={temperature} onChange={setTemperature}/>}
@@ -189,7 +190,6 @@ export function TerritorialMap({view,data,focusLeadId,focusPersonId,focusKey,onF
      <Button variant="outline" size="icon" onClick={()=>setFit(v=>v+1)} aria-label="Enquadrar o que está no mapa" title="Enquadrar o que está no mapa"><LocateFixed/></Button>
      <Button variant="outline" size="icon" aria-label={expanded?'Fechar modo ampliado':'Ampliar mapa'} title={expanded?'Fechar modo ampliado':'Ampliar mapa'} onClick={()=>setExpanded(v=>!v)}>{expanded?<Minimize2/>:<Maximize2/>}</Button>
     </div>
-    {guideChip&&<div className="territory-guide-chip territory-float">{guideChip}</div>}
     <Button variant="outline" size="sm" className="territory-legend-open territory-float" aria-haspopup="dialog" onClick={()=>setLegendOpen(true)}><Layers/>Legenda</Button>
    </div>}
    <aside className="territory-side" aria-label={chosen?'Ficha do registro':'Registros do mapa'}>
