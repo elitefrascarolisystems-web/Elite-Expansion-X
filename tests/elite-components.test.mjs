@@ -90,3 +90,36 @@ test('componentes: medidor e minigráfico com leitura para leitor de tela; linha
  const tl=renderToStaticMarkup(h(Timeline,{now:Date.parse('2026-10-22T15:00:00-03:00'),items:[{id:'1',at:'2026-10-22T09:05:00-03:00',title:'Cidade criada'}]}));
  assert.match(tl,/Hoje/);assert.match(tl,/09:05/);assert.match(tl,/Cidade criada/);
 });
+
+test('guia "Como usar": cartão, botão e miolo da gaveta renderizados, sem pedido ao servidor',async()=>{
+ const g=await vite.ssrLoadModule('/components/elite/tab-guide.tsx');
+ const guide={key:'vendas/agenda',titulo:'Como usar: Agenda',paraQueServe:'Saber com quem falar hoje.',passos:['Comece por "Atrasados".','Toque em "Abrir ficha".','Toque em "Registrar retorno".'],exemplo:'Carla estava atrasada desde segunda.',cuidado:'Fale só com quem autorizou o contato.'};
+ const realFetch=globalThis.fetch;let calls=0;globalThis.fetch=async()=>{calls++;throw new Error('sem servidor');};
+ try{
+  const button=renderToStaticMarkup(h(g.GuideButton,{onClick(){}}));
+  assert.match(button,/aria-label="Como usar esta aba"/);assert.match(button,/Como usar<\/span>/);
+  const clean=(html)=>html.replaceAll('<!-- -->','');
+  const card=clean(renderToStaticMarkup(h(g.TabGuideCard,{guide,action:{label:'Novo atendimento',run(){}},onOpen(){},onDone(){}})));
+  assert.match(card,/aria-label="Como usar: Agenda"/);assert.match(card,/Saber com quem falar hoje\. 1º passo: Comece por/);
+  for(const label of ['Ver como usar','Fazer agora','Entendi'])assert.match(card,new RegExp(`>${label}<`),label);
+  assert.doesNotMatch(renderToStaticMarkup(h(g.TabGuideCard,{guide,onOpen(){},onDone(){}})),/Fazer agora/,'sem ação, sem "Fazer agora"');
+  const body=clean(renderToStaticMarkup(h(g.TabGuideBody,{guide,action:{label:'Novo atendimento',disabled:'sem cidade',run(){}},onClose(){},onResetAll(){}})));
+  assert.equal((body.match(/<li /g)??[]).length,3,'3 passos');
+  assert.match(body,/class="elite-guide-badge">Exemplo</);assert.match(body,/Carla estava atrasada/);
+  assert.match(body,/Cuidado:<\/strong> Fale só com quem autorizou/);
+  assert.match(body,/disabled="" title="sem cidade"[^>]*>Fazer agora: Novo atendimento</,'indisponível com o mesmo motivo do + Novo');
+  assert.match(body,/>Fechar</);assert.match(body,/>Mostrar os guias de novo</);
+  const chip=renderToStaticMarkup(h(g.TabGuideChip,{label:'Como usar o mapa',onOpen(){},onDone(){}}));
+  assert.match(chip,/Como usar o mapa/);assert.match(chip,/aria-label="Fechar o aviso do guia"/);
+  assert.equal(calls,0,'nenhum pedido ao servidor');
+ }finally{globalThis.fetch=realFetch;}
+});
+
+test('Ctrl+K: "retorno" acha "Ajuda: Agenda" com o texto dos guias',async()=>{
+ const nav=await vite.ssrLoadModule('/lib/navigation.ts');const keys=await vite.ssrLoadModule('/lib/tab-guide-keys.ts');const guides=await vite.ssrLoadModule('/lib/tab-guides.ts');
+ const access={role:'Comercial',organizationId:1,isPlatformOwner:false,active:true,email:'x@y.z',name:'X',cityId:1,ambassadorId:null,id:1,organizationName:'Empresa Teste',canManageGlobal:false,canManageCity:false,canManagePipeline:false,canManageContent:false};
+ const areas=nav.navigationFor(access,{hasAdvisors:false});
+ const text=(location)=>{const key=keys.guideKeyFor(location);return key?guides.guideSearchText(guides.resolveGuide(key,'Comercial','Empresa Teste')):null;};
+ assert.ok(c.helpCommands('retorno',areas,{area:'hoje',view:''},text).some((x)=>x.title==='Ajuda: Agenda'));
+ assert.ok(c.helpCommands('retorno',areas,{area:'hoje',view:''},text).every((x)=>areas.some((a)=>a.id===x.location.area)),'só telas da função');
+});

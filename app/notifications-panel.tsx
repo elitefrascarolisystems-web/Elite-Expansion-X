@@ -48,7 +48,7 @@ export function NoticesCard() {
     <div className="flex items-center gap-3"><span className="rounded-xl bg-gold/10 p-2.5 text-gold-soft"><BellRing className="size-5" aria-hidden /></span><div><h2 className="font-semibold text-white">Avisos por e-mail</h2><p className="text-sm text-zinc-400">Chegam às {SEND_TIME}, horário de Brasília.</p></div></div>
     <label className="flex items-start justify-between gap-4 text-sm"><span><span className="block text-zinc-100">{NOTIFICATION_LABEL.diario}</span><span className="text-zinc-400">Seus retornos atrasados e os de hoje. Sem retorno no dia, não chega e-mail.</span></span><Switch checked={prefs.daily} disabled={busy} onCheckedChange={(daily) => change({ ...prefs, daily })} aria-label={NOTIFICATION_LABEL.diario} /></label>
     {prefs.canWeekly && <label className="flex items-start justify-between gap-4 text-sm"><span><span className="block text-zinc-100">{NOTIFICATION_LABEL.semanal}</span><span className="text-zinc-400">Às segundas: mapeamento, atendimentos e vendas da semana, e quem tem retorno atrasado.</span></span><Switch checked={prefs.weekly} disabled={busy} onCheckedChange={(weekly) => change({ ...prefs, weekly })} aria-label={NOTIFICATION_LABEL.semanal} /></label>}
-    {!prefs.configured && <p className="text-xs text-subtle">O envio começa quando a Elite ligar o serviço de e-mail. Sua escolha já fica salva.</p>}
+    {!prefs.configured && <p className="text-xs text-subtle">O envio começa quando o serviço de e-mail da plataforma for ligado. Sua escolha já fica salva.</p>}
   </section>;
 }
 

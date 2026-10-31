@@ -3,6 +3,8 @@ import { canPerform } from "@/lib/expansion-permissions";
 import { isPortalRole, type AccessView } from "@/lib/expansion-types";
 import { PORTAL_AUDIENCE, MAX_REFERRALS_PER_DAY, mapMemberSchema, memberSchema, referSchema, stepSchema, stepToggleSchema, type PortalAdminData, type PortalData } from "@/lib/portal";
 import { ensurePortalPerson } from "@/db/portal-person";
+import { GuideError, markGuideSeen, resetGuides } from "@/db/guides";
+import { parseGuidesSeen } from "@/lib/tab-guide-keys";
 
 type Value = string | number | null;
 const rows = async (sql: string, args: Value[] = []) => (await database().prepare(sql).bind(...args).all()).results;
@@ -27,7 +29,7 @@ const spDay = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Pa
 export async function getPortalData(access: AccessView): Promise<PortalData> {
   const a = member(access);
   const audience = PORTAL_AUDIENCE;
-  const user = await first(`SELECT u.name,u.email,u.role,u.title,u.mentorship_cycle,u.welcomed_at,u.person_id,u.business_id,u.portal_owner_email,u.next_meeting_at,u.next_meeting_note,u.city_id,COALESCE(c.name,'') AS city_name,o.name AS organization_name
+  const user = await first(`SELECT u.name,u.email,u.role,u.title,u.mentorship_cycle,u.welcomed_at,u.guides_seen,u.person_id,u.business_id,u.portal_owner_email,u.next_meeting_at,u.next_meeting_note,u.city_id,COALESCE(c.name,'') AS city_name,o.name AS organization_name
     FROM app_users u JOIN organizations o ON o.id=u.organization_id LEFT JOIN cities c ON c.id=u.city_id WHERE u.id=? AND u.organization_id=?`, [a.id, a.organizationId]);
   if (!user) throw new PortalError("Perfil não encontrado.", 404);
   const ownerEmail = str(user.portal_owner_email);
@@ -47,7 +49,7 @@ export async function getPortalData(access: AccessView): Promise<PortalData> {
   ]);
   const meetingAt = user.next_meeting_at ? str(user.next_meeting_at) : "";
   return {
-    member: { name: str(user.name) || a.email, email: str(user.email), role: "Mentorado", title: str(user.title), mentorshipCycle: Number(user.mentorship_cycle ?? 0), cityName: str(user.city_name), welcomed: Boolean(user.welcomed_at), organizationName: str(user.organization_name) },
+    member: { name: str(user.name) || a.email, email: str(user.email), role: "Mentorado", title: str(user.title), mentorshipCycle: Number(user.mentorship_cycle ?? 0), cityName: str(user.city_name), welcomed: Boolean(user.welcomed_at), guidesSeen: parseGuidesSeen(user.guides_seen), organizationName: str(user.organization_name) },
     owner: owner ? { name: str(owner.name) || str(owner.email), email: str(owner.email), title: str(owner.title) } : null,
     nextMeeting: meetingAt ? { at: meetingAt, note: str(user.next_meeting_note) } : null,
     place: place ? { name: str(place.name), link: str(place.place_link) } : null,
@@ -59,12 +61,23 @@ export async function getPortalData(access: AccessView): Promise<PortalData> {
   };
 }
 
-/** Ações do próprio membro: marcar etapa, indicar alguém, fechar as boas-vindas. */
+/** Ações do próprio membro: marcar etapa, indicar alguém, fechar as boas-vindas e os guias. */
 export async function portalAction(access: AccessView, action: string, input: unknown) {
   const a = member(access);
   const db = database(), now = brazilTimestamp();
   if (action === "welcome") {
     await db.prepare("UPDATE app_users SET welcomed_at=? WHERE id=? AND welcomed_at IS NULL").bind(now, a.id).run();
+    return {};
+  }
+  // Guia "Como usar" do portal: só na linha do próprio membro.
+  if (action === "guide_seen" || action === "guides_reset") {
+    try {
+      if (action === "guides_reset") await resetGuides(a.id, a.organizationId);
+      else await markGuideSeen(a.id, a.organizationId, (input as { key?: unknown } | null)?.key);
+    } catch (error) {
+      if (error instanceof GuideError) throw new PortalError(error.message, 400);
+      throw error;
+    }
     return {};
   }
   if (action === "step") {
@@ -185,7 +198,7 @@ export async function portalAdminAction(access: AccessView, action: string, inpu
     const user = await first("SELECT id,role,city_id FROM app_users WHERE id=? AND organization_id=? AND role='Mentorado'", [v.userId, a.organizationId]);
     if (!user) throw new PortalError("Membro do portal não encontrado.", 404);
     if (v.personId && !(await first("SELECT p.id FROM territory_people p JOIN cities c ON c.id=p.city_id WHERE p.id=? AND c.organization_id=?", [v.personId, a.organizationId]))) throw new PortalError("Pessoa do mapa não encontrada.", 404);
-    if (v.ownerEmail && !(await first("SELECT id FROM app_users WHERE organization_id=? AND lower(email)=? AND active=1 AND role IN ('Administrador','Coordenação','Líder','Comercial')", [a.organizationId, v.ownerEmail]))) throw new PortalError("O responsável precisa ser da equipe Elite.", 400);
+    if (v.ownerEmail && !(await first("SELECT id FROM app_users WHERE organization_id=? AND lower(email)=? AND active=1 AND role IN ('Administrador','Coordenação','Líder','Comercial')", [a.organizationId, v.ownerEmail]))) throw new PortalError("O responsável precisa ser da equipe da empresa.", 400);
     await db.prepare("UPDATE app_users SET person_id=?,portal_owner_email=?,next_meeting_at=?,next_meeting_note=? WHERE id=?")
       .bind(v.personId, v.ownerEmail, v.nextMeetingAt || null, v.nextMeetingNote, v.userId).run();
     await audit(db, a.organizationId, a.email, "portal_member", "app_user", v.userId, "Vínculos e próximo encontro do portal atualizados.");

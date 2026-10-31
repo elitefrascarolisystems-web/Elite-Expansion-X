@@ -447,6 +447,9 @@ test('importação de pessoas: liga ao local pelo nome, valida vínculo e papel,
  assert.equal(sqlite.prepare('SELECT role,source FROM territory_roles WHERE person_id=?').get(maria.id).role,'Mentorado');
  const again=await m.mutateTerritory(m.access,'import_people',{rows:rows.slice(0,1),commit:true});
  assert.equal(again.rows[0].ok,false,'reimportar não duplica');
+ const example=await m.mutateTerritory(m.access,'import_people',{rows:[{cityId:1,name:'EXEMPLO Maria Souza',place:'Padaria Pão Dourado',link:'Sócio / dono',role:'Mentorado'}],commit:true});
+ assert.deepEqual(example.rows.map(r=>[r.ok,r.status]),[[false,'Linha de exemplo do modelo: troque pelos dados reais.']]);
+ assert.equal(sqlite.prepare("SELECT count(*) n FROM territory_people WHERE name LIKE 'EXEMPLO%'").get().n,0,'linha de exemplo nunca é gravada');
  const sales={...m.access,role:'Comercial',email:'sales@example.invalid',cityId:null};
  const mine=await m.mutateTerritory(sales,'import_people',{rows:[{cityId:1,name:'Do Vendedor',place:'Padaria Pão Dourado',link:'Colaborador',role:''}],commit:true});
  assert.equal(mine.rows[0].ok,true,'vendedor importa e liga a qualquer local da cidade');

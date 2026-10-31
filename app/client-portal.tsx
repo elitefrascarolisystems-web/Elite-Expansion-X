@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BookOpen, CalendarClock, Check, ExternalLink, GraduationCap, HeartHandshake, LoaderCircle, LogOut, Mail, Send, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { GuideButton, TabGuideCard, TabGuideSheet, useGuideContent, useGuidesSeen, type GuideRun } from "@/components/elite/tab-guide";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { PortalData } from "@/lib/portal";
@@ -22,12 +23,24 @@ async function post(action: string, data: unknown) {
 }
 
 /** Área do mentorado ou da empresa assinante: jornada, próximo encontro, materiais e indicações. */
-export function ClientPortal({ initialData, signOutPath }: { initialData: PortalData; signOutPath: string }) {
+export function ClientPortal({ initialData, signOutPath, guideStorageKey }: { initialData: PortalData; signOutPath: string; guideStorageKey: string }) {
   const [data, setData] = useState(initialData);
   const [busyStep, setBusyStep] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
   const [referCity, setReferCity] = useState("");
   const [showWelcome, setShowWelcome] = useState(!initialData.member.welcomed);
+  // Guia "Como usar" do portal: depois das boas-vindas, uma vez; o botão do topo reabre.
+  const guides = useGuidesSeen({ storageKey: guideStorageKey, serverSeen: data.member.guidesSeen ?? [], send: (action, key) => post(action, { key }) });
+  const [guideOpen, setGuideOpen] = useState(false);
+  const firstVisit = guides.ready && !showWelcome && !guides.seen.has("portal:mentorado");
+  const guideContent = useGuideContent(guideOpen || firstVisit);
+  const guide = guideContent ? guideContent.resolveGuide("portal:mentorado", "Mentorado", data.member.organizationName) : null;
+  const guideRun: GuideRun | undefined = guide?.acao === "portal:indicar" ? { label: "Indicar alguém", run: () => {
+    const form = document.getElementById("indicar");
+    form?.scrollIntoView({ behavior: "smooth", block: "start" });
+    form?.querySelector<HTMLInputElement>('input[name="name"]')?.focus({ preventScroll: true });
+  } } : undefined;
+  const closeGuide = (value: boolean) => { setGuideOpen(value); if (!value) guides.markSeen("portal:mentorado"); };
   const m = data.member, firstName = m.name.split(" ")[0];
   const done = data.steps.filter((s) => s.doneAt).length;
 
@@ -58,7 +71,7 @@ export function ClientPortal({ initialData, signOutPath }: { initialData: Portal
   return <main className="elite-auth min-h-screen text-zinc-100">
     <header className="sticky top-0 z-30 border-b border-white/8 bg-[#050504]/85 backdrop-blur-xl"><div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
       <div className="flex items-center gap-3"><Image src="/elite-emblem-sm.png" alt="Elite Expansion X" width={128} height={128} className="elite-brand-logo" /><div><p className="font-semibold tracking-tight text-white">Elite Expansion X</p><p className="text-xs text-subtle">Portal do Mentorado · {m.organizationName}</p></div></div>
-      <Button asChild variant="ghost" size="icon" className="text-zinc-400 hover:bg-white/5 hover:text-white"><a href={signOutPath} aria-label="Sair"><LogOut /></a></Button>
+      <div className="flex items-center gap-1"><GuideButton onClick={() => setGuideOpen(true)} /><Button asChild variant="ghost" size="icon" className="text-zinc-400 hover:bg-white/5 hover:text-white"><a href={signOutPath} aria-label="Sair"><LogOut /></a></Button></div>
     </div></header>
 
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
@@ -77,6 +90,7 @@ export function ClientPortal({ initialData, signOutPath }: { initialData: Portal
         <div className="flex-1 text-sm leading-6 text-zinc-300"><p className="font-semibold text-white">Bem-vindo(a) ao seu portal de mentoria.</p><p>Aqui você acompanha sua jornada, vê o próximo encontro, acessa os materiais e indica pessoas que podem crescer com a {m.organizationName}. Marque cada etapa quando concluir.</p></div>
         <Button size="icon" variant="ghost" aria-label="Fechar boas-vindas" onClick={closeWelcome} className="text-subtle"><X /></Button>
       </section>}
+      {firstVisit && guide && <div className="mb-6"><TabGuideCard guide={guide} action={guideRun} onOpen={() => setGuideOpen(true)} onDone={() => guides.markSeen("portal:mentorado")} /></div>}
 
       <div className="grid gap-5 lg:grid-cols-[1.45fr_1fr]">
         <div className="space-y-5">
@@ -104,7 +118,7 @@ export function ClientPortal({ initialData, signOutPath }: { initialData: Portal
             {data.owner && <div className="mt-5 border-t border-white/8 pt-4"><p className="text-xs uppercase tracking-[0.14em] text-subtle">Seu contato na {m.organizationName}</p><p className="mt-1 font-medium text-white">{data.owner.name}</p>{data.owner.title && <p className="text-xs text-subtle">{data.owner.title}</p>}<a href={`mailto:${data.owner.email}`} className="mt-2 inline-flex items-center gap-1.5 text-sm text-gold-soft hover:underline"><Mail className="size-4" />{data.owner.email}</a></div>}
           </article>
 
-          <article className="elite-card p-6" aria-label="Indicar alguém">
+          <article id="indicar" className="elite-card scroll-mt-24 p-6" aria-label="Indicar alguém">
             <p className="section-kicker">Indique e fortaleça a rede</p><h2 className="flex items-center gap-2 text-xl font-semibold text-white"><HeartHandshake className="size-5 text-gold-soft" />Indicar alguém</h2>
             <p className="mt-1 text-sm leading-6 text-zinc-400">Conhece alguém que pode crescer com a {m.organizationName}? Indique aqui; a equipe entra em contato.</p>
             <form onSubmit={refer} className="mt-4 grid gap-3 text-sm">
@@ -120,5 +134,6 @@ export function ClientPortal({ initialData, signOutPath }: { initialData: Portal
         </div>
       </div>
     </div>
+    <TabGuideSheet guide={guide} open={guideOpen} onOpenChange={closeGuide} action={guideRun} onResetAll={() => { guides.resetAll(); setGuideOpen(false); toast.success("Pronto: o guia aparece de novo na próxima visita."); }} />
   </main>;
 }

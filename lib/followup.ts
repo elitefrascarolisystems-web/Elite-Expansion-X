@@ -11,9 +11,9 @@ export function transition(previous:Followup,v:z.infer<typeof commandSchema>,pai
  const f:Followup=structuredClone(previous),current=fechaStatus(f,paid,now);const need=(ok:unknown,m:string)=>{if(!ok)throw Error(m);};
  need(stage!=='Perdido','Oportunidade encerrada como perdida.');
  if(v.action==='aftercare'){need(paid,'Pós-venda exige pagamento confirmado no cadastro de vendas.');need(v.aftercare,'Selecione a etapa do pós-venda.');f.aftercare=v.aftercare;if(v.aftercare==='Concluído'){delete f.dueAt;return f;}}
- else if(v.action==='start'){need(!f.fecha,'O FECHA já foi iniciado.');need(!paid&&v.unpaid,'Confirme que houve decisão de entrada e o pagamento está pendente.');f.fecha={status:'pending',startedAt:new Date(now).toISOString(),deadlineAt:new Date(now+72*3600000).toISOString(),evidence:v.note};}
+ else if(v.action==='start'){need(!f.fecha,'O Método F.E.C.H.A. já foi iniciado.');need(!paid&&v.unpaid,'Confirme que houve decisão de entrada e o pagamento está pendente.');f.fecha={status:'pending',startedAt:new Date(now).toISOString(),deadlineAt:new Date(now+72*3600000).toISOString(),evidence:v.note};}
  else if(v.action!=='contact'){
-  need(f.fecha&&!paid,'O FECHA exige pagamento pendente e rodada iniciada.');const c=f.fecha!;
+  need(f.fecha&&!paid,'O Método F.E.C.H.A. exige pagamento pendente e rodada iniciada.');const c=f.fecha!;
   if(v.action==='future'){c.status='future';delete c.agreedAt;delete f.dueAt;return f;}
   if(v.action==='resume'){need(current==='future','Esta rodada ainda está em andamento.');c.status=c.resolution?'resolved':c.blocker?'blocker':'pending';c.agreedAt=v.dueAt;}
   else {need(current!=='future','A rodada terminou. Use Retomar com data combinada.');
@@ -22,7 +22,7 @@ export function transition(previous:Followup,v:z.infer<typeof commandSchema>,pai
    if(v.action==='link'){need(['resolved','link'].includes(c.status),'Resolva a trava antes de reenviar o link.');c.status='link';}
    if(v.action==='date')c.agreedAt=v.dueAt;
   }
- }else if(f.fecha&&!paid){need(false,'Atualize esta oportunidade pelas ações do método FECHA.');}
+ }else if(f.fecha&&!paid){need(false,'Atualize este atendimento pelas ações do Método F.E.C.H.A.');}
  if(v.action==='contact'&&paid&&(!f.aftercare||f.aftercare==='Concluído'))f.aftercare='Acompanhamento';
  need(v.dueAt&&Date.parse(v.dueAt)>now,'Informe uma data e um horário futuros.');need(v.nextAction.length>=3,'Defina a próxima ação.');
  if(f.fecha&&!paid){if(f.fecha.agreedAt)need(v.dueAt===f.fecha.agreedAt,'Use Marcar data combinada para alterar o compromisso.');else need(Date.parse(v.dueAt!)<=Date.parse(f.fecha.deadlineAt),'Agende dentro das 72 horas ou use Marcar data combinada.');}

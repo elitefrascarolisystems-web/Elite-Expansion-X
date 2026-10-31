@@ -36,3 +36,17 @@ test('navegação: área inicial e endereços inválidos',()=>{
  assert.deepEqual(nav.resolveLocation(areas,seller,'vendas','pagamentos'),{area:'vendas',view:'pagamentos'});
  assert.deepEqual(nav.parseTarget('vendas/agenda'),{area:'vendas',view:'agenda'});
 });
+
+test('navegação: a frase de cada área cita só o que a função vê',()=>{
+ const desc=(a)=>Object.fromEntries(nav.navigationFor(a,{hasAdvisors:false}).map(x=>[x.id,x.description]));
+ const seller=desc(access('Comercial'));
+ assert.ok(!/alerta/i.test(seller.hoje),seller.hoje);assert.ok(!/cidades/i.test(seller.territorio),seller.territorio);
+ assert.ok(!/embaixador|mentorad|parceir/i.test(seller.rede),seller.rede);assert.ok(!/custo|mapeamento|indicadores/i.test(seller.resultados),seller.resultados);
+ const leader=desc(access('Líder'));assert.ok(!/mentorad/i.test(leader.rede),leader.rede);assert.match(leader.hoje,/alertas/);
+ assert.match(desc(access('Administrador')).rede,/mentorados/);
+});
+
+test('navegação: Plataforma só para o Administrador dono (mesma regra do servidor)',()=>{
+ for(const role of ['Coordenação','Líder','Comercial'])assert.equal(shape(access(role,{isPlatformOwner:true})).plataforma,undefined,role);
+ assert.deepEqual(shape(access('Administrador',{isPlatformOwner:true})).plataforma,['assinaturas','pedidos','assessores']);
+});

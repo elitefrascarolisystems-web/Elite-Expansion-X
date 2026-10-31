@@ -30,6 +30,11 @@ export type AccessView = {
   title?: string;
   /** Já viu a tela de boas-vindas nesta organização. */
   welcomed?: boolean;
+  /**
+   * Guias "Como usar" já fechados nesta organização (chaves de lib/tab-guide-keys.ts).
+   * Sem o campo (Assessoria Elite), o "já vi" fica só no aparelho.
+   */
+  guidesSeen?: string[];
   /** Portal: pessoa do mapa e empresa assinante ligadas a este login. */
   personId?: string | null;
   businessId?: string | null;

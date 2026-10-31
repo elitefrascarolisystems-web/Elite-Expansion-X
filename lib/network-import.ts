@@ -1,4 +1,4 @@
-import { nameKey } from "@/lib/places";
+import { isTemplateExample, nameKey, TEMPLATE_EXAMPLE_ERROR } from "@/lib/places";
 
 /**
  * Importação da rede por planilha: uma linha por pessoa, com quem indicou, contato e venda.
@@ -22,11 +22,12 @@ export const NETWORK_COLUMNS = [
 ] as const;
 export type NetworkColumn = (typeof NETWORK_COLUMNS)[number][0];
 
+/** Modelo: as linhas começam por "EXEMPLO", sem contato, e são recusadas (só mostram o formato). */
 export const NETWORK_TEMPLATE =
   "﻿Nome;Cidade;Bairro;WhatsApp;E-mail;Quem indicou;Papel;Produto;Valor;Data do pagamento;Situação da venda\r\n" +
-  "Ana Souza;Esmeraldas;Centro;31 99999-0001;ana@exemplo.com;;Mentorado;Mentoria Elite;1.500,00;10/03/2026;Pagamento confirmado\r\n" +
-  "Bruno Lima;Esmeraldas;Novo Retiro;31 99999-0002;;Ana Souza;Mentorado;Mentoria Elite;1.500,00;22/04/2026;Pagamento confirmado\r\n" +
-  "Carla Dias;Esmeraldas;;31 99999-0003;;Bruno Lima;;;;;\r\n";
+  "EXEMPLO Ana Souza;Cidade Exemplo;Centro;;;;Mentorado;Mentoria;1.500,00;10/03/2026;Pagamento confirmado\r\n" +
+  "EXEMPLO Bruno Lima;Cidade Exemplo;Bairro Exemplo;;;EXEMPLO Ana Souza;Mentorado;Mentoria;1.500,00;22/04/2026;Pagamento confirmado\r\n" +
+  "EXEMPLO Carla Dias;Cidade Exemplo;;;;EXEMPLO Bruno Lima;;;;;\r\n";
 
 export const SALE_STATUSES = ["Em negociação", "Venda confirmada", "Pagamento confirmado", "Cancelada", "Reembolsada"] as const;
 export type SaleStatus = (typeof SALE_STATUSES)[number];
@@ -120,6 +121,7 @@ export function buildNetworkRows(grid: string[][], cities: CityLike[], defaultCi
     const fail = (status: string) => problems.push({ line, ok: false, status });
     const name = value(cells, "name");
     if (name.length < 2) return fail("Informe o nome da pessoa.");
+    if (isTemplateExample(name)) return fail(TEMPLATE_EXAMPLE_ERROR);
     const cityText = value(cells, "city");
     const city = cityText ? cities.find((item) => nameKey(item.name) === nameKey(cityText)) : cities.find((item) => item.id === defaultCityId);
     if (!city) return fail(cityText ? `Cidade "${cityText}" não cadastrada ou fora do seu acesso.` : "Escolha a cidade.");
@@ -137,6 +139,7 @@ export function buildNetworkRows(grid: string[][], cities: CityLike[], defaultCi
     if (whatsapp && whatsapp.replace(/\D/g, "").length < 8) return fail(`WhatsApp "${whatsapp}" incompleto.`);
     if (saleStatus && !whatsapp && !email) return fail("Para registrar a venda, informe o WhatsApp ou o e-mail (o atendimento precisa de um contato autorizado).");
     const referrer = value(cells, "referrer");
+    if (isTemplateExample(referrer)) return fail(TEMPLATE_EXAMPLE_ERROR);
     if (referrer && nameKey(referrer) === nameKey(name)) return fail("A pessoa não pode indicar a si mesma.");
     rows.push({ line, cityId: city.id, name, region: value(cells, "region"), whatsapp, email, referrer, role: value(cells, "role"), place: value(cells, "place"), link: value(cells, "link"), product, amountCents, paidAt, saleStatus });
   });

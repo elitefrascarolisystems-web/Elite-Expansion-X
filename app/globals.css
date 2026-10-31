@@ -905,3 +905,17 @@ button:disabled { cursor: not-allowed; }
   .elite-print { min-height: 0; }
   .print-sheet { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* Guia "Como usar": cartão da 1ª visita, chip do mapa e o quadro do exemplo. */
+.elite-guide-card{border:1px solid rgb(214 185 79 / 0.28);background:linear-gradient(180deg,rgb(214 185 79 / 0.08),rgb(214 185 79 / 0.03));border-radius:14px;padding:12px 14px;animation:elite-guide-in .2s ease-out}
+.elite-guide-chip{display:inline-flex;align-items:center;gap:2px;padding:2px;border-radius:999px;border:1px solid rgb(214 185 79 / 0.4);background:rgb(12 12 10 / 0.92);box-shadow:0 10px 30px rgb(0 0 0 / 0.35)}
+.elite-guide-chip-open{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:600;color:#f5f5ef}
+.elite-guide-chip-close{display:grid;place-items:center;width:32px;height:32px;border-radius:999px;color:#c4c5bc}
+.elite-guide-chip-open:hover,.elite-guide-chip-close:hover{background:rgb(255 255 255 / 0.08)}
+.elite-guide-chip-open:focus-visible,.elite-guide-chip-close:focus-visible{outline:2px solid #d6b94f;outline-offset:2px}
+.territory-guide-chip{position:absolute;z-index:4;left:12px;top:12px}
+.elite-guide-example{border:1px dashed rgb(214 185 79 / 0.4);border-radius:12px;padding:12px;background:rgb(214 185 79 / 0.04)}
+.elite-guide-badge{display:inline-flex;align-items:center;border-radius:999px;background:#d6b94f;color:#111;font-size:11px;font-weight:700;padding:2px 8px}
+@keyframes elite-guide-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media (max-width:760px){.territory-guide-chip{top:auto;bottom:80px}}
+@media (prefers-reduced-motion:reduce){.elite-guide-card{animation:none}}

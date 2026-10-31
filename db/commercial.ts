@@ -4,6 +4,7 @@ import {featureBlocked} from '@/db/plan';
 import type {AccessView} from '@/lib/expansion-types';
 import {canAccessCity,canAccessLead} from '@/lib/expansion-permissions';
 import {decisionInput,businessSchema,opportunitySchema,activityInput,goalInput,reportInput,businessIdentity,daySchema} from '@/lib/commercial';
+import {isTemplateExample,TEMPLATE_EXAMPLE_ERROR} from '@/lib/places';
 export class CommercialError extends Error{constructor(message:string,public status=400){super(message);}}
 type Row=Record<string,unknown>;type Value=string|number|null;
 const rows=async(sql:string,args:Value[]=[])=> (await database().prepare(sql).bind(...args).all()).results as Row[];
@@ -42,7 +43,7 @@ export async function saveCommercial(a:AccessView,action:string,input:unknown){
   const blocked=await featureBlocked(a.organizationId,'imports');if(blocked)throw new CommercialError(blocked,403);
   const body=input as {rows?:unknown[];confirmed?:boolean};if(!Array.isArray(body?.rows)||body.rows.length<1||body.rows.length>50)throw new CommercialError('Importe de 1 a 50 empresas por lote.');if(action==='import_commit'&&body.confirmed!==true)throw new CommercialError('Confirme a prévia antes de importar.');
   const output=[];const seen=new Set<string>();
-  for(const [index,item] of body.rows.entries()){try{const v=businessSchema.parse(item);await city(a,v.cityId);await owner(a,v.ownerEmail,v.cityId);const key=businessIdentity(v.name,v.address);if(seen.has(key))throw new CommercialError('Duplicado no arquivo.');seen.add(key);const existing=(await rows('SELECT id FROM businesses WHERE organization_id=? AND city_id=? AND identity_key=?',[a.organizationId,v.cityId,key]))[0];if(existing&&existing.id!==v.id)throw new CommercialError('Empresa já cadastrada.');if(action==='import_commit')await saveCommercial(a,'business',v);output.push({line:index+2,ok:true,status:action==='import_commit'?'Salvo':'Válido'});}catch(e){output.push({line:index+2,ok:false,status:e instanceof CommercialError?e.message:'Linha inválida ou duplicada. Revise os campos.'});}}
+  for(const [index,item] of body.rows.entries()){try{const v=businessSchema.parse(item);if(isTemplateExample(v.name))throw new CommercialError(TEMPLATE_EXAMPLE_ERROR);await city(a,v.cityId);await owner(a,v.ownerEmail,v.cityId);const key=businessIdentity(v.name,v.address);if(seen.has(key))throw new CommercialError('Duplicado no arquivo.');seen.add(key);const existing=(await rows('SELECT id FROM businesses WHERE organization_id=? AND city_id=? AND identity_key=?',[a.organizationId,v.cityId,key]))[0];if(existing&&existing.id!==v.id)throw new CommercialError('Empresa já cadastrada.');if(action==='import_commit')await saveCommercial(a,'business',v);output.push({line:index+2,ok:true,status:action==='import_commit'?'Salvo':'Válido'});}catch(e){output.push({line:index+2,ok:false,status:e instanceof CommercialError?e.message:'Linha inválida ou duplicada. Revise os campos.'});}}
   return {rows:output};
  }
  if(action==='business'){

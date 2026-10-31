@@ -4,11 +4,13 @@ import { getTeamAccess } from "@/db/access";
 import { AuthError, createPasswordLink } from "@/db/auth";
 import { ActionError, executeAction } from "@/db/mutations";
 import { planLimitFromDatabase } from "@/db/plan";
+import { markGuideSeen, resetGuides } from "@/db/guides";
 import { getDashboardData } from "@/db/queries";
 import { brazilTimestamp, database } from "@/db/runtime";
 import { canPerform } from "@/lib/expansion-permissions";
 import { parseActionPayload } from "@/lib/expansion-validation";
 import { sameOrigin } from "@/lib/session-cookie";
+import { isGuideKey } from "@/lib/tab-guide-keys";
 import { MAX_TEAM_ROWS } from "@/lib/team";
 import { organizationFromRequest } from "@/lib/tenant-request";
 import { validationMessage } from "@/lib/validation-message";
@@ -37,7 +39,8 @@ function rowError(error: unknown) {
 /**
  * Equipe:
  * - invite: o administrador cadastra várias pessoas de uma vez e recebe o link de acesso de cada uma;
- * - welcome: a pessoa fechou a tela de boas-vindas (não aparece de novo).
+ * - welcome: a pessoa fechou a tela de boas-vindas (não aparece de novo);
+ * - guide_seen / guides_reset: o "já vi" dos guias "Como usar" da própria pessoa.
  */
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return Response.json({ error: "Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo." }, { status: 403, headers });
@@ -52,6 +55,17 @@ export async function POST(request: Request) {
       if (!access.isAdvisory) {
         await database().prepare("UPDATE app_users SET welcomed_at=? WHERE id=? AND organization_id=? AND welcomed_at IS NULL")
           .bind(brazilTimestamp(), access.id, access.organizationId).run();
+      }
+      return Response.json({ ok: true }, { headers });
+    }
+
+    // Guias "Como usar": a Assessoria Elite não grava na empresa cliente (o "já vi" dela fica só no aparelho).
+    if (body?.action === "guide_seen" || body?.action === "guides_reset") {
+      const key = (body as { key?: unknown }).key;
+      if (body.action === "guide_seen" && !isGuideKey(key)) return Response.json({ error: "Guia desconhecido." }, { status: 400, headers });
+      if (!access.isAdvisory) {
+        if (body.action === "guides_reset") await resetGuides(access.id, access.organizationId);
+        else await markGuideSeen(access.id, access.organizationId, key);
       }
       return Response.json({ ok: true }, { headers });
     }

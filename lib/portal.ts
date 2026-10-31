@@ -38,7 +38,7 @@ export const memberSchema = z.object({
 
 export type PortalStep = { id: number; title: string; description: string; doneAt: string | null };
 export type PortalData = {
-  member: { name: string; email: string; role: "Mentorado"; title: string; mentorshipCycle: number; cityName: string; welcomed: boolean; organizationName: string };
+  member: { name: string; email: string; role: "Mentorado"; title: string; mentorshipCycle: number; cityName: string; welcomed: boolean; guidesSeen: string[]; organizationName: string };
   owner: { name: string; email: string; title: string } | null;
   nextMeeting: { at: string; note: string } | null;
   place: { name: string; link: string } | null;

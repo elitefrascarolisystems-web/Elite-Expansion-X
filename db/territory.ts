@@ -1,4 +1,4 @@
-import {nameKey,PERSON_ROLES,PLACE_LINKS,PLACE_TYPES,personRoleFromText,placeLinkFromText,SECTORS} from '@/lib/places';
+import {isTemplateExample,nameKey,PERSON_ROLES,PLACE_LINKS,PLACE_TYPES,personRoleFromText,placeLinkFromText,SECTORS,TEMPLATE_EXAMPLE_ERROR} from '@/lib/places';
 import { z, ZodError } from 'zod';
 import {rowDue,type Followup} from '@/lib/followup';
 import { database, brazilTimestamp } from '@/db/runtime';
@@ -221,7 +221,7 @@ async function importPeople(a:AccessView,input:unknown){
   const output:{line:number;ok:boolean;status:string}[]=[];const seen=new Set<string>();const places=new Map<number,{id:string;key:string}[]>();
   for(const [index,item] of body.rows.entries()){
     try{
-      const r=importPersonSchema.parse(item);await allowedCity(a,r.cityId);
+      const r=importPersonSchema.parse(item);if(isTemplateExample(r.name))throw new TerritoryError(TEMPLATE_EXAMPLE_ERROR);await allowedCity(a,r.cityId);
       const key=r.cityId+'|'+nameKey(r.name);if(seen.has(key))throw new TerritoryError('Pessoa repetida no arquivo.');seen.add(key);
       if((await samePeople(r.cityId,r.name)).length)throw new TerritoryError('Já existe uma pessoa com esse nome nesta cidade.');
       let placeId:string|null=null,placeLink='';

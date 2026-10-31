@@ -101,8 +101,56 @@ test('gestão do portal: etapas em ordem, responsável só da equipe, vínculos 
  await p.portalAdminAction(admin,'save_step',{id:steps[0].id,audience:'Mentorados',title:'Etapa um editada'});
  await p.portalAdminAction(admin,'delete_step',{id:steps[1].id});
  assert.deepEqual((await p.getPortalAdmin(admin)).steps.map(s=>s.title),['Etapa um editada','Etapa três']);
- await assert.rejects(p.portalAdminAction(admin,'set_member',{userId:mentee,ownerEmail:'outro@cliente.invalid'}),/equipe Elite/);
+ await assert.rejects(p.portalAdminAction(admin,'set_member',{userId:mentee,ownerEmail:'outro@cliente.invalid'}),/equipe da empresa/);
  await assert.rejects(p.portalAdminAction(admin,'set_member',{userId:mentee,personId:crypto.randomUUID()}),/não encontrada/);
  const sellerAccess=await access('vendas@elite.invalid');await assert.rejects(p.portalAdminAction(sellerAccess,'set_member',{userId:mentee}),/administradores/);
  const members=(await p.getPortalAdmin(admin)).members;assert.deepEqual(members.map(m=>m.role),['Mentorado','Mentorado']);assert.equal(members.find(m=>m.role==='Mentorado').total,2);
+});
+
+test('guias "Como usar": o "já vi" grava só a própria linha, sem repetir, e "Mostrar os guias de novo" zera',async()=>{
+ await setup();const team=await api('team');
+ const post=(body,org='1')=>team.POST(new Request('https://elite.invalid/api/team',{method:'POST',headers:{origin:'https://elite.invalid','content-type':'application/json','X-Elite-Organization':org},body:JSON.stringify(body)}));
+ const seen=(email,org=1)=>sqlite.prepare('SELECT guides_seen g FROM app_users WHERE lower(email)=? AND organization_id=?').get(email,org)?.g;
+ for(const key of ['vendas/agenda','vendas/agenda','hoje/'])assert.equal((await post({action:'guide_seen',key})).status,200);
+ assert.equal(seen(ADMIN),'vendas/agenda,hoje/','a mesma chave entra uma vez só');
+ assert.equal(seen('vendas@elite.invalid'),'','a linha de outra pessoa não muda');
+ for(const key of ['x/y',"hoje/' OR 1=1 --",'',null,42]){const r=await post({action:'guide_seen',key});assert.equal(r.status,400);assert.equal((await r.json()).error,'Guia desconhecido.');}
+ assert.equal(seen(ADMIN),'vendas/agenda,hoje/');
+ assert.deepEqual((await access(ADMIN)).guidesSeen,['vendas/agenda','hoje/'],'volta junto com o acesso');
+ assert.equal((await post({action:'guides_reset'})).status,200);assert.equal(seen(ADMIN),'');
+ // Isolamento entre empresas: a mesma pessoa em duas empresas tem um "já vi" em cada.
+ const {createOrganization}=await vite.ssrLoadModule('/db/organizations.ts');
+ const org=await createOrganization(await access(ADMIN),{name:'Cliente com guia',ownerEmail:'dona@cliente.invalid',ownerName:'Dona',requestId:crypto.randomUUID()});
+ addUser('dona@cliente.invalid','Comercial',{name:'Dona também na Elite'});
+ globalThis.__eliteTestUser={email:'dona@cliente.invalid',displayName:'Dona'};
+ assert.equal((await post({action:'guide_seen',key:'gestao/time'},String(org))).status,200);
+ assert.equal(seen('dona@cliente.invalid',org),'gestao/time');assert.equal(seen('dona@cliente.invalid',1),'','na outra empresa nada muda');
+ // Assessoria Elite: responde ok e não grava nada na empresa cliente (o "já vi" fica no aparelho).
+ globalThis.__eliteTestUser={email:ADMIN,displayName:'Dono'};
+ const before=sqlite.prepare('SELECT organization_id o,email,guides_seen g FROM app_users ORDER BY id').all();
+ assert.equal((await post({action:'guide_seen',key:'gestao/time'},String(org))).status,200);
+ assert.equal((await post({action:'guides_reset'},String(org))).status,200);
+ assert.deepEqual(sqlite.prepare('SELECT organization_id o,email,guides_seen g FROM app_users ORDER BY id').all(),before);
+ assert.equal((await vite.ssrLoadModule('/db/access.ts').then(m=>m.getUserAccess(ADMIN,'Dono',org))).guidesSeen,undefined,'a assessoria não recebe lista do servidor');
+});
+
+test('guia do portal: o mentorado grava o "já vi" dele pelo portal e só a chave do portal existe',async()=>{
+ await setup();const p=await portal();const ma=await access('mentorado@cliente.invalid');
+ await p.portalAction(ma,'guide_seen',{key:'portal:mentorado'});await p.portalAction(ma,'guide_seen',{key:'portal:mentorado'});
+ assert.deepEqual((await p.getPortalData(ma)).member.guidesSeen,['portal:mentorado']);
+ assert.deepEqual((await p.getPortalData(await access('outro@cliente.invalid'))).member.guidesSeen,[],'cada mentorado tem o seu');
+ await assert.rejects(p.portalAction(ma,'guide_seen',{key:'gestao/../time'}),/Guia desconhecido/);
+ await p.portalAction(ma,'guides_reset',{});assert.deepEqual((await p.getPortalData(ma)).member.guidesSeen,[]);
+ globalThis.__eliteTestUser={email:'mentorado@cliente.invalid',displayName:'M'};const route=await api('portal');
+ const r=await route.POST(req('/api/portal','POST',{action:'guide_seen',data:{key:'portal:mentorado'}}));assert.equal(r.status,200);
+ assert.equal(sqlite.prepare("SELECT guides_seen g FROM app_users WHERE email='mentorado@cliente.invalid'").get().g,'portal:mentorado');
+ assert.equal((await route.POST(req('/api/portal','POST',{action:'guide_seen',data:{key:'nada'}}))).status,400);
+});
+
+test('convite: o e-mail do exemplo (@exemplo.com) nunca vira acesso',async()=>{
+ await setup();const team=await api('team');
+ const r=await team.POST(req('/api/team','POST',{action:'invite',rows:[{name:'Ana Exemplo',email:'Ana@Exemplo.com',role:'Comercial',cityId:null},{name:'Pessoa Real',email:'real@cliente.invalid',role:'Comercial',cityId:null}]}));
+ assert.equal(r.status,200);const body=await r.json();
+ assert.deepEqual(body.results.map(x=>[x.email,x.ok,x.error??'']),[['ana@exemplo.com',false,'Troque o e-mail de exemplo pelo e-mail real da pessoa.'],['real@cliente.invalid',true,'']]);
+ assert.equal(sqlite.prepare("SELECT count(*) n FROM app_users WHERE email LIKE '%@exemplo.com'").get().n,0);
 });

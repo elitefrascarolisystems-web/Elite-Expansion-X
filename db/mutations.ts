@@ -579,6 +579,8 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       if (cityId !== ambassador.cityId) throw new ActionError("O embaixador não pertence à cidade selecionada.");
     }
     const email = text(input, "email").toLowerCase();
+    // E-mail do exemplo do convite: nunca vira acesso de verdade.
+    if (/@exemplo\.com$/.test(email)) throw new ActionError("Troque o e-mail de exemplo pelo e-mail real da pessoa.");
     const existing = await db.prepare("SELECT id FROM app_users WHERE lower(email) = lower(?) AND organization_id=? LIMIT 1").bind(email,access.organizationId).all();
     const blocked = await seatBlocked(access.organizationId, text(input, "role"), existing.results[0] ? asNumber(existing.results[0].id) : null);
     if (blocked) throw new ActionError(blocked);

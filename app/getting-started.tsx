@@ -82,21 +82,26 @@ const ROLE_WELCOME: Record<AccessView["role"], { what: string; steps: string[]; 
 };
 
 /** Tela de boas-vindas na primeira entrada de cada pessoa (não aparece de novo depois de fechada). */
-export function WelcomeDialog({ access, onStart }: { access: AccessView; onStart: (tab: string) => void }) {
+/** `onClose` avisa que as boas-vindas fecharam: só depois o guia "Como usar" da aba aparece. */
+export function WelcomeDialog({ access, onStart, onClose }: { access: AccessView; onStart: (tab: string) => void; onClose?: () => void }) {
   const [open, setOpen] = useState(access.welcomed === false);
   const [busy, setBusy] = useState(false);
   const content = ROLE_WELCOME[access.role];
+  const ambassador = access.role === "Embaixador";
   async function finish(tab?: string) {
     setBusy(true);
     // Mesmo se falhar, não prende a pessoa: ela pode seguir e a tela volta na próxima entrada.
     await tenantFetch("/api/team", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "welcome" }) }).catch(() => undefined);
-    setBusy(false); setOpen(false);
+    setBusy(false); setOpen(false); onClose?.();
     if (tab) onStart(tab);
   }
   return <Dialog open={open} onOpenChange={(value) => { if (!value && !busy) finish(); }}><DialogContent className="border-white/10 bg-surface-raised text-white sm:max-w-lg">
     <DialogHeader><p className="section-kicker">Bem-vindo(a) à Elite Expansion X</p><DialogTitle className="text-2xl">Olá, {access.name.split(" ")[0]}!</DialogTitle><DialogDescription className="text-zinc-300">{access.title ? <><strong className="text-white">{access.title}</strong> · </> : null}{content.what}</DialogDescription></DialogHeader>
     <ol className="grid gap-2">{content.steps.map((step, index) => <li key={step} className="flex gap-3 rounded-lg border border-white/8 bg-white/[0.03] p-3 text-sm leading-6 text-zinc-300"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-gold text-xs font-semibold text-black">{index + 1}</span>{step}</li>)}</ol>
-    <div className="grid gap-2 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-3 text-xs leading-5 text-emerald-100"><p className="flex items-center gap-2 font-semibold"><ShieldCheck className="size-4" /> Regras do mapeamento</p><p><MapPin className="mr-1 inline size-3.5" />Pessoas nunca são marcadas na casa delas: aparecem no local ligado (empresa, escritório, network), no centro do bairro ou no centro da cidade.</p><p><Compass className="mr-1 inline size-3.5" />Cadastre como lead só quem autorizou o contato.</p></div>
-    <div className="flex flex-wrap justify-end gap-2"><Button asChild variant="ghost" className="text-zinc-300"><a href={GUIDE_PATH} target="_blank" rel="noreferrer"><BookOpen /> Ler o guia</a></Button><Button disabled={busy} onClick={() => finish(content.tab)} className="bg-gold text-black">{busy ? <LoaderCircle className="animate-spin" /> : null}{content.start} <ArrowRight /></Button></div>
+    {/* O Embaixador não mapeia: as regras dele são as do programa, e o guia do mapeador não se aplica. */}
+    {ambassador
+      ? <div className="grid gap-2 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-3 text-xs leading-5 text-emerald-100"><p className="flex items-center gap-2 font-semibold"><ShieldCheck className="size-4" /> Regras do embaixador</p><p><BookOpen className="mr-1 inline size-3.5" />Use só os materiais aprovados pela equipe.</p><p><Compass className="mr-1 inline size-3.5" />Registre só contatos que autorizaram o atendimento.</p></div>
+      : <div className="grid gap-2 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-3 text-xs leading-5 text-emerald-100"><p className="flex items-center gap-2 font-semibold"><ShieldCheck className="size-4" /> Regras do mapeamento</p><p><MapPin className="mr-1 inline size-3.5" />Pessoas nunca são marcadas na casa delas: aparecem no local ligado (empresa, escritório, network), no centro do bairro ou no centro da cidade.</p><p><Compass className="mr-1 inline size-3.5" />Cadastre como lead só quem autorizou o contato.</p></div>}
+    <div className="flex flex-wrap justify-end gap-2">{!ambassador && <Button asChild variant="ghost" className="text-zinc-300"><a href={GUIDE_PATH} target="_blank" rel="noreferrer"><BookOpen /> Ler o guia</a></Button>}<Button disabled={busy} onClick={() => finish(content.tab)} className="bg-gold text-black">{busy ? <LoaderCircle className="animate-spin" /> : null}{content.start} <ArrowRight /></Button></div>
   </DialogContent></Dialog>;
 }

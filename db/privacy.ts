@@ -4,6 +4,7 @@ import {
   ANONYMOUS_LABEL, anonymizeSchema, correctionSchema, daysBetween, deadlineOf, PRIVACY_KIND_LABEL, privacyRequestSchema, REMOVED_NOTE,
   type PrivacyDetails, type PrivacyKind, type PrivacyRequestRow, type PrivacySubject,
 } from "@/lib/privacy";
+import { parseGuidesSeen } from "@/lib/tab-guide-keys";
 
 export class PrivacyError extends Error { constructor(message: string, public status = 400) { super(message); } }
 
@@ -83,7 +84,7 @@ async function related(a: AccessView, s: Subject) {
     history: oppIds.length ? await rows(`SELECT action,note,created_at,actor_email FROM followup_events WHERE organization_id=? AND opportunity_id IN (${inList(oppIds)}) ORDER BY created_at`, [a.organizationId, ...oppIds]) : [],
     sale: s.lead ? (await rows("SELECT product,amount_cents,status,paid_at FROM sales WHERE lead_id=?", [s.lead.id]))[0] ?? null : null,
     updates: s.ambassador ? await rows("SELECT period,leads,sales,note,created_at FROM ambassador_updates WHERE ambassador_id=? ORDER BY period", [s.ambassador.id]) : [],
-    access: await rows(`SELECT email,role,active FROM app_users WHERE organization_id=? AND (${[s.person ? "person_id=?" : "", s.ambassador ? "ambassador_id=?" : "", s.lead && str(s.lead.email) ? "lower(email)=lower(?)" : ""].filter(Boolean).join(" OR ") || "0"})`,
+    access: await rows(`SELECT email,role,active,guides_seen FROM app_users WHERE organization_id=? AND (${[s.person ? "person_id=?" : "", s.ambassador ? "ambassador_id=?" : "", s.lead && str(s.lead.email) ? "lower(email)=lower(?)" : ""].filter(Boolean).join(" OR ") || "0"})`,
       [a.organizationId, ...(s.person ? [s.person.id] : []), ...(s.ambassador ? [s.ambassador.id] : []), ...(s.lead && str(s.lead.email) ? [s.lead.email] : [])]),
   };
 }
@@ -146,7 +147,7 @@ export async function exportSubject(a: AccessView, input: unknown) {
       nivel: str(m.level), status: str(m.status), termosAceitosEm: str(m.terms_accepted_at) || null, cadastradoEm: str(m.created_at),
       atualizacoes: r.updates.map((x) => ({ periodo: str(x.period), leads: Number(x.leads), vendas: Number(x.sales), nota: str(x.note) || null })),
     } : null,
-    acessoAPlataforma: r.access.map((u) => ({ email: str(u.email), funcao: str(u.role), ativo: Boolean(Number(u.active)) })),
+    acessoAPlataforma: r.access.map((u) => ({ email: str(u.email), funcao: str(u.role), ativo: Boolean(Number(u.active)), guiasVistos: parseGuidesSeen(u.guides_seen) })),
     pedidosAnteriores: (await rows(`SELECT kind,received_at,completed_at FROM privacy_requests WHERE organization_id=? AND subject_ref IN (${inList(s.refs)}) ORDER BY completed_at`, [a.organizationId, ...s.refs]))
       .map((x) => ({ pedido: PRIVACY_KIND_LABEL[str(x.kind) as PrivacyKind] ?? str(x.kind), recebidoEm: str(x.received_at), atendidoEm: str(x.completed_at) })),
   };

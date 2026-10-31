@@ -30,10 +30,16 @@ export function placeIconLabel(roles: string[]): string {
   return roles.find((r) => (SECTORS as readonly string[]).includes(r)) ?? "Empresa";
 }
 
-/** Chave para comparar nomes sem acento, caixa ou espaços repetidos ("Flávia  Silva" = "flavia silva"). */
+/** Chave para comparar nomes sem acento, caixa ou espaços repetidos ("Ana  Exemplo" = "ana exemplo"). */
 export function nameKey(value: string): string {
   return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
+
+/** Mensagem das linhas de exemplo dos modelos de importação (o nome começa por "EXEMPLO"). */
+export const TEMPLATE_EXAMPLE_ERROR = "Linha de exemplo do modelo: troque pelos dados reais.";
+
+/** Linha de exemplo dos modelos (pessoas, empresas e rede): nunca é gravada, nem na prévia passa. */
+export const isTemplateExample = (name: string) => /^exemplo( |$)/.test(nameKey(name));
 
 function fromList<T extends string>(list: readonly T[], value: string, aliases: Record<string, T> = {}): T | null {
   const key = nameKey(value);

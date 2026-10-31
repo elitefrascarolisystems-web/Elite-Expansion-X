@@ -37,3 +37,26 @@ export function goCommands(term: string, areas: NavArea[], current: NavLocation,
       location: { area: area.id, view: view?.id ?? "" },
     }));
 }
+
+export type HelpCommand = { id: string; group: "Ajuda"; title: string; detail: string; location: NavLocation };
+
+/**
+ * "Ajuda: <aba>" no Ctrl+K. Busca vazia: a ajuda da tela atual. Com texto: as telas
+ * desta função cujo guia combina com a busca (título, passos e exemplo), então
+ * "retorno" acha "Ajuda: Agenda". `guideText` devolve o texto do guia da tela, ou
+ * null quando a tela não tem guia.
+ */
+export function helpCommands(term: string, areas: NavArea[], current: NavLocation, guideText: (location: NavLocation) => string | null, limit = 4): HelpCommand[] {
+  const screens = areas.flatMap((area) => area.views.length
+    ? area.views.map((view) => ({ area, view: view as { id: string; label: string } | null }))
+    : [{ area, view: null }]);
+  const items = screens.flatMap(({ area, view }) => {
+    const location = { area: area.id, view: view?.id ?? "" };
+    const text = guideText(location);
+    return text === null ? [] : [{ id: `help:${area.id}/${view?.id ?? ""}`, group: "Ajuda" as const, title: `Ajuda: ${view?.label ?? area.label}`, detail: view ? `Como usar · ${area.label}` : "Como usar", location, text }];
+  });
+  const found = normalize(term)
+    ? items.filter((item) => matches(term, `${item.title} ${item.text}`))
+    : items.filter((item) => item.location.area === current.area && item.location.view === current.view);
+  return found.slice(0, limit).map(({ id, group, title, detail, location }) => ({ id, group, title, detail, location }));
+}

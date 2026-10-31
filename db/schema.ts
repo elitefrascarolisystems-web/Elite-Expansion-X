@@ -68,6 +68,8 @@ export const appUsers = sqliteTable("app_users", {
   mentorshipCycle: integer("mentorship_cycle").notNull().default(0),
   /** Quando a pessoa fechou a tela de boas-vindas nesta organização. */
   welcomedAt: text("welcomed_at"),
+  /** Guias "Como usar" que a pessoa já fechou nesta organização (chaves separadas por vírgula). */
+  guidesSeen: text("guides_seen").notNull().default(""),
   /** Portal (Mentorado/Assinante): a pessoa do mapa ou a empresa assinante ligada a este login. */
   personId: text("person_id"),
   businessId: text("business_id"),

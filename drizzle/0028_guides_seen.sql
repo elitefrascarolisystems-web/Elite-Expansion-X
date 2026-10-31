@@ -1,0 +1,1 @@
+ALTER TABLE `app_users` ADD `guides_seen` text DEFAULT '' NOT NULL;

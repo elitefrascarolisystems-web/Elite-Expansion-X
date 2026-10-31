@@ -1,5 +1,5 @@
 import { ZodError } from "zod";
-import { nameKey, PERSON_ROLES, PLACE_LINKS, personRoleFromText, placeLinkFromText } from "@/lib/places";
+import { isTemplateExample, nameKey, PERSON_ROLES, PLACE_LINKS, personRoleFromText, placeLinkFromText, TEMPLATE_EXAMPLE_ERROR } from "@/lib/places";
 import { canPerform } from "@/lib/expansion-permissions";
 import { importNetworkRowSchema } from "@/lib/territory-validation";
 import type { NetworkOutcome } from "@/lib/network-import";
@@ -50,6 +50,7 @@ export async function importNetwork(a: AccessView, input: unknown) {
     try {
       const r = importNetworkRowSchema.parse(item);
       outcome.line = r.line;
+      if (isTemplateExample(r.name) || isTemplateExample(r.referrer)) throw new TerritoryError(TEMPLATE_EXAMPLE_ERROR);
       if (!canPerform(a, "create_lead") && (r.whatsapp || r.email)) throw new TerritoryError("Seu perfil não registra atendimentos. Deixe WhatsApp e e-mail em branco.");
       if (!canPerform(a, "record_sale") && r.saleStatus) throw new TerritoryError("Seu perfil não registra vendas.");
       const cityRow = (await rows("SELECT id FROM cities WHERE id=? AND organization_id=?", [r.cityId, a.organizationId]))[0];

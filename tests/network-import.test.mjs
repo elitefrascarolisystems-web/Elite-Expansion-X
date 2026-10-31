@@ -71,3 +71,19 @@ test('servidor: prévia sem gravar, gravação com pessoa, papel, quem indicou, 
  const net=await m.getNetwork(m.access,new URLSearchParams({q:'Ana Souza'}));
  assert.ok(JSON.stringify(net).includes('Multiplicador'));
 });
+
+test('modelo da rede: linhas EXEMPLO sem contato e sem "Elite", recusadas na prévia e no servidor',async()=>{
+ const MSG='Linha de exemplo do modelo: troque pelos dados reais.';
+ const lines=lib.NETWORK_TEMPLATE.replace(/^﻿/,'').trim().split(/\r?\n/).map(l=>l.split(';'));
+ const [header,...data]=lines;const col=(name)=>header.indexOf(name);
+ assert.ok(data.length>=1);assert.ok(!/elite|esmeraldas|@/i.test(lib.NETWORK_TEMPLATE),'modelo sem Elite, cidade piloto ou e-mail');
+ for(const row of data){assert.match(row[col('Nome')],/^EXEMPLO /);assert.equal(row[col('WhatsApp')],'');assert.equal(row[col('E-mail')],'');assert.equal(row[col('Cidade')],'Cidade Exemplo');}
+ const parsed=lib.buildNetworkRows(lines,[{id:1,name:'Cidade Exemplo'}],1);
+ assert.equal(parsed.rows.length,0);assert.deepEqual(parsed.problems.map(p=>p.status),data.map(()=>MSG));
+ assert.equal(lib.buildNetworkRows(grid('Nome;Quem indicou','Zé;EXEMPLO Ana Souza'),cities,1).problems[0].status,MSG,'indicador de exemplo também trava');
+ assert.equal(lib.buildNetworkRows(grid('Nome','Exemplar Silva'),cities,1).rows.length,1,'só a palavra EXEMPLO no começo do nome trava');
+ const m=await modules();
+ const out=await m.importNetwork(m.access,{rows:[{line:2,cityId:1,name:'EXEMPLO Ana Souza'},{line:3,cityId:1,name:'Zé Real',referrer:'exemplo bruno'}],commit:true,consent:true});
+ assert.deepEqual(out.rows.map(r=>[r.line,r.ok,r.status]),[[2,false,MSG],[3,false,MSG]]);
+ assert.equal(sqlite.prepare('SELECT count(*) n FROM territory_people').get().n,0,'nada gravado');
+});

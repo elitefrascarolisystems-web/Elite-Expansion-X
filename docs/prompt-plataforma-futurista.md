@@ -2,6 +2,12 @@
 
 > Para usar: cole este texto em uma nova conversa com o Claude neste repositório (ou peça "siga o docs/prompt-plataforma-futurista.md").
 > Continua o `docs/prompt-reorganizacao-premium.md`, que já foi executado (navegação por áreas e primeiro visual premium).
+>
+> **Nota (absorvido por `docs/prompt-calculadora-pessoas-guias.md`, para não fazer duas vezes):**
+> - **Etapa 4 (gráficos):** o medidor "Estou no ritmo?" de Hoje vira o cartão "Quanto falta"; a meta × realizado por pessoa vai para Metas e rotina; as taxas (conversão por coorte, tempo até pagar, produção por mapeador por semana) ficam em `lib/` e `db/` para reaproveitar. Continuam aqui: os outros gráficos, o funil com % de passagem, o tempo em cada etapa e os 4 indicadores de Hoje por agregados do servidor.
+> - **Etapa 5 (abas premium):** o link `&ficha=` (lá, só para pessoa), a linha do tempo da pessoa, o "para que serve em uma frase" (virou o guia "Como usar" de cada aba, com o botão no cabeçalho; mantenha o botão ao redesenhar o cabeçalho) e a meta da semana lida de `goals`. O resto da Etapa 5 continua aqui.
+> - **Etapa 3 e os passos do mapa:** lá entram só `territory_actions.business_id`, o "Registrar visita" manual sem GPS e a regra "nunca linhas entre os lugares de uma pessoa". Cite os passos do mapa pelo nome, não pelo número.
+> - **Etapa 6 (portais):** o guia nos dois portais e "Seus lugares" no Portal do Mentorado. Trilha, missões, nível, QR e a Sala de comando continuam aqui.
 
 ---
 

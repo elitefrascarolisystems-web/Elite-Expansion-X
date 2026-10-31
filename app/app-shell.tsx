@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react
 import { BarChart3, Building2, ChevronsLeft, ChevronsRight, HandCoins, LogOut, Map, Menu, Network, Plus, Settings2, Sun, type LucideIcon } from "lucide-react";
 
 import { OrganizationSwitcher } from "@/app/organization-switcher";
+import { GuideButton } from "@/components/elite/tab-guide";
 import { markInteractive } from "@/components/elite/count-up";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -29,13 +30,16 @@ function writeCollapsed(value: boolean) { try { window.localStorage.setItem(COLL
  * Estrutura da plataforma da equipe: barra lateral (computador), barra inferior
  * (celular), cabeçalho com a organização e o "+ Novo", título da área e sub-abas.
  */
-export function AppShell({ logo, access, userName, signOutPath, areas, location, badges, actions, onNavigate, search, notice, children }: {
+export function AppShell({ logo, access, userName, signOutPath, areas, location, badges, actions, onNavigate, search, notice, onGuide, children }: {
   /** Logo da empresa assinante (no lugar do emblema Elite), quando houver. */
   logo?: string | null;
   access: AccessView; userName: string; signOutPath: string; areas: NavArea[]; location: NavLocation;
   badges: Partial<Record<AreaId, number>>; actions: NewAction[]; onNavigate: (location: NavLocation) => void; search?: ReactNode;
   /** Avisos sob o cabeçalho (conexão, cadastros guardados, instalar o app). */
-  notice?: ReactNode; children: ReactNode;
+  notice?: ReactNode;
+  /** Reabre o guia "Como usar" da tela atual (botão ao lado do título da área). */
+  onGuide?: () => void;
+  children: ReactNode;
 }) {
   const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
   // Depois da primeira pintura, os números dos indicadores passam a contar ao trocar de área.
@@ -83,7 +87,7 @@ export function AppShell({ logo, access, userName, signOutPath, areas, location,
 
       <main className="elite-area">
         <div className="elite-area-head">
-          <div className="elite-area-title"><span className="elite-area-icon" aria-hidden><AreaIcon className="size-5" /></span><div className="min-w-0"><p className="elite-area-org truncate">{access.organizationName}</p><h1 className="text-2xl font-semibold tracking-[-0.035em] sm:text-[2rem]">{current.label}</h1></div></div>
+          <div className="elite-area-title"><span className="elite-area-icon" aria-hidden><AreaIcon className="size-5" /></span><div className="min-w-0"><p className="elite-area-org truncate">{access.organizationName}</p><h1 className="text-2xl font-semibold tracking-[-0.035em] sm:text-[2rem]">{current.label}</h1></div>{onGuide && <GuideButton onClick={onGuide} className="ml-auto shrink-0 self-center" />}</div>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">{current.description}</p>
           {current.views.length > 1 && <nav className="elite-subnav" aria-label={`Seções de ${current.label}`}>{current.views.map((view) => <button key={view.id} type="button" aria-current={view.id === location.view ? "page" : undefined} onClick={() => onNavigate({ area: current.id, view: view.id })} className={view.id === location.view ? "is-active" : ""}>{view.label}</button>)}</nav>}
         </div>

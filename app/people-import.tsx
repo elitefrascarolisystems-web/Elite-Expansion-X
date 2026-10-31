@@ -3,13 +3,14 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { parseBusinessFile } from "@/lib/commercial-import";
 import type { DashboardData } from "@/lib/expansion-types";
-import { nameKey, PERSON_ROLES, PLACE_LINKS } from "@/lib/places";
+import { isTemplateExample, nameKey, PERSON_ROLES, PLACE_LINKS, TEMPLATE_EXAMPLE_ERROR } from "@/lib/places";
 import { tenantFetch } from "@/lib/tenant-request";
 
 type Outcome = { line: number; ok: boolean; status: string };
 type Row = { cityId: number; name: string; place: string; link: string; role: string };
 const COLUMNS = [["name", "Nome"], ["city", "Cidade"], ["place", "Local"], ["link", "Vínculo"], ["role", "Papel"]] as const;
-const TEMPLATE = "﻿Nome;Cidade;Local;Vínculo;Papel\r\nMaria Souza;Esmeraldas;Padaria Pão Dourado;Sócio / dono;Mentorado\r\n";
+// A linha de exemplo começa por "EXEMPLO" e é recusada na prévia e no servidor: só serve para mostrar o formato.
+const TEMPLATE = "﻿Nome;Cidade;Local;Vínculo;Papel\r\nEXEMPLO Maria Souza;Cidade Exemplo;Padaria Pão Dourado;Sócio / dono;Mentorado\r\n";
 
 /** Importa pessoas de uma planilha, cada uma ligada ao local pelo nome (que já precisa estar cadastrado). */
 export function PeopleImport({ data, onSaved }: { data: DashboardData; onSaved: () => Promise<void> }) {
@@ -31,6 +32,7 @@ export function PeopleImport({ data, onSaved }: { data: DashboardData; onSaved: 
     const problems: Outcome[] = [];
     const built = grid.slice(1).map((cells, index) => {
       const value = (label: string) => (column(label) >= 0 ? cells[column(label)] ?? "" : "").trim();
+      if (isTemplateExample(value("Nome"))) { problems.push({ line: index + 2, ok: false, status: TEMPLATE_EXAMPLE_ERROR }); return null; }
       const cityText = value("Cidade");
       const city = cityText ? data.cities.find((item) => nameKey(item.name) === nameKey(cityText)) : data.cities.find((item) => String(item.id) === defaultCity);
       if (!city) { problems.push({ line: index + 2, ok: false, status: cityText ? `Cidade "${cityText}" não cadastrada ou fora do seu acesso.` : "Escolha a cidade." }); return null; }
@@ -74,6 +76,7 @@ export function PeopleImport({ data, onSaved }: { data: DashboardData; onSaved: 
   return <details className="elite-card mt-4 p-4"><summary className="cursor-pointer font-semibold">Importar pessoas por planilha (CSV ou XLSX)</summary><div className="mt-4 space-y-3 text-sm">
     <p className="text-zinc-400">Até 50 pessoas por lote. Colunas: {COLUMNS.map(([, label]) => label).join(", ")}. Só o nome é obrigatório. O <strong className="text-zinc-200">Local</strong> precisa estar cadastrado na mesma cidade (escreva o nome igual). Vínculo: {PLACE_LINKS.join(", ")}. Papel: {PERSON_ROLES.join(", ")}. Nunca inclua endereço de residência.</p>
     <a className="text-amber-200 underline" download="modelo-pessoas.csv" href={"data:text/csv;charset=utf-8," + encodeURIComponent(TEMPLATE)}>Baixar modelo CSV</a>
+    <p className="text-xs text-zinc-400">A linha que começa por EXEMPLO só mostra o formato e não é importada: troque pelos dados reais.</p>
     {stage === "file" && <>
       <label className="grid gap-1">Arquivo<input disabled={busy} type="file" accept=".csv,.xlsx" onChange={async (e) => { setError(""); try { const file = e.target.files?.[0]; if (file) setGrid(await parseBusinessFile(file)); } catch (err) { setGrid([]); setError(err instanceof Error ? err.message : "Arquivo inválido."); } }} /></label>
       {grid.length > 0 && column("Nome") < 0 && <p role="alert" className="text-red-300">A primeira linha precisa ter a coluna &ldquo;Nome&rdquo;. Use o modelo.</p>}

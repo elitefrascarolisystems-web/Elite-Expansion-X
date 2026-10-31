@@ -1,24 +1,31 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Building2, CornerDownRight, HandCoins, LoaderCircle, MapPin, Search, UserRound, type LucideIcon } from "lucide-react";
+import { ArrowRight, Building2, CircleHelp, CornerDownRight, HandCoins, LoaderCircle, MapPin, RotateCcw, Search, UserRound, type LucideIcon } from "lucide-react";
 
 import type { NewAction } from "@/app/app-shell";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { goCommands, matches } from "@/lib/commands";
+import { goCommands, helpCommands, matches } from "@/lib/commands";
+import type { UserRole } from "@/lib/expansion-types";
+import { guideKeyFor } from "@/lib/tab-guide-keys";
 import type { NavArea, NavLocation } from "@/lib/navigation";
 import type { TerritoryRecord } from "@/lib/territory-types";
 import { tenantFetch } from "@/lib/tenant-request";
 
 type FollowupHit = { id: number; lead_id: number; lead_name: string; city_name: string; stage: string; next_action: string };
 export type SearchPick = { kind: "territory"; key: string } | { kind: "followup"; leadId: number };
-type Group = "Nesta área" | "Ir para" | "Criar" | "Cidades" | "Pessoas e locais" | "Atendimentos";
+type Group = "Nesta área" | "Ir para" | "Criar" | "Ajuda" | "Cidades" | "Pessoas e locais" | "Atendimentos";
 type Hit = { id: string; group: Group; title: string; detail: string; icon: LucideIcon; run: () => void };
 /** O que a central de comandos oferece além da busca: as telas e as ações do "+ Novo" desta função. */
-export type Commands = { areas: NavArea[]; current: NavLocation; actions: NewAction[]; onNavigate: (location: NavLocation) => void };
+export type Commands = {
+  areas: NavArea[]; current: NavLocation; actions: NewAction[]; onNavigate: (location: NavLocation) => void;
+  /** "Ajuda: <aba>" e "Mostrar os guias de novo" (guias "Como usar" desta função). */
+  help?: { role: UserRole; organizationName: string; onOpen: (location: NavLocation) => void; onReset: () => void };
+};
+type GuidesModule = typeof import("@/lib/tab-guides");
 
 const KIND_LABEL: Record<string, string> = { city: "Cidade", person: "Pessoa", business: "Local", partner: "Parceiro", event: "Evento", action: "Ação no território" };
-const GROUPS: Group[] = ["Nesta área", "Ir para", "Criar", "Cidades", "Pessoas e locais", "Atendimentos"];
+const GROUPS: Group[] = ["Nesta área", "Ir para", "Criar", "Ajuda", "Cidades", "Pessoas e locais", "Atendimentos"];
 
 /**
  * Central de comandos (Ctrl+K / ⌘K): busca cidade, pessoa, local e atendimento
@@ -51,6 +58,10 @@ function SearchDialog({ sales, commands, onClose, onRun, onPick }: { sales: bool
   // A busca no servidor não recomeça só porque a tela de trás mudou.
   const pickRef = useRef(onPick);
   useEffect(() => { pickRef.current = onPick; }, [onPick]);
+  // Os textos dos guias chegam quando a central abre (para "retorno" achar "Ajuda: Agenda").
+  const help = commands?.help;
+  const [guides, setGuides] = useState<GuidesModule | null>(null);
+  useEffect(() => { if (help && !guides) import("@/lib/tab-guides").then(setGuides).catch(() => undefined); }, [help, guides]);
   const term = query.trim();
 
   useEffect(() => {
@@ -91,7 +102,14 @@ function SearchDialog({ sales, commands, onClose, onRun, onPick }: { sales: bool
       id: `run:${action.id}`, group: "Criar" as const, title: action.label, detail: action.group === "dia" ? "No dia a dia" : "Cadastro", icon: action.icon, run: action.run,
     })),
   ] : [];
-  const ordered = GROUPS.flatMap((group) => [...local, ...(term.length < 2 ? [] : hits)].filter((hit) => hit.group === group));
+  const helpHits: Hit[] = commands && help && guides ? [
+    ...helpCommands(term, commands.areas, commands.current, (location) => {
+      const key = guideKeyFor(location);
+      return key ? guides.guideSearchText(guides.resolveGuide(key, help.role, help.organizationName)) : null;
+    }).map((command) => ({ id: command.id, group: "Ajuda" as const, title: command.title, detail: command.detail, icon: CircleHelp, run: () => help.onOpen(command.location) })),
+    ...(term && matches(term, "mostrar os guias de novo ajuda como usar") ? [{ id: "help:reset", group: "Ajuda" as const, title: "Mostrar os guias de novo", detail: "O cartão \"Como usar\" volta em cada aba", icon: RotateCcw, run: help.onReset }] : []),
+  ] : [];
+  const ordered = GROUPS.flatMap((group) => [...local, ...helpHits, ...(term.length < 2 ? [] : hits)].filter((hit) => hit.group === group));
   const current = Math.min(active, Math.max(0, ordered.length - 1));
 
   function onKeyDown(event: React.KeyboardEvent) {

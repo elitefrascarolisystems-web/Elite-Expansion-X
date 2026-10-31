@@ -7,6 +7,7 @@ import { getUserAccess, suspendedOrganizationOf } from "@/db/access";
 import { getDashboardData } from "@/db/queries";
 import { getPortalData } from "@/db/portal";
 import { ClientPortal } from "@/app/client-portal";
+import { guidesStorageKey } from "@/lib/tab-guide-keys";
 import { isPortalRole } from "@/lib/expansion-types";
 import Image from "next/image";
 
@@ -50,7 +51,7 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
   }
 
   // Mentorados e assinantes só têm o portal deles; nunca carregam os dados da equipe.
-  if (isPortalRole(access.role)) return <ClientPortal initialData={await getPortalData(access)} signOutPath={signOutPath()} />;
+  if (isPortalRole(access.role)) return <ClientPortal initialData={await getPortalData(access)} signOutPath={signOutPath()} guideStorageKey={guidesStorageKey(access.organizationId, access.id)} />;
 
   const data = await getDashboardData(access);
   // Área e sub-aba vêm do endereço (?area=&ver=), para os links e o botão voltar.

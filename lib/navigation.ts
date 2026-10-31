@@ -57,11 +57,19 @@ export function navigationFor(access: AccessView, { hasAdvisors }: NavOptions): 
     },
     {
       id: "plataforma", label: "Plataforma", description: "Empresas assinantes, pedidos vindos da página pública e a equipe de assessoria da Elite.",
-      views: access.isPlatformOwner ? [{ id: "assinaturas", label: "Assinaturas" }, { id: "pedidos", label: "Pedidos de assinatura" }, { id: "assessores", label: "Assessores" }] : [],
+      // O servidor só marca como dona da plataforma a função Administrador (db/access.ts); aqui vale a mesma regra.
+      views: admin && access.isPlatformOwner ? [{ id: "assinaturas", label: "Assinaturas" }, { id: "pedidos", label: "Pedidos de assinatura" }, { id: "assessores", label: "Assessores" }] : [],
     },
   ];
   // "Hoje" não tem sub-abas; as outras áreas só aparecem se tiverem alguma.
-  return areas.filter((area) => area.id === "hoje" || area.views.length > 0);
+  // A frase de cada área cita só o que esta função vê (o Comercial não vê alertas, cidades, embaixadores nem custos).
+  const text: Partial<Record<AreaId, string>> = !manage ? {
+    hoje: "O que fazer agora: retornos do dia e próximos passos.",
+    territorio: "Onde e com quem atuamos: mapa e locais.",
+    rede: "Quem indicou quem: a sua rede de indicações.",
+    resultados: "Sua rotina do dia e as atividades registradas.",
+  } : !admin ? { rede: "Quem multiplica a operação: embaixadores, indicações e parceiros." } : {};
+  return areas.filter((area) => area.id === "hoje" || area.views.length > 0).map((area) => (text[area.id] ? { ...area, description: text[area.id]! } : area));
 }
 
 /** Onde cada função começa. */

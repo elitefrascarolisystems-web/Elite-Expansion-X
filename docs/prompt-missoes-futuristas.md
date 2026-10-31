@@ -2,6 +2,8 @@
 
 > Para usar: cole este texto em uma nova conversa com o Claude neste repositório (ou peça "siga o docs/prompt-missoes-futuristas.md").
 > Rode **depois** que a Etapa 1 do `docs/prompt-plataforma-futurista.md` estiver publicada: este prompt usa a fundação dela (fontes, cores, paleta de gráficos validada e os componentes de `components/elite`).
+>
+> **Nota (regra fixada por `docs/prompt-calculadora-pessoas-guias.md`):** nada deste prompt rodou ainda. Quando rodar, as missões automáticas leem o alvo de `goals` (por exemplo, a meta de Pessoas mapeadas da pessoa, definida na Calculadora de metas) e **nunca criam uma meta própria**. "Missões de plantio" podem nascer das visitas programadas. Cada aba nova que este prompt criar ganha o seu guia "Como usar" (`lib/tab-guides-content.ts`, chave em `lib/tab-guide-keys.ts`).
 
 ---
 

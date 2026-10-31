@@ -11,6 +11,7 @@ export const MAPPER_GUIDE: GuideSection[] = [
       "Seu link de acesso é pessoal: vale por 72 horas e só funciona uma vez. Nele você cria a sua senha.",
       "Depois, entre sempre por /entrar com seu e-mail e sua senha. Não compartilhe o seu login.",
       "Na primeira entrada aparece o resumo do que a sua função faz. O administrador acompanha tudo em Gestão → Time e acessos.",
+      "Cada aba tem um guia “Como usar”: na primeira visita aparece um cartão curto com para que ela serve e o 1º passo. “Ver como usar” mostra os 3 passos e um exemplo; “Entendi” fecha. Depois, o botão “Como usar” no topo da aba (no celular, o ícone ?) reabre o guia. No Ctrl+K, digite o que quer fazer (ex.: retorno) e escolha uma linha “Ajuda”.",
     ],
   },
   {
@@ -23,7 +24,7 @@ export const MAPPER_GUIDE: GuideSection[] = [
       "Bairro: pessoa sem local ganha um bairro e aparece no centro dele (nunca na residência). Escolha na lista ou cadastre na hora; a gestão confere o ponto em Território → Cidades → Bairros.",
       "Pessoas: no mesmo passo a passo, adicione as pessoas do local com o vínculo (sócio/dono, colaborador, mentorado, membro do network, responsável ou frequenta) e, se quiser, o papel (Mentorado, Mentor, Parceiro, Cliente assinante, Network...).",
       "Nome repetido: se aparecer o aviso de que já existe alguém com esse nome na cidade, confira no mapa. Só salve se for mesmo outra pessoa.",
-      "Muitos de uma vez: use as planilhas “Importar empresas e locais” (Território → Locais) e “Importar pessoas” (Território → Mapa). Importe os locais antes das pessoas. Para trazer a rede inteira de uma vez (mentorados, quem indicou, contato e vendas já feitas), use “Importar a rede por planilha” em Rede → Indicações: uma linha por pessoa, e o mapa e a rede ficam prontos.",
+      "Muitos de uma vez: use as planilhas “Importar empresas e locais” (Território → Locais) e “Importar pessoas” (Território → Mapa). Importe os locais antes das pessoas. Para trazer a rede inteira de uma vez (mentorados, quem indicou, contato e vendas já feitas), use “Importar a rede por planilha” em Rede → Indicações: uma linha por pessoa, e o mapa e a rede ficam prontos. Nos modelos de planilha, as linhas que começam com EXEMPLO só mostram o formato e não são importadas: troque pelos dados reais.",
       "Quem indicou: ao cadastrar a pessoa ou ao iniciar o atendimento, escolha “Quem indicou”. A rede de indicações e o ícone de quem indicou se atualizam sozinhos.",
       "Venda: na ficha da pessoa no mapa, “Registrar venda”. Com o pagamento confirmado o círculo fica dourado (Cliente); se ela indicar alguém vira Indicador; se a indicação comprar, Multiplicador.",
       "Atendimento: se a pessoa autorizou o contato, use “Iniciar atendimento” (na ficha do mapa ou logo depois de cadastrá-la). O atendimento começa com o primeiro retorno já marcado na agenda. Depois siga em Vendas → Agenda com o roteiro do Método F.E.C.H.A.; ao confirmar o pagamento, a oportunidade fecha sozinha como Ganho.",
