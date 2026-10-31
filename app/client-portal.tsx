@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { BookOpen, CalendarClock, Check, ExternalLink, GraduationCap, HeartHandshake, LoaderCircle, LogOut, Mail, Send, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,14 +33,21 @@ export function ClientPortal({ initialData, signOutPath, guideStorageKey }: { in
   const guides = useGuidesSeen({ storageKey: guideStorageKey, serverSeen: data.member.guidesSeen ?? [], send: (action, key) => post(action, { key }) });
   const [guideOpen, setGuideOpen] = useState(false);
   const firstVisit = guides.ready && !showWelcome && !guides.seen.has("portal:mentorado");
-  const guideContent = useGuideContent(guideOpen || firstVisit);
-  const guide = guideContent ? guideContent.resolveGuide("portal:mentorado", "Mentorado", data.member.organizationName) : null;
+  // Sem internet antes de o texto do guia chegar: avisa e fecha (o navegador guarda a falha do download até recarregar).
+  const wantGuide = useRef(false);
+  const guideFetch = useGuideContent(guideOpen || firstVisit, () => {
+    if (!wantGuide.current) return;
+    wantGuide.current = false; setGuideOpen(false);
+    toast.error("Sem conexão: o guia não abriu. Com internet, recarregue a página.");
+  });
+  const guide = guideFetch.content ? guideFetch.content.resolveGuide("portal:mentorado", "Mentorado", data.member.organizationName) : null;
+  const openGuide = () => { wantGuide.current = true; guideFetch.retry(); setGuideOpen(true); };
   const guideRun: GuideRun | undefined = guide?.acao === "portal:indicar" ? { label: "Indicar alguém", run: () => {
     const form = document.getElementById("indicar");
     form?.scrollIntoView({ behavior: "smooth", block: "start" });
     form?.querySelector<HTMLInputElement>('input[name="name"]')?.focus({ preventScroll: true });
   } } : undefined;
-  const closeGuide = (value: boolean) => { setGuideOpen(value); if (!value) guides.markSeen("portal:mentorado"); };
+  const closeGuide = (value: boolean) => { setGuideOpen(value); if (!value) { wantGuide.current = false; guides.markSeen("portal:mentorado"); } };
   const m = data.member, firstName = m.name.split(" ")[0];
   const done = data.steps.filter((s) => s.doneAt).length;
 
@@ -71,7 +78,7 @@ export function ClientPortal({ initialData, signOutPath, guideStorageKey }: { in
   return <main className="elite-auth min-h-screen text-zinc-100">
     <header className="sticky top-0 z-30 border-b border-white/8 bg-[#050504]/85 backdrop-blur-xl"><div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
       <div className="flex items-center gap-3"><Image src="/elite-emblem-sm.png" alt="Elite Expansion X" width={128} height={128} className="elite-brand-logo" /><div><p className="font-semibold tracking-tight text-white">Elite Expansion X</p><p className="text-xs text-subtle">Portal do Mentorado · {m.organizationName}</p></div></div>
-      <div className="flex items-center gap-1"><GuideButton onClick={() => setGuideOpen(true)} /><Button asChild variant="ghost" size="icon" className="text-zinc-400 hover:bg-white/5 hover:text-white"><a href={signOutPath} aria-label="Sair"><LogOut /></a></Button></div>
+      <div className="flex items-center gap-1"><GuideButton onClick={openGuide} /><Button asChild variant="ghost" size="icon" className="text-zinc-400 hover:bg-white/5 hover:text-white"><a href={signOutPath} aria-label="Sair"><LogOut /></a></Button></div>
     </div></header>
 
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
@@ -90,7 +97,7 @@ export function ClientPortal({ initialData, signOutPath, guideStorageKey }: { in
         <div className="flex-1 text-sm leading-6 text-zinc-300"><p className="font-semibold text-white">Bem-vindo(a) ao seu portal de mentoria.</p><p>Aqui você acompanha sua jornada, vê o próximo encontro, acessa os materiais e indica pessoas que podem crescer com a {m.organizationName}. Marque cada etapa quando concluir.</p></div>
         <Button size="icon" variant="ghost" aria-label="Fechar boas-vindas" onClick={closeWelcome} className="text-subtle"><X /></Button>
       </section>}
-      {firstVisit && guide && <div className="mb-6"><TabGuideCard guide={guide} action={guideRun} onOpen={() => setGuideOpen(true)} onDone={() => guides.markSeen("portal:mentorado")} /></div>}
+      {firstVisit && guide && <div className="mb-6"><TabGuideCard guide={guide} action={guideRun} onOpen={openGuide} onDone={() => guides.markSeen("portal:mentorado")} /></div>}
 
       <div className="grid gap-5 lg:grid-cols-[1.45fr_1fr]">
         <div className="space-y-5">

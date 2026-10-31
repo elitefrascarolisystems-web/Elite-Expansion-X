@@ -108,6 +108,8 @@ test('guia "Como usar": cartão, botão e miolo da gaveta renderizados, sem pedi
   assert.match(body,/class="elite-guide-badge">Exemplo</);assert.match(body,/Carla estava atrasada/);
   assert.match(body,/Cuidado:<\/strong> Fale só com quem autorizou/);
   assert.match(body,/disabled="" title="sem cidade"[^>]*>Fazer agora: Novo atendimento</,'indisponível com o mesmo motivo do + Novo');
+  assert.match(body,/>sem cidade<\/span>/,'o motivo aparece escrito, não só na dica do mouse');
+  assert.match(clean(renderToStaticMarkup(h(g.TabGuideCard,{guide,action:{label:'Novo atendimento',disabled:'sem cidade',run(){}},onOpen(){},onDone(){}}))),/>sem cidade<\/span>/);
   assert.match(body,/>Fechar</);assert.match(body,/>Mostrar os guias de novo</);
   const chip=renderToStaticMarkup(h(g.TabGuideChip,{label:'Como usar o mapa',onOpen(){},onDone(){}}));
   assert.match(chip,/Como usar o mapa/);assert.match(chip,/aria-label="Fechar o aviso do guia"/);

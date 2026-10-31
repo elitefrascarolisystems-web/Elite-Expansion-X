@@ -70,7 +70,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Coordenação",
       "Líder"
     ],
-    "paraQueServe": "Acompanhar cada cidade, seus bairros e a decisão da gestão.",
+    "paraQueServe": "Acompanhar cada cidade, seus bairros e a decisão.",
     "passos": [
       "Em \"Saúde das cidades\", veja a \"Decisão\" de cada uma e o motivo.",
       "Em \"Bairros\", toque em \"Cadastrar bairro\"; se ficar \"Sem ponto no mapa\", use \"Localizar\".",
@@ -106,7 +106,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     ],
     "paraQueServe": "Ver e cadastrar empresas, escritórios e networks.",
     "passos": [
-      "Toque em \"Cadastrar empresa ou local\" e informe tipo, setor e fonte dos dados.",
+      "Toque em \"Cadastrar empresa ou local\": tipo, setor e fonte.",
       "Abra \"Importar empresas e locais por CSV ou XLSX\", envie a planilha e toque em \"Validar prévia\".",
       "No Mapa, abra a ficha do local e toque em \"Validar localização\" para marcar o ponto."
     ],
@@ -198,13 +198,13 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Líder",
       "Comercial"
     ],
-    "paraQueServe": "Levar ao pagamento quem decidiu entrar e não pagou: Fato, Entender, Corrigir, Hora e Acompanhar.",
+    "paraQueServe": "Levar ao pagamento quem decidiu entrar e não pagou.",
     "passos": [
       "Na Agenda, toque em \"Abrir ficha\" e em \"Iniciar F.E.C.H.A.\".",
       "Siga o roteiro da ficha: \"Entender a trava\", \"Registrar solução\" e \"Marcar data combinada\".",
       "Registre o pagamento em \"Venda e pagamento\"; se a pessoa sumir, toque em \"Sem resposta\"."
     ],
-    "exemplo": "Daniel decidiu entrar, mas não pagou. Você iniciou o F.E.C.H.A. e achou a trava: limite do cartão. Registrou a solução, pagar no boleto, e a data combinada, sexta. Na sexta ele pagou, e você registrou em \"Venda e pagamento\".",
+    "exemplo": "F.E.C.H.A. = Fato, Entender, Corrigir, Hora e Acompanhar. Daniel decidiu entrar, mas não pagou: a trava era o limite do cartão. Você registrou a solução, boleto, e a data combinada, sexta. Na sexta ele pagou, e você registrou em \"Venda e pagamento\".",
     "cuidado": "A plataforma não envia mensagens: copie, adapte e envie você. Se a pessoa pedir para parar, marque a revogação em \"Etapa e autorização\".",
     "acao": "aba:vendas/agenda"
   },
@@ -256,9 +256,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Coordenação",
       "Líder"
     ],
-    "paraQueServe": "Cadastrar embaixadores, dar missões e acompanhar cada um até ficar ativo.",
+    "paraQueServe": "Cadastrar embaixadores e acompanhar cada um até ficar ativo.",
     "passos": [
-      "Toque em \"Cadastrar embaixador\", escolha a cidade e crie o \"Código único\" dele.",
+      "Toque em \"Cadastrar embaixador\" e crie o \"Código único\" dele.",
       "Na lista, toque em \"Acompanhar\" para atualizar o treinamento e a \"Situação\".",
       "Use \"Criar tarefa\" para a missão da semana e \"Registrar atividade\" quando ele agir."
     ],
@@ -274,9 +274,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Líder",
       "Comercial"
     ],
-    "paraQueServe": "Ver quem indicou quem, em ramos, e completar as indicações que faltam.",
+    "paraQueServe": "Ver quem indicou quem e completar as indicações que faltam.",
     "passos": [
-      "Em \"Árvore por ramos\", toque em \"Explorar ramo\" para ver quem a pessoa indicou.",
+      "Em \"Árvore por ramos\", toque em \"Explorar ramo\".",
       "No cartão com \"Sem indicador registrado\", toque em \"Quem indicou?\" e em \"Vincular indicação\".",
       "Abra \"Importar a rede por planilha (mentorados, vendas e indicações)\" para trazer uma planilha."
     ],
@@ -285,7 +285,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "acao": "novo:atendimento-novo",
     "porFuncao": {
       "Comercial": {
-        "paraQueServe": "Ver quem indicou quem entre as pessoas dos seus atendimentos.",
+        "paraQueServe": "Ver quem indicou quem entre os seus atendimentos.",
         "cuidado": "Você vê só as pessoas dos seus atendimentos. Registre só indicação de quem autorizou o contato."
       }
     }
@@ -295,9 +295,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Preparar o portal de cada mentorado: jornada, contato e próximo encontro.",
+    "paraQueServe": "Preparar o portal de cada mentorado: jornada e encontros.",
     "passos": [
-      "Toque em \"Convidar para o portal\" e convide a pessoa com a função Mentorado.",
+      "Toque em \"Convidar para o portal\" e use a função Mentorado.",
       "Em \"Jornada\", toque em \"Começar com uma sugestão editável\" ou use \"Adicionar etapa\".",
       "Na lista, toque em \"Editar\" para contato e próximo encontro, e em \"Colocar no mapa\"."
     ],
@@ -312,9 +312,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Coordenação",
       "Líder"
     ],
-    "paraQueServe": "Registrar quem abre portas na cidade e as ações locais, com a próxima ação.",
+    "paraQueServe": "Registrar quem abre portas na cidade e as ações locais.",
     "passos": [
-      "Toque em \"Cadastrar parceiro\" e escreva a \"Próxima ação\" com responsável e prazo.",
+      "Toque em \"Cadastrar parceiro\" e escreva a \"Próxima ação\".",
       "Toque em \"Cadastrar evento\", escolha o \"Parceiro\" e informe data, \"Responsável\" e custo.",
       "Em \"Parceiros\", confira a próxima ação; em \"Eventos\", a data, o responsável e o custo."
     ],
@@ -329,9 +329,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Coordenação",
       "Líder"
     ],
-    "paraQueServe": "Guardar mensagens, vídeos e roteiros e escolher quem pode usar cada um.",
+    "paraQueServe": "Guardar materiais e escolher quem pode usar cada um.",
     "passos": [
-      "Toque em \"Adicionar material\", cole o \"Link do material\" e escreva as \"Instruções\".",
+      "Toque em \"Adicionar material\", cole o link e escreva as \"Instruções\".",
       "Em \"Para quem\", escolha embaixadores, mentorados ou todos.",
       "Em \"Situação\", marque \"Aprovado\" só depois de revisar: só o aprovado aparece nos portais."
     ],
@@ -341,7 +341,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "porFuncao": {
       "Líder": {
         "passos": [
-          "Toque em \"Adicionar material\", cole o \"Link do material\" e escreva as \"Instruções\".",
+          "Toque em \"Adicionar material\", cole o link e escreva as \"Instruções\".",
           "Em \"Para quem\", escolha embaixadores, mentorados ou todos.",
           "Em \"Situação\", o seu material entra \"Em revisão\": só o \"Aprovado\" aparece nos portais."
         ],
@@ -356,9 +356,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Coordenação",
       "Líder"
     ],
-    "paraQueServe": "Ver como a expansão está indo: clientes pagos, receita, custo e cada cidade.",
+    "paraQueServe": "Ver como a expansão vai: clientes pagos, receita e custo.",
     "passos": [
-      "Toque em \"Filtros\" para escolher cidade, período ou canal; \"Limpar\" mostra tudo de novo.",
+      "Toque em \"Filtros\" e escolha cidade, período ou canal.",
       "Em \"Estamos crescendo com lucro?\", compare receita e custo por mês; \"Ver tabela\" dá os números.",
       "Em \"Saúde das cidades\", veja a \"Decisão\" e o motivo escrito logo abaixo dela."
     ],
@@ -380,9 +380,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Líder",
       "Comercial"
     ],
-    "paraQueServe": "Definir a meta do dia de cada pessoa da equipe e ver o que cada uma fez.",
+    "paraQueServe": "Definir a meta do dia de cada pessoa e ver o que fez.",
     "passos": [
-      "Toque em \"Definir meta\", escolha \"Responsável\" e \"Dia\" e preencha frios, quentes e contatos.",
+      "Toque em \"Definir meta\" e preencha frios, quentes e contatos.",
       "Escolha o \"Dia\" e compare \"Frios / meta\", \"Quentes / meta\" e \"Contatos / meta\".",
       "Leia \"Relatos diários · autodeclarados\" e mande o seu em \"Meu relatório diário\"."
     ],
@@ -390,9 +390,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "cuidado": "O Comercial vê só os próprios números. No relato, não escreva contato de cliente.",
     "porFuncao": {
       "Comercial": {
-        "paraQueServe": "Ver a sua meta do dia, o que você já fez e mandar o seu relato.",
+        "paraQueServe": "Ver sua meta do dia, o que já fez e mandar seu relato.",
         "passos": [
-          "Escolha o \"Dia\" e veja \"Frios / meta\", \"Quentes / meta\" e \"Contatos / meta\".",
+          "Escolha o \"Dia\" e veja \"Frios / meta\" e \"Contatos / meta\".",
           "Use \"Registrar atividade\" na ficha do atendimento, na Agenda, para somar contatos.",
           "Toque em \"Meu relatório diário\" no fim do dia e conte impedimentos e o plano de amanhã."
         ],
@@ -409,9 +409,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Coordenação",
       "Líder"
     ],
-    "paraQueServe": "Ver quanto já está no mapa e quanto cada pessoa da equipe cadastrou.",
+    "paraQueServe": "Ver o que já está no mapa e quem cadastrou.",
     "passos": [
-      "Em \"Cobertura por cidade\", arraste a tabela e veja \"Locais validados\" e \"Ligadas a um local\".",
+      "Em \"Cobertura por cidade\", veja \"Locais validados\" e \"Ligadas a um local\".",
       "Em \"Produção por mapeador\", veja quanto cada pessoa cadastrou, no total e em \"7 dias\".",
       "Toque em \"Novo\" e em \"Mapear local e pessoas\" para subir os números."
     ],
@@ -426,9 +426,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Coordenação",
       "Líder"
     ],
-    "paraQueServe": "Registrar cada custo e ver quanto custa cada cliente pago, por canal.",
+    "paraQueServe": "Registrar custos e ver quanto custa cada cliente pago.",
     "passos": [
-      "Toque em \"Registrar custo\" e informe cidade, \"Período\", \"Categoria\", \"Canal relacionado\" e valor.",
+      "Toque em \"Registrar custo\" e informe \"Período\", \"Categoria\" e valor.",
       "Em \"Eficiência por canal\", compare o CAC (custo por cliente pago) de cada canal.",
       "Em \"Custos registrados\", confira se cada custo entrou uma vez só e no mês certo."
     ],
@@ -441,9 +441,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Cadastrar a equipe da {empresa}, enviar o link de acesso e ver quem já entrou.",
+    "paraQueServe": "Cadastrar a equipe, enviar o link de acesso e ver quem entrou.",
     "passos": [
-      "Toque em \"Convidar equipe\" e cole uma pessoa por linha; a prévia mostra o que corrigir.",
+      "Toque em \"Convidar equipe\" e cole uma pessoa por linha.",
       "Confirme e envie a cada pessoa a própria mensagem por \"WhatsApp\" ou \"Copiar mensagem\".",
       "Em \"Acesso\", veja quem entrou; use \"Novo link\" para convite vencido e \"Nova senha\" se esquecer."
     ],
@@ -456,9 +456,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Definir os critérios que decidem se cada cidade avança e entender como cada número é calculado.",
+    "paraQueServe": "Definir quando cada cidade avança e entender cada cálculo.",
     "passos": [
-      "Em \"Critérios de decisão\", toque em \"Editar\" e defina embaixadores, pagamentos e períodos mínimos.",
+      "Em \"Critérios de decisão\", toque em \"Editar\" e defina os mínimos.",
       "Na mesma janela, preencha o \"Link-base de indicação\": dele sai o link de cada embaixador.",
       "Em \"Como os indicadores são calculados\" e \"O que cada nome quer dizer\", tire dúvidas."
     ],
@@ -469,9 +469,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Mostrar o nome e a logo da {empresa} na barra lateral e no mapa impresso.",
+    "paraQueServe": "Mostrar o nome e a logo da empresa para a equipe.",
     "passos": [
-      "Em \"Nome da empresa\", escreva o nome do jeito que a equipe deve ver.",
+      "Em \"Nome da empresa\", escreva o nome que a equipe deve ver.",
       "Toque em \"Escolher imagem\" e escolha a logo, com até 150 KB e, se der, fundo transparente.",
       "Marque a caixa de logo oficial e toque em \"Salvar identidade\"."
     ],
@@ -483,7 +483,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Ver o que o plano da {empresa} inclui e quanto já usou de vagas de equipe e cidades.",
+    "paraQueServe": "Ver o que o seu plano inclui e quanto já usou.",
     "passos": [
       "Na lista do plano, veja o que está incluído (✓) e o que ficou fora (riscado).",
       "Em \"Usuários da equipe\" e \"Cidades ativas\", veja quanto já usou de cada limite.",
@@ -497,9 +497,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Ver o que mudou na {empresa}, quando e por quem, nas 50 alterações mais recentes.",
+    "paraQueServe": "Ver o que mudou, quando e por quem (as 50 mais recentes).",
     "passos": [
-      "Veja as alterações por dia (\"Hoje\", \"Ontem\" e as datas), das mais novas para as mais antigas.",
+      "Veja as alterações por dia, das mais novas às mais antigas.",
       "Em cada item, leia o que mudou, a hora e, embaixo, o e-mail de quem fez.",
       "Repare no selo \"Assessoria Elite\": ele aparece quando a mudança foi feita pela assessoria."
     ],
@@ -510,9 +510,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Atender quem pede, pela LGPD (lei de proteção de dados), para ver, corrigir ou apagar os próprios dados.",
+    "paraQueServe": "Atender pedidos da LGPD (lei de proteção de dados).",
     "passos": [
-      "Em \"Buscar pelo nome, e-mail ou WhatsApp\", digite 2 letras ou mais e toque na pessoa.",
+      "Em \"Buscar pelo nome, e-mail ou WhatsApp\", ache a pessoa.",
       "Escolha \"Cópia dos dados\", \"Corrigir dados\", \"Revogar autorização\" ou \"Excluir (anonimizar)\".",
       "Preencha \"Pedido recebido em\" e \"Por onde chegou\"; o pedido fica em \"Pedidos atendidos\"."
     ],
@@ -524,9 +524,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Ver se os e-mails automáticos estão saindo, como eles chegam e quem recebe cada um.",
+    "paraQueServe": "Ver se os e-mails automáticos saem e quem recebe cada um.",
     "passos": [
-      "No alto, veja se está \"Envio ligado\"; com ele ligado, toque em \"Enviar teste para mim\".",
+      "Veja se está \"Envio ligado\" e toque em \"Enviar teste para mim\".",
       "Em \"Como chega o e-mail\", troque entre \"Lembrete diário\" e \"Resumo semanal\" para ver a prévia.",
       "Em \"Quem recebe\", ligue ou desligue o \"Diário\" e o \"Semanal\" (só de administradores)."
     ],
@@ -537,9 +537,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Ver quem da Assessoria Elite pode ver e editar os dados da {empresa} para dar suporte.",
+    "paraQueServe": "Ver quem da Assessoria Elite acessa seus dados para dar suporte.",
     "passos": [
-      "Veja na lista o nome e o e-mail de cada pessoa da Assessoria Elite com acesso.",
+      "Veja na lista o nome e o e-mail de cada pessoa com acesso.",
       "Em \"Histórico\", procure o selo \"Assessoria Elite\": ele marca o que a assessoria mudou.",
       "Tire dúvidas sobre uma mudança com quem a fez: o e-mail aparece no item do \"Histórico\"."
     ],
@@ -552,9 +552,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Criar as empresas assinantes e controlar plano, valor, vencimento, limites e suspensão.",
+    "paraQueServe": "Criar e cuidar das empresas assinantes.",
     "passos": [
-      "Toque em \"Nova empresa assinante\", preencha os dados e o plano e toque em \"Criar empresa\".",
+      "Toque em \"Nova empresa assinante\", preencha dados e plano e toque em \"Criar empresa\".",
       "Na empresa nova, toque em \"Entrar\" e gere o link do responsável em \"Time e acessos\".",
       "Veja \"Pagamento vencido\"; na empresa atrasada, mude \"Pago até\" em \"Plano\" ou use \"Suspender\"."
     ],
@@ -566,9 +566,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Acompanhar as empresas que pediram apresentação pela página pública até virarem assinantes.",
+    "paraQueServe": "Acompanhar quem pediu apresentação até virar assinante.",
     "passos": [
-      "Fale com a pessoa pelo e-mail ou WhatsApp do pedido e mude o \"Andamento\" para \"Em conversa\".",
+      "Fale com a pessoa e mude o \"Andamento\" para \"Em conversa\".",
       "Escreva o combinado em \"Anotação\": ela é salva quando você sai do campo.",
       "Feche o plano e toque em \"Criar empresa assinante\": o ambiente nasce com os dados do pedido."
     ],
@@ -580,9 +580,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Escolher quem da sua equipe entra nas empresas clientes como Assessoria Elite.",
+    "paraQueServe": "Escolher quem é Assessoria Elite nas empresas clientes.",
     "passos": [
-      "Cadastre a pessoa antes em \"Time e acessos\": só quem está ativo na sua equipe pode ser assessor.",
+      "Cadastre a pessoa antes em \"Time e acessos\", como ativa.",
       "Em \"Adicionar assessor\", digite o e-mail da pessoa e toque em \"Conceder assessoria\".",
       "Toque em \"Retirar\" ao lado do nome para tirar o acesso; \"Reativar\" devolve."
     ],
@@ -594,9 +594,9 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Embaixador"
     ],
-    "paraQueServe": "Concluir sua ativação, divulgar seu link e registrar quem autorizou o contato.",
+    "paraQueServe": "Ativar o cadastro, divulgar o link e registrar contatos.",
     "passos": [
-      "Em \"Seu progresso\", toque em \"Li e aceito\" e depois em \"Concluir treinamento\".",
+      "Em \"Seu progresso\", toque em \"Li e aceito\" e \"Concluir treinamento\".",
       "Em \"Indicação rastreada\", toque em \"Copiar link\" e envie com os \"Materiais para divulgar\".",
       "Quando alguém autorizar o contato, toque em \"Novo atendimento\" e registre a pessoa."
     ],
@@ -609,7 +609,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Mentorado"
     ],
-    "paraQueServe": "Acompanhar sua jornada, seus encontros e as pessoas que você indicou.",
+    "paraQueServe": "Acompanhar sua jornada, encontros e indicações.",
     "passos": [
       "Em \"Sua jornada\", toque no círculo de cada etapa quando concluir.",
       "Em \"Indicar alguém\", escreva nome e contato de quem aceitou conversar e toque em \"Enviar indicação\".",

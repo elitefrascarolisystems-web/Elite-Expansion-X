@@ -67,8 +67,12 @@ test('guias: tamanhos, 3 passos, exemplo fictício e cuidado curto, como cada fu
    assert.ok(total<=LIMIT.palavras,`${where}: ${total} palavras`);
    const all=[g.titulo,g.paraQueServe,...g.passos,g.exemplo,g.cuidado??''].join(' ');
    assert.ok(!all.includes('{empresa}'),`${where}: {empresa} sem trocar`);
-   // Exemplo sempre fictício: sem e-mail, telefone, a Elite ou a cidade piloto.
-   assert.ok(!/@|\d{4,5}[-\s]?\d{4}/.test(g.exemplo),`${where}: exemplo com contato`);
+   // Textos sempre fictícios: sem e-mail, telefone, a Elite ou a cidade piloto.
+   assert.ok(!/@|\d{4,5}[-\s]?\d{4}/.test(all),`${where}: texto com e-mail ou telefone`);
+   // Cartão da 1ª visita em até 3 linhas a 390 px, mesmo com um nome de empresa longo.
+   const long=guides.resolveGuide(key,role,'Empresa Com Nome Bem Longo');
+   const card=`${long.paraQueServe} 1º passo: ${long.passos[0]}`;
+   assert.ok(card.length<=LIMIT.cartao,`${where}: cartão com ${card.length} caracteres`);
    assert.ok(!/esmeraldas/i.test(all),`${where}: cita a cidade piloto`);
    if(!key.startsWith('plataforma/'))assert.ok(!/elite/i.test(all.replaceAll('Assessoria Elite','')),`${where}: cita a Elite numa tela que a empresa assinante vê`);
   }

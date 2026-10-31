@@ -918,4 +918,4 @@ button:disabled { cursor: not-allowed; }
 .elite-guide-example{border:1px dashed rgb(214 185 79 / 0.4);border-radius:12px;padding:12px;background:rgb(214 185 79 / 0.04)}
 .elite-guide-badge{display:inline-flex;align-items:center;border-radius:999px;background:#d6b94f;color:#111;font-size:11px;font-weight:700;padding:2px 8px}
 @keyframes elite-guide-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.elite-guide-card{animation:none}}
+@media (prefers-reduced-motion:reduce){.elite-guide-card{animation:none}[data-slot=sheet-content],[data-slot=sheet-overlay]{animation:none!important;transition:none!important}}

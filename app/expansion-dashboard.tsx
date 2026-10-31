@@ -147,12 +147,15 @@ const MappingWizard = lazy(() => import("@/app/mapping-wizard").then((m) => ({ d
 function warmUp() {
   void import("@/app/expansion-forms"); void import("@/app/mapping-wizard"); void import("@/app/opportunity-dialog");
   void import("@/app/territorial-map"); void import("@/app/followup-workspace"); void import("@/app/hooks-bank");
-  void import("@/lib/tab-guides");
+  import("@/lib/tab-guides").catch(() => undefined); // sem internet: o botão "Como usar" avisa
 }
 
 const NO_GUIDES: string[] = [];
 /** Grava o "já vi" do guia no login (falha em silêncio: tenta de novo na próxima vez). */
-const sendGuide = (action: "guide_seen" | "guides_reset", key?: string) => tenantFetch("/api/team", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, key }) });
+const sendGuide = async (action: "guide_seen" | "guides_reset", key?: string) => {
+  const response = await tenantFetch("/api/team", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, key }) });
+  if (!response.ok) throw new Error("O guia não foi gravado."); // fica pendente no aparelho e vai de novo na próxima vez
+};
 
 
 function badgeClass(value: string) {
@@ -428,9 +431,16 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const [guideOpen, setGuideOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(data.access.welcomed === false);
   const firstVisit = guideKey !== null && guides.ready && !welcomeOpen && !guides.seen.has(guideKey);
-  const guideContent = useGuideContent(guideKey !== null && (guideOpen || firstVisit));
-  const guide = guideContent && guideKey ? guideContent.resolveGuide(guideKey, data.access.role, data.access.organizationName) : null;
-  const closeGuide = (value: boolean) => { setGuideOpen(value); if (!value && guide) guides.markSeen(guide.key); };
+  // Sem internet antes de o texto do guia chegar: avisa e fecha (o navegador guarda a falha do download até recarregar).
+  const wantGuide = useRef(false);
+  const guideFetch = useGuideContent(guideKey !== null && (guideOpen || firstVisit), () => {
+    if (!wantGuide.current) return;
+    wantGuide.current = false; setGuideOpen(false);
+    toast.error("Sem conexão: o guia não abriu. Com internet, recarregue a página.");
+  });
+  const guide = guideFetch.content && guideKey ? guideFetch.content.resolveGuide(guideKey, data.access.role, data.access.organizationName) : null;
+  const openGuide = () => { wantGuide.current = true; guideFetch.retry(); setGuideOpen(true); };
+  const closeGuide = (value: boolean) => { setGuideOpen(value); if (!value) { wantGuide.current = false; if (guide) guides.markSeen(guide.key); } };
   const resetGuides = () => { guides.resetAll(); setGuideOpen(false); toast.success("Pronto: o guia de cada aba aparece de novo na próxima visita."); };
 
   // Depois de abrir, baixa em segundo plano as janelas e telas mais usadas.
@@ -492,7 +502,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   if (data.access.role === "Embaixador") {
     const ambassadorRun: GuideRun | undefined = guide?.acao === "portal:atendimento" ? { label: "Novo atendimento", run: () => setDialog({ name: "lead" }) }
       : guide?.acao === "portal:atividade" ? { label: "Registrar atividade", run: () => setDialog({ name: "ambassador-activity" }) } : undefined;
-    return <><AmbassadorPortal data={data} view={view} open={setDialog} saving={saving} save={save} onGuide={() => setGuideOpen(true)} guideCard={firstVisit && guide ? <TabGuideCard guide={guide} action={ambassadorRun} onOpen={() => setGuideOpen(true)} onDone={() => guides.markSeen(guide.key)} /> : null} /><WelcomeDialog access={data.access} onStart={() => undefined} onClose={() => setWelcomeOpen(false)} /><TabGuideSheet guide={guide} open={guideOpen} onOpenChange={closeGuide} action={ambassadorRun} onResetAll={resetGuides} />{dialog && <Suspense fallback={null}><ExpansionDialog dialog={dialog} data={data} saving={saving} onClose={() => setDialog(null)} onSave={save} /></Suspense>}</>;
+    return <><AmbassadorPortal data={data} view={view} open={setDialog} saving={saving} save={save} onGuide={openGuide} guideCard={firstVisit && guide ? <TabGuideCard guide={guide} action={ambassadorRun} onOpen={openGuide} onDone={() => guides.markSeen(guide.key)} /> : null} /><WelcomeDialog access={data.access} onStart={() => undefined} onClose={() => setWelcomeOpen(false)} /><TabGuideSheet guide={guide} open={guideOpen} onOpenChange={closeGuide} action={ambassadorRun} onResetAll={resetGuides} />{dialog && <Suspense fallback={null}><ExpansionDialog dialog={dialog} data={data} saving={saving} onClose={() => setDialog(null)} onSave={save} /></Suspense>}</>;
   }
 
   const manage = MANAGEMENT_ROLES.includes(data.access.role);
@@ -547,16 +557,16 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const outline = "border-white/10 bg-white/5 text-white";
 
   return <>
-    <AppShell logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={{ ...(pending ? { vendas: pending } : {}), ...(data.subscriptionRequests ? { plataforma: data.subscriptionRequests } : {}) }} actions={actions} onNavigate={(next) => navigate(next)} onGuide={guideKey ? () => setGuideOpen(true) : undefined} search={<QuickSearch sales={canPipeline} commands={{ areas, current: location, actions, onNavigate: (next) => navigate(next), help: { role: data.access.role, organizationName: data.access.organizationName, onOpen: (next) => { navigate(next); setGuideOpen(true); }, onReset: resetGuides } }} onPick={(pick) => (pick.kind === "territory" ? openMapKey(pick.key) : openFollowup(pick.leadId))} />} notice={<><OfflineSync access={data.access} cities={data.cities} onSynced={refreshDashboard} /><InstallAppBanner /></>}>
+    <AppShell logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={{ ...(pending ? { vendas: pending } : {}), ...(data.subscriptionRequests ? { plataforma: data.subscriptionRequests } : {}) }} actions={actions} onNavigate={(next) => navigate(next)} onGuide={guideKey ? openGuide : undefined} search={<QuickSearch sales={canPipeline} commands={{ areas, current: location, actions, onNavigate: (next) => navigate(next), help: { role: data.access.role, organizationName: data.access.organizationName, onOpen: (next) => { navigate(next); openGuide(); }, onReset: resetGuides } }} onPick={(pick) => (pick.kind === "territory" ? openMapKey(pick.key) : openFollowup(pick.leadId))} />} notice={<><OfflineSync access={data.access} cities={data.cities} onSynced={refreshDashboard} /><InstallAppBanner /></>}>
       {/* Telas que vêm sob demanda: enquanto o código delas chega, o esqueleto no formato da tela. */}
       <Suspense fallback={<PanelSkeleton label="Carregando a tela…" />}><div className="space-y-5">
-        {firstVisit && guide && here !== "territorio/mapa" && <TabGuideCard guide={guide} action={guideAction} onOpen={() => setGuideOpen(true)} onDone={() => guides.markSeen(guide.key)} />}
+        {firstVisit && guide && here !== "territorio/mapa" && <TabGuideCard guide={guide} action={guideAction} onOpen={openGuide} onDone={() => guides.markSeen(guide.key)} />}
         {showFilters && <FilterBar data={data} filters={filters} onChange={setFilters} />}
         {attributionWarning && <div className="flex items-start gap-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><AlertTriangle className="mt-1 size-4 shrink-0" />Filtros por canal ou embaixador não usam fechamentos consolidados, pois eles não possuem atribuição individual. Cidades detalhadas continuam sendo calculadas normalmente.</div>}
 
         {location.area === "hoje" && <TodayPanel data={data} view={fullView} onGo={go} onFollowup={openFollowup} shortcuts={actions.filter((action) => action.group === "dia" && action.id !== "atendimento-mapa")} />}
 
-        {here === "territorio/mapa" && <>{/* Mapa em primeiro lugar: as ações principais ficam na barra do próprio mapa. */}<TerritorialMap guideChip={firstVisit && guide ? <TabGuideChip label="Como usar o mapa" onOpen={() => setGuideOpen(true)} onDone={() => guides.markSeen("territorio/mapa")} /> : undefined} actions={canMap ? <><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-gold text-black"><MapPin /><span>Mapear<span className="territory-bar-label"> local e pessoas</span></span></Button><Button asChild variant="outline" title="Imprimir mapa (A3/PDF)"><a href={`/imprimir/mapa?org=${data.access.organizationId}`} target="_blank" rel="noopener"><Printer /><span className="territory-bar-label">Imprimir</span><span className="sr-only"> mapa (A3/PDF)</span></a></Button></> : undefined} key={mapFocusKey || mapPersonId || mapLeadId || "map"} focusKey={mapFocusKey} focusPersonId={mapPersonId} focusLeadId={mapLeadId} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canImport && <PeopleImport data={data} onSaved={refreshDashboard} />}</>}
+        {here === "territorio/mapa" && <>{/* Mapa em primeiro lugar: as ações principais ficam na barra do próprio mapa. */}<TerritorialMap guideChip={firstVisit && guide ? <TabGuideChip label="Como usar o mapa" onOpen={openGuide} onDone={() => guides.markSeen("territorio/mapa")} /> : undefined} actions={canMap ? <><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-gold text-black"><MapPin /><span>Mapear<span className="territory-bar-label"> local e pessoas</span></span></Button><Button asChild variant="outline" title="Imprimir mapa (A3/PDF)"><a href={`/imprimir/mapa?org=${data.access.organizationId}`} target="_blank" rel="noopener"><Printer /><span className="territory-bar-label">Imprimir</span><span className="sr-only"> mapa (A3/PDF)</span></a></Button></> : undefined} key={mapFocusKey || mapPersonId || mapLeadId || "map"} focusKey={mapFocusKey} focusPersonId={mapPersonId} focusLeadId={mapLeadId} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canImport && <PeopleImport data={data} onSaved={refreshDashboard} />}</>}
         {here === "territorio/cidades" && <><ActionBar hint="Saúde de cada cidade, decisão registrada e fechamentos consolidados.">{canPerform(data.access, "record_city") && <Button onClick={() => setDialog({ name: "city-result" })} variant="outline" className={outline}><Activity /> Fechamento consolidado</Button>}{canCity && <Button onClick={() => setDialog({ name: "city" })} className="bg-gold text-black">Cadastrar cidade</Button>}</ActionBar><CityTable cities={view.cities} onCreate={canCity ? () => setDialog({ name: "city" }) : undefined} onEdit={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canMap && data.cities.length > 0 && <RegionPanel data={data} onChanged={refreshDashboard} />}<TerritoryDecisions data={data} /></>}
         {here === "territorio/locais" && <CommercialWorkspace data={data} mode="businesses" onRefresh={refreshDashboard} />}
 

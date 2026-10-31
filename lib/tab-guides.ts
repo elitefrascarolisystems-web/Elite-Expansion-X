@@ -36,7 +36,12 @@ export type ResolvedGuide = {
   key: GuideKey; titulo: string; paraQueServe: string; passos: readonly string[]; exemplo: string; cuidado?: string; acao?: GuideAction;
 };
 
-export const GUIDE_LIMITS = { titulo: 40, paraQueServe: 120, passo: 100, exemplo: 280, cuidado: 240, palavras: 130 } as const;
+/**
+ * `cartao`: "para que serve" + " 1º passo: " + 1º passo, para caber em 3 linhas no cartão a 390 px.
+ * Medido no próprio app (Inter 13 px numa coluna de 328 px): de 145 caracteres em diante já pode
+ * passar de 3 linhas; o limite de 135 deixa folga e vale com um nome de empresa longo.
+ */
+export const GUIDE_LIMITS = { titulo: 40, paraQueServe: 120, passo: 100, exemplo: 280, cuidado: 240, palavras: 130, cartao: 135 } as const;
 
 export const TAB_GUIDES: Record<GuideKey, TabGuide> = GUIDE_CONTENT;
 
