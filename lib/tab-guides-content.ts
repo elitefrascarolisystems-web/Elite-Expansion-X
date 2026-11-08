@@ -427,7 +427,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     ],
     "paraQueServe": "Ver o que já está no mapa e quem cadastrou.",
     "passos": [
-      "Em \"Cobertura por cidade\", veja \"Locais validados\" e \"Ligadas a um local\".",
+      "Em \"Cobertura por cidade\", veja \"Locais validados\" e \"Com local principal\".",
       "Em \"Produção por mapeador\", veja quanto cada pessoa cadastrou, no total e em \"7 dias\".",
       "Toque em \"Novo\" e em \"Mapear local e pessoas\" para subir os números."
     ],
@@ -646,10 +646,10 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "paraQueServe": "Ver tudo de uma pessoa num lugar só e o próximo passo com ela.",
     "passos": [
       "Comece pelo \"Próximo passo\": é a ação mais importante agora.",
-      "Em \"Resumo\", veja o atendimento, quem indicou e como abordar.",
-      "Em \"Histórico\", veja o que já aconteceu, dia a dia."
+      "Em \"Lugares\", veja onde ela tem vínculo, a situação de cada lugar e o plano de plantio.",
+      "Depois da visita, toque em \"Registrar visita\"; tudo entra no \"Histórico\"."
     ],
-    "exemplo": "Maria é Cliente e sócia da Padaria Pão Dourado. O Próximo passo dela é \"Pedir indicação\": o gancho já vem pronto em \"Como abordar\", com \"Copiar\".",
-    "cuidado": "A página não mostra contato: o envio continua pela ficha do atendimento. Ela não pode ser impressa nem exportada."
+    "exemplo": "Maria é Cliente e sócia da Padaria Pão Dourado. Próximo passo: \"Pedir indicação\". Em Lugares: Academia Corpo Ativo · Frequenta · Avançar (1 cliente aqui). Plano: \"Pedir apresentação ao responsável\" até 05/11.",
+    "cuidado": "Lugares só com a autorização da pessoa: trabalho, negócios e comunidades, nunca a casa, e sem horários."
   }
 };

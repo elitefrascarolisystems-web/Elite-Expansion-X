@@ -7,7 +7,7 @@ export const HOOK_SITUATIONS = ["Primeiro contato", "Retomada", "Indicação", "
 export const HOOK_CHANNELS = ["WhatsApp", "Ligação", "Presencial", "E-mail"] as const;
 export const HOOK_STATUSES = ["Rascunho", "Aprovado", "Retirado"] as const;
 /** Variáveis que o gancho pode usar; a plataforma troca pelos dados do atendimento. */
-export const HOOK_VARIABLES = [["{nome}", "nome da pessoa"], ["{primeiro_nome}", "primeiro nome"], ["{cidade}", "cidade"], ["{responsavel}", "quem atende"], ["{empresa}", "sua empresa"]] as const;
+export const HOOK_VARIABLES = [["{nome}", "nome da pessoa"], ["{primeiro_nome}", "primeiro nome"], ["{cidade}", "cidade"], ["{responsavel}", "quem atende"], ["{empresa}", "sua empresa"], ["{lugar}", "lugar onde a pessoa tem vínculo"]] as const;
 export const MAX_HOOK_IMPORT = 50;
 
 export const hookSchema = z.object({
@@ -22,16 +22,16 @@ export const hookSchema = z.object({
 export type HookInput = z.infer<typeof hookSchema>;
 export type HookRecord = HookInput & { id: number; createdBy: string; updatedAt: string };
 
-export type HookContext = { name?: string; city?: string; owner?: string; organization?: string };
+export type HookContext = { name?: string; city?: string; owner?: string; organization?: string; place?: string; sector?: string };
 
 /** Troca as variáveis; as que ficarem sem dado viram “…” para a pessoa completar antes de enviar. */
 export function fillHook(body: string, context: HookContext): string {
   const firstName = (context.name ?? "").trim().split(/\s+/)[0] ?? "";
   const values: Record<string, string> = {
     "{nome}": context.name?.trim() ?? "", "{primeiro_nome}": firstName, "{cidade}": context.city?.trim() ?? "",
-    "{responsavel}": context.owner?.trim() ?? "", "{empresa}": context.organization?.trim() ?? "",
+    "{responsavel}": context.owner?.trim() ?? "", "{empresa}": context.organization?.trim() ?? "", "{lugar}": context.place?.trim() ?? "",
   };
-  return body.replace(/\{(nome|primeiro_nome|cidade|responsavel|empresa)\}/g, (key) => values[key] || "…");
+  return body.replace(/\{(nome|primeiro_nome|cidade|responsavel|empresa|lugar)\}/g, (key) => values[key] || "…");
 }
 
 /** Linhas coladas: "Título | Situação | Texto" (canal e setor opcionais: "| Canal | Setor"). */

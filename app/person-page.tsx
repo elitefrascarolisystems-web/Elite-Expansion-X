@@ -12,6 +12,7 @@ import { HookPicker } from "@/app/hooks-bank";
 import { Segmented } from "@/components/elite/segmented";
 import { TabGuideBody, TabGuideCard } from "@/components/elite/tab-guide";
 import { Timeline } from "@/components/elite/timeline";
+import { LinkPlaceDialog, PlanDialog, SituationBadge, VisitDialog, type PlantPlace, type PlantPerson } from "@/app/plant-dialogs";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import type { PersonPage } from "@/db/person-page";
@@ -27,7 +28,9 @@ export type PersonPageAction =
   | { type: "map" | "edit" | "interaction"; personId: string }
   | { type: "followup" | "sale"; leadId: number }
   | { type: "start"; person: { id: string; name: string; cityId: number; cityName: string; placeName?: string } }
-  | { type: "go"; target: string };
+  | { type: "go"; target: string }
+  /** Ver no mapa a ficha do local (não a da pessoa) e abrir o mapeamento guiado já no local. */
+  | { type: "mapKey"; key: string } | { type: "mapear"; businessId?: string };
 
 type Part = "resumo" | "lugares" | "historico";
 const LEVEL_HELP: Record<string, string> = { Cliente: "Cliente: pagamento confirmado", Indicador: "Indicador: indicou alguém", Multiplicador: "Multiplicador: alguém que ela indicou comprou" };
@@ -59,6 +62,10 @@ function Body({ personId, access, organizationName, guide, guideSeen, onGuideSee
   const [part, setPartState] = useState<Part>(() => readPart(partKey));
   const [showGuide, setShowGuide] = useState(false);
   const [hook, setHook] = useState<HookContext | null>(null);
+  const [plan, setPlan] = useState<PlantPlace | null>(null);
+  const [visit, setVisit] = useState<PlantPlace | null>(null);
+  const [linking, setLinking] = useState(false);
+  const [busyPlace, setBusyPlace] = useState("");
   const setPart = (value: Part) => { setPartState(value); try { localStorage.setItem(partKey, value); } catch { /* aparelho sem armazenamento: só nesta visita */ } };
 
   const fetchPage = useCallback((all: boolean) => tenantFetch(`/api/territory/person?id=${encodeURIComponent(personId)}${all ? "&all=1" : ""}`, { cache: "no-store" })
@@ -106,15 +113,31 @@ function Body({ personId, access, organizationName, guide, guideSeen, onGuideSee
     switch (p.next.action) {
       case "registrar-retorno": case "abrir-acompanhamento": case "continuar-fecha": if (a) onAction({ type: "followup", leadId: a.leadId }); break;
       case "iniciar-atendimento": onAction({ type: "start", person: { id: p.id, name: p.name, cityId: p.cityId, cityName: p.cityName, placeName: p.place?.name } }); break;
-      case "pedir-indicacao": setHook({ name: p.name, city: p.cityName, owner: a?.ownerName ?? "", organization: organizationName }); break;
+      case "pedir-indicacao": setHook({ name: p.name, city: p.cityName, owner: a?.ownerName ?? "", organization: organizationName, place: p.place?.name, sector: p.place?.sector }); break;
       case "marcar-encontro": onAction({ type: "go", target: "rede/mentorados" }); break;
       case "ver-indicacoes": onAction({ type: "go", target: "rede/indicacoes" }); break;
       case "cadastrar-embaixador": onAction({ type: "go", target: "rede/embaixadores" }); break;
-      case "registrar-interacao": case "registrar-visita": case "planejar-visita": onAction({ type: "interaction", personId: p.id }); break;
+      case "registrar-visita": { const target = p.places.find((x) => x.summary?.planned.length) ?? p.places[0]; if (target) setVisit(toPlant(target)); else onAction({ type: "interaction", personId: p.id }); break; }
+      case "planejar-visita": { const target = p.places.find((x) => !x.review && x.summary?.situation === "Avançar" && !x.summary.planned.length); if (target) setPlan(toPlant(target)); break; }
+      case "registrar-interacao": onAction({ type: "interaction", personId: p.id }); break;
       default: break;
     }
   };
   const a = p.attendance;
+  const toPlant = (x: PersonPage["places"][number]): PlantPlace => ({ businessId: x.businessId, name: x.name, type: x.type, sector: x.sector });
+  const plantPerson = (x: PersonPage["places"][number] | undefined): PlantPerson => ({ id: p.id, name: p.name, link: x?.link, level: p.level, review: x?.review });
+  const placeOf = (target: PlantPlace | null) => target ? p.places.find((x) => x.businessId === target.businessId) : undefined;
+  const reload = () => { void load(false); };
+  async function placeAction(action: "primary_place" | "remove_person_place", businessId: string, name: string) {
+    if (action === "remove_person_place" && !window.confirm(`Tirar ${name} dos lugares de ${p!.name}? As visitas com ela ali saem do histórico dela e as programadas são canceladas.`)) return;
+    setBusyPlace(businessId);
+    try {
+      const r = await tenantFetch("/api/territory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, data: { personId: p!.id, businessId } }) });
+      const b = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(b.error || "Não foi possível salvar.");
+      toast.success(action === "primary_place" ? "Local principal trocado." : "Lugar removido."); reload();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Sem conexão: tente quando o sinal voltar."); } finally { setBusyPlace(""); }
+  }
 
   return <>
     {header}
@@ -177,10 +200,25 @@ function Body({ personId, access, organizationName, guide, guideSeen, onGuideSee
         </section>
       </div>}
 
-      {part === "lugares" && <section className="elite-card p-4" aria-label="Lugares"><p className="section-kicker">Local principal</p>
-        {p.place ? <><p className="mt-1 text-sm text-white">{p.place.name}</p><p className="text-xs text-subtle">{[p.place.type, p.place.sector, p.place.link].filter(Boolean).join(" · ")}</p></>
-          : <p className="mt-1 text-sm text-zinc-300">Sem local ligado: no mapa, aparece {p.onMap.kind === "bairro" ? `no centro do bairro ${p.onMap.name}` : "no centro da cidade"} (nunca na residência).</p>}
-        <p className="mt-2 text-xs text-subtle">Outros lugares da pessoa chegam numa próxima etapa.</p>
+      {part === "lugares" && <section className="grid gap-3" aria-label="Lugares">
+        <p className="text-xs text-subtle">Lugares de relacionamento: onde a pessoa tem vínculo (trabalho, negócios e comunidades), contados e autorizados por ela. Nunca a casa dela, e sem horários. No mapa, ela aparece só no local principal.</p>
+        {!p.places.length && <p className="text-sm text-zinc-300">Sem local ligado: no mapa, aparece {p.onMap.kind === "bairro" ? `no centro do bairro ${p.onMap.name}` : "no centro da cidade"} (nunca na residência).</p>}
+        {p.places.map((x) => <article key={x.businessId} className="elite-card grid gap-2 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-white">{x.name}{x.main && <span className="elite-guide-badge ml-2">Principal</span>}{x.review && <span className="ml-2 rounded-full border border-amber-300/40 px-2 py-0.5 text-[11px] text-amber-100">a revisar</span>}</p>
+            <p className="text-xs text-subtle">{[x.type, x.sector || "sem setor", x.link].filter(Boolean).join(" · ")}</p></div>
+            {x.summary && <SituationBadge situation={x.summary.situation} text={x.summary.situationText} />}</div>
+          {x.summary?.planned.length ? <ul className="text-xs text-zinc-300">{x.summary.planned.map((v) => <li key={v.id}>Plano: {v.step} até {shortDate(v.dueDate)} · {v.responsible}</li>)}</ul> : null}
+          {x.summary?.lastVisit && <p className="text-xs text-subtle">Última visita: {shortDate(x.summary.lastVisit)}</p>}
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => onAction({ type: "mapKey", key: `business:${x.businessId}` })}><MapPin /> Ver no mapa</Button>
+            {p.can.edit && !x.review && x.summary?.situation !== "Institucional" && <Button size="sm" variant="outline" onClick={() => setPlan(toPlant(x))}>Planejar visita</Button>}
+            {p.can.edit && <Button size="sm" variant="outline" onClick={() => setVisit(toPlant(x))}>Registrar visita</Button>}
+            {p.can.edit && !x.main && <Button size="sm" variant="ghost" disabled={busyPlace === x.businessId} onClick={() => placeAction("primary_place", x.businessId, x.name)}>Tornar principal</Button>}
+            {p.can.edit && !x.main && <Button size="sm" variant="ghost" disabled={busyPlace === x.businessId} onClick={() => placeAction("remove_person_place", x.businessId, x.name)}>Remover</Button>}
+          </div>
+        </article>)}
+        {p.can.edit && <div className="grid gap-1"><Button variant="outline" className="justify-self-start" disabled={!p.linkPlace.allowed} onClick={() => setLinking(true)}>Ligar a outro lugar</Button>
+          {!p.linkPlace.allowed && <p className="text-xs text-subtle">{p.linkPlace.reason}{p.can.startAttendance && <> <button type="button" className="text-gold underline-offset-2 hover:underline" onClick={() => onAction({ type: "start", person: { id: p.id, name: p.name, cityId: p.cityId, cityName: p.cityName, placeName: p.place?.name } })}>Iniciar atendimento</button></>}</p>}</div>}
       </section>}
 
       {part === "historico" && <section aria-label="Histórico">
@@ -189,5 +227,8 @@ function Body({ personId, access, organizationName, guide, guideSeen, onGuideSee
       </section>}
     </div>
     <HookPicker context={hook} initialSituation="Indicação" onClose={() => setHook(null)} />
+    {plan && <PlanDialog place={plan} person={plantPerson(placeOf(plan))} team={p.team} me={access.email} situation={placeOf(plan)?.summary?.situation ?? null} company={organizationName} onClose={() => setPlan(null)} onSaved={reload} />}
+    {visit && <VisitDialog place={visit} person={plantPerson(placeOf(visit))} onClose={() => setVisit(null)} onSaved={reload} onMapPeople={(businessId) => onAction({ type: "mapear", businessId })} />}
+    {linking && <LinkPlaceDialog person={{ id: p.id, name: p.name, cityId: p.cityId }} onClose={() => setLinking(false)} onSaved={reload} onNewPlace={() => onAction({ type: "mapear" })} />}
   </>;
 }

@@ -148,7 +148,8 @@ function PickerBody({ context, initialSituation = "" }: { context: HookContext; 
   const [error, setError] = useState("");
   const [situation, setSituation] = useState(initialSituation);
   useEffect(() => { let alive = true; load().then((v) => { if (alive) setData(v); }).catch((e) => { if (alive) setError(e instanceof Error ? e.message : "Não foi possível carregar."); }); return () => { alive = false; }; }, []);
-  const approved = (data?.hooks ?? []).filter((h) => h.status === "Aprovado" && (!situation || h.situation === situation));
+  // Primeiro os ganchos do setor do lugar (quando a página da pessoa manda o setor).
+  const approved = (data?.hooks ?? []).filter((h) => h.status === "Aprovado" && (!situation || h.situation === situation)).sort((x, y) => Number(!!context.sector && y.sector === context.sector) - Number(!!context.sector && x.sector === context.sector));
   return <>
     <DialogHeader><DialogTitle>Usar gancho · {context.name}</DialogTitle><DialogDescription className="text-zinc-400">O texto já vem com o nome, a cidade e o responsável. Confira antes de enviar.</DialogDescription></DialogHeader>
     <div className="flex flex-wrap gap-1.5">{["", ...HOOK_SITUATIONS].map((item) => <Button key={item || "todas"} size="sm" variant={situation === item ? "secondary" : "ghost"} onClick={() => setSituation(item)}>{item || "Todas"}</Button>)}</div>

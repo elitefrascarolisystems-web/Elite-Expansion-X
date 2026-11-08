@@ -1,3 +1,4 @@
+import { clearPlacesStatements } from "@/db/person-places";
 import type { AccessView } from "@/lib/expansion-types";
 import type { ActionName } from "@/lib/expansion-permissions";
 import { canAccessAmbassador, canAccessCity, canAccessLead, canPerform } from "@/lib/expansion-permissions";
@@ -361,6 +362,11 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
       db.prepare("UPDATE opportunities SET owner_email = ?, updated_at = ?, version = version + 1 WHERE lead_id = ? AND ? <> '' AND lower(owner_email) <> ?")
         .bind(assigned, timestamp, leadId, assigned, assigned),
     ]);
+    // Revogação: os lugares extras somem e a pessoa sai das visitas em que foi ponte (as programadas são canceladas).
+    if (revocationNow) {
+      const personId = (await db.prepare("SELECT person_id FROM leads WHERE id = ?").bind(leadId).all()).results[0]?.person_id;
+      if (personId) await db.batch(clearPlacesStatements(String(personId), null, timestamp));
+    }
     await audit(db, access.organizationId, access.email, action, "lead", leadId, revocationNow ? "Autorização revogada e contato cancelado." : `Etapa alterada para ${status}.`);
     return;
   }

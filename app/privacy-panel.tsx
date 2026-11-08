@@ -153,6 +153,7 @@ function SubjectCard({ subject: s, onAction }: { subject: PrivacyDetails; onActi
 
 function ActionDialog({ subject: s, action, onClose, onDone }: { subject: PrivacyDetails; action: Action; onClose: () => void; onDone: () => void }) {
   const [form, setForm] = useState({ receivedAt: localDay(), channel: "", note: "", name: s.name, email: s.email, whatsapp: s.whatsapp, confirm: false });
+  const [removePlaces, setRemovePlaces] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const kind = ACTION_KIND[action];
@@ -169,7 +170,7 @@ function ActionDialog({ subject: s, action, onClose, onDone }: { subject: Privac
         document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(url);
         toast.success("Arquivo gerado. Envie para a pessoa pelo mesmo canal do pedido.");
       } else if (action === "correct") {
-        await post("correct", { ...base, name: form.name, email: form.email, whatsapp: form.whatsapp });
+        await post("correct", { ...base, name: form.name, email: form.email, whatsapp: form.whatsapp, removePlaces });
         toast.success("Dados corrigidos em todos os cadastros.");
       } else if (action === "revoke") {
         await post("revoke", base);
@@ -194,6 +195,7 @@ function ActionDialog({ subject: s, action, onClose, onDone }: { subject: Privac
           <label className="grid gap-1 text-sm">E-mail<input className="commercial-input" type="email" value={form.email} maxLength={200} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
           <label className="grid gap-1 text-sm">WhatsApp<input className="commercial-input" inputMode="tel" value={form.whatsapp} maxLength={40} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="(31) 99999-0000" /></label>
         </div>}
+        {(s.places ?? []).length > 0 && <fieldset className="grid gap-1 text-sm"><legend className="mb-1">Tirar lugares de relacionamento (a pessoa pediu)</legend>{s.places.map((pl) => <label key={pl.businessId} className="flex items-center gap-2"><input type="checkbox" checked={removePlaces.includes(pl.businessId)} onChange={(e) => setRemovePlaces((list) => e.target.checked ? [...list, pl.businessId] : list.filter((x) => x !== pl.businessId))} />{pl.name} · {pl.link}</label>)}</fieldset>}
         <p className="text-xs text-subtle">A correção vale para o mapa, o contato e o cadastro de embaixador da pessoa.</p>
       </div>}
       {action === "revoke" && <p className="text-sm text-zinc-300">A pessoa não será mais contatada: o atendimento é encerrado, sai da agenda e a autorização de WhatsApp do embaixador é retirada. O cadastro no mapa continua.</p>}

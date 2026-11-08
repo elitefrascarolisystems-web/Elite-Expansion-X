@@ -59,7 +59,7 @@ function Origin({ rate, typed }: { rate?: Rate; typed?: boolean }) {
 }
 
 /** Resultados → Calculadora: simula a meta com as taxas reais da empresa (nada é gravado). */
-export function GoalCalculator({ access, cities, organizationName, onPersonPage }: { access: AccessView; cities: { id: number; name: string }[]; organizationName: string; onPersonPage?: (personId: string) => void }) {
+export function GoalCalculator({ access, cities, organizationName, onPersonPage, onMapKey }: { access: AccessView; cities: { id: number; name: string }[]; organizationName: string; onPersonPage?: (personId: string) => void; onMapKey?: (key: string) => void }) {
   const fixedCity = access.role === "Coordenação" || access.role === "Líder" ? access.cityId : null;
   const [cityId, setCityId] = useState<number | null>(fixedCity);
   const [state, setState] = useState<{ loading: boolean; error?: string; offline?: boolean; base?: CalculatorBaseResponse }>({ loading: true });
@@ -243,7 +243,7 @@ export function GoalCalculator({ access, cities, organizationName, onPersonPage 
       <p className="text-sm text-zinc-300">Bônus da rede: {bonus === null ? (base.r === null ? "Sem dados suficientes" : "—") : `≈ ${floor6(bonus)} indicações a mais até o prazo (fora da data)`}.</p>
     </article>}
 
-    <WhereToLook cityId={api.scope.kind === "Cidade" ? api.scope.cityId : null} onPersonPage={onPersonPage} />
+    <WhereToLook cityId={api.scope.kind === "Cidade" ? api.scope.cityId : null} onPersonPage={onPersonPage} onMapKey={onMapKey} />
 
     {/* 8. Chegamos lá? */}
     {chart.length > 0 && g.M !== null && <ChartFrame kicker="Projeção" title="Chegamos lá?" takeaway={`Vendas pagas acumuladas desde ${shortDate(api.periodStart)}${unit === "receita" ? " (receita em vendas equivalentes)" : ""}. Tracejado = projeção, não é resultado.`}

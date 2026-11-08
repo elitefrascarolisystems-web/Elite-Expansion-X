@@ -379,6 +379,9 @@ test('locais com tipo e setor no mapa; pessoa aparece no local vinculado, nunca 
  assert.equal((await m.getTerritory(m.access,new URLSearchParams('category=Saúde'))).records.length,1,'filtro por setor');
  assert.equal((await m.getTerritory(m.access,new URLSearchParams('layers=Escritório'))).records.length,1,'camada por tipo de local');
  // Pessoa vinculada ao escritório aparece no ponto do escritório; sem local, no centro da cidade.
+ // Local sem setor: ligar pessoas é recusado até a gestão escolher o setor (Etapa 5).
+ await assert.rejects(m.mutateTerritory(m.access,'person',{...person('Sem setor ainda'),placeId:office,placeLink:'Mentorado'}),/Escolha o setor deste local/);
+ sqlite.prepare("UPDATE businesses SET sector='Serviços profissionais' WHERE id=?").run(office);
  const linked=await m.mutateTerritory(m.access,'person',{...person('Mentorada do escritório'),placeId:office,placeLink:'Mentorado'});
  const loose=await m.mutateTerritory(m.access,'person',person('Pessoa sem local'));
  map=await m.getTerritory(m.access,new URLSearchParams('category=person'));

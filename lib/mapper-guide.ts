@@ -30,6 +30,7 @@ export const MAPPER_GUIDE: GuideSection[] = [
       "Atendimento: se a pessoa autorizou o contato, use “Iniciar atendimento” (na ficha do mapa ou logo depois de cadastrá-la). O atendimento começa com o primeiro retorno já marcado na agenda. Depois siga em Vendas → Agenda com o roteiro do Método F.E.C.H.A.; ao confirmar o pagamento, a oportunidade fecha sozinha como Ganho.",
       "Agenda: ao entrar, “Sua agenda” mostra seus retornos atrasados e os de hoje. Comece por eles.",
       "Página da pessoa: na ficha do mapa, “Abrir página da pessoa” mostra tudo dela num lugar só e o próximo passo, a um toque. Ela não mostra contato nem pode ser impressa; o envio continua pela ficha do atendimento.",
+      "Lugares de relacionamento: na página da pessoa, “Ligar a outro lugar” (até 5, só trabalho, negócios e comunidades, com a autorização dela a cada lugar; nunca a casa e sem horários). Igreja não recebe pessoas; em clínica, só quem trabalha ali; todo local precisa de setor.",
     ],
   },
   {

@@ -1,4 +1,5 @@
 import { brazilTimestamp, database } from "@/db/runtime";
+import { clearPlacesStatements } from "@/db/person-places";
 import type { AccessView } from "@/lib/expansion-types";
 import {
   ANONYMOUS_LABEL, anonymizeSchema, correctionSchema, daysBetween, deadlineOf, PRIVACY_KIND_LABEL, privacyRequestSchema, REMOVED_NOTE,
@@ -79,7 +80,8 @@ async function related(a: AccessView, s: Subject) {
   return {
     opportunities,
     roles: s.person ? await rows("SELECT role,status,responsible,source,created_at FROM territory_roles WHERE person_id=? ORDER BY created_at", [s.person.id]) : [],
-    actions: s.person ? await rows("SELECT name,category,status,responsible,due_date FROM territory_actions WHERE person_id=? ORDER BY due_date", [s.person.id]) : [],
+    actions: s.person ? await rows("SELECT t.name,t.category,t.status,t.responsible,t.due_date,t.business_id,b.name AS place FROM territory_actions t LEFT JOIN businesses b ON b.id=t.business_id WHERE t.person_id=? ORDER BY t.due_date", [s.person.id]) : [],
+    places: s.person ? await rows("SELECT b.id,b.name,pp.link,pp.authorized_by,pp.authorized_at FROM person_places pp JOIN businesses b ON b.id=pp.business_id WHERE pp.person_id=? ORDER BY b.name", [s.person.id]) : [],
     activities: oppIds.length ? await rows(`SELECT kind,note,activity_date,owner_email FROM commercial_activities WHERE organization_id=? AND opportunity_id IN (${inList(oppIds)}) ORDER BY activity_date`, [a.organizationId, ...oppIds]) : [],
     history: oppIds.length ? await rows(`SELECT action,note,created_at,actor_email FROM followup_events WHERE organization_id=? AND opportunity_id IN (${inList(oppIds)}) ORDER BY created_at`, [a.organizationId, ...oppIds]) : [],
     sale: s.lead ? (await rows("SELECT product,amount_cents,status,paid_at FROM sales WHERE lead_id=?", [s.lead.id]))[0] ?? null : null,
@@ -100,6 +102,7 @@ export async function subjectDetails(a: AccessView, ref: string): Promise<Privac
     consent: !s.lead ? "sem contato" : s.lead.consent_revoked_at ? "revogada" : "vigente",
     counts: { roles: r.roles.length, actions: r.actions.length, activities: r.activities.length, history: r.history.length, sale: Boolean(r.sale), updates: r.updates.length },
     platformAccess: r.access.map((u) => `${str(u.email)} (${str(u.role)}${Number(u.active) ? "" : ", inativo"})`),
+    places: r.places.map((x) => ({ businessId: str(x.id), name: str(x.name), link: str(x.link) })),
   };
 }
 
@@ -129,7 +132,10 @@ export async function exportSubject(a: AccessView, input: unknown) {
       rede: { foiIndicada: Boolean(p.referrer_id), pessoasIndicadas: Number(p.referred_count ?? 0) },
       cadastradoPor: str(p.created_by), cadastradoEm: str(p.created_at), atualizadoEm: str(p.updated_at),
       papeis: r.roles.map((x) => ({ papel: str(x.role), status: str(x.status), responsavel: str(x.responsible), origem: str(x.source), desde: str(x.created_at) })),
-      acoes: r.actions.map((x) => ({ acao: str(x.name), categoria: str(x.category), status: str(x.status), responsavel: str(x.responsible), prazo: str(x.due_date) })),
+      acoes: r.actions.filter((x) => !x.business_id).map((x) => ({ acao: str(x.name), categoria: str(x.category), status: str(x.status), responsavel: str(x.responsible), prazo: str(x.due_date) })),
+      // Lugares de relacionamento além do principal, com a autorização de cada um, e as visitas da equipe em que ela foi ponte.
+      lugares: r.places.map((x) => ({ local: str(x.name), vinculo: str(x.link), autorizadoPor: str(x.authorized_by), autorizadoEm: str(x.authorized_at) })),
+      visitas: r.actions.filter((x) => x.business_id).map((x) => ({ local: str(x.place), dia: str(x.due_date), status: str(x.status) })),
     } : null,
     contato: l ? {
       nome: str(l.name), email: str(l.email) || null, whatsapp: str(l.whatsapp) || null, canal: str(l.channel), origem: str(l.source_label) || null,
@@ -163,6 +169,8 @@ export async function correctSubject(a: AccessView, input: unknown) {
   const email = v.email?.trim() ?? null, whatsapp = v.whatsapp?.trim() ?? null;
   const statements = [];
   if (s.person) statements.push(db.prepare("UPDATE territory_people SET name=?,updated_at=? WHERE id=?").bind(v.name, now, s.person.id));
+  // "Corrigir dados" também tira lugares que a pessoa pediu para remover.
+  if (s.person) for (const businessId of v.removePlaces ?? []) statements.push(...clearPlacesStatements(str(s.person.id), businessId, now));
   if (s.lead) statements.push(db.prepare("UPDATE leads SET name=?,email=COALESCE(?,email),normalized_email=CASE WHEN ? IS NULL THEN normalized_email ELSE NULLIF(lower(?),'') END,whatsapp=COALESCE(?,whatsapp),normalized_whatsapp=CASE WHEN ? IS NULL THEN normalized_whatsapp ELSE NULLIF(?,'') END,updated_at=? WHERE id=?")
     .bind(v.name, email, email, email ?? "", whatsapp, whatsapp, (whatsapp ?? "").replace(/\D/g, ""), now, s.lead.id));
   if (s.ambassador) statements.push(db.prepare("UPDATE ambassadors SET name=?,email=COALESCE(?,email),whatsapp=COALESCE(?,whatsapp),updated_at=? WHERE id=?").bind(v.name, email, whatsapp, now, s.ambassador.id));
@@ -174,8 +182,11 @@ export async function correctSubject(a: AccessView, input: unknown) {
 export async function revokeSubject(a: AccessView, input: unknown) {
   allowed(a);
   const v = privacyRequestSchema.parse(input), s = await resolve(a, v.subject), now = brazilTimestamp(), db = database();
-  if (!s.lead && !s.ambassador?.whatsapp_authorized_at) throw new PrivacyError("Este titular não tem autorização de contato registrada.");
+  const hasPlaces = s.person ? !!(await rows("SELECT 1 FROM person_places WHERE person_id=? LIMIT 1", [s.person.id]))[0] : false;
+  if (!s.lead && !s.ambassador?.whatsapp_authorized_at && !hasPlaces) throw new PrivacyError("Este titular não tem autorização de contato registrada.");
   const statements = [];
+  // A revogação também apaga os lugares extras e tira a pessoa das visitas em que foi ponte (as programadas são canceladas).
+  if (s.person) statements.push(...clearPlacesStatements(str(s.person.id), null, now));
   if (s.lead) statements.push(db.prepare("UPDATE leads SET status='Cancelado',consent_revoked_at=COALESCE(consent_revoked_at,?),consent_revocation_reason=CASE WHEN consent_revoked_at IS NULL THEN 'Pedido do titular (LGPD)' ELSE consent_revocation_reason END,updated_at=? WHERE id=?").bind(now, now, s.lead.id));
   if (s.ambassador) statements.push(db.prepare("UPDATE ambassadors SET whatsapp_authorized_at=NULL,updated_at=? WHERE id=?").bind(now, s.ambassador.id));
   await db.batch([...statements, ...record(a, "revogacao", s, nameOf(s), v, now)]);
@@ -201,7 +212,9 @@ export async function anonymizeSubject(a: AccessView, input: unknown) {
       db.prepare("UPDATE territory_people SET name=?,place_id=NULL,place_link='',region_id=NULL,referrer_id=NULL,leader=0,updated_at=? WHERE id=?").bind(label, now, id),
       db.prepare("DELETE FROM territory_roles WHERE person_id=?").bind(id),
       db.prepare("DELETE FROM territory_locations WHERE entity_key=?").bind(`person:${id}`),
+      ...clearPlacesStatements(str(id), null, now),
       db.prepare("UPDATE territory_actions SET name=?,updated_at=? WHERE person_id=?").bind(REMOVED_NOTE, now, id),
+      db.prepare("UPDATE territory_actions SET person_id=NULL,updated_at=? WHERE person_id=?").bind(now, id),
       // Vínculos de indicação antigos guardavam uma observação livre: o resumo vira só o fato.
       db.prepare("UPDATE audit_logs SET summary='Vínculo de indicação (dados do titular anonimizados).' WHERE organization_id=? AND action='link_referral' AND instr(summary, ?)>0").bind(a.organizationId, id),
     );

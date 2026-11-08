@@ -10,7 +10,7 @@ import { cityReference } from '@/lib/territorial-map';
 import { locationSchema, personSchema, activitySchema, roleSchema, regionSchema, displayedCoordinates, importPersonSchema } from '@/lib/territory-validation';
 import type { AccessView } from '@/lib/expansion-types';
 import { ANONYMOUS_LABEL } from '@/lib/privacy';
-import { safePlaceSql, sensitiveLinkSql } from '@/lib/person-places';
+import { linkNeedsReview, linkRefusal, safePlaceSql, sensitiveLinkSql, visitNameAllowed } from '@/lib/person-places';
 import type { MapDeal, MapSpot, TerritoryPlacesResponse, TerritoryRecord, TerritoryResponse } from '@/lib/territory-types';
 
 export class TerritoryError extends Error { constructor(message: string, public status = 400, public duplicate = false) { super(message); } }
@@ -25,7 +25,7 @@ function localScope(a:AccessView, alias = 'r') {
   if (a.role === 'Administrador') return {sql:'1=1',values:[] as (string|number)[]};
   if (['Coordenação','Líder'].includes(a.role) && a.cityId !== null) return {sql:`${alias}.city_id = ?`,values:[a.cityId]};
   if (a.role === 'Embaixador' && a.ambassadorId !== null) return {sql:`${alias}.kind = 'person' AND ${alias}.ambassador_id = ?`,values:[a.ambassadorId]};
-  if (a.role === 'Comercial') return {sql:`((${alias}.kind = 'person' AND (${alias}.lead_id IN (SELECT id FROM leads WHERE lower(assigned_to_email)=lower(?) AND consent_revoked_at IS NULL) OR ${alias}.id IN (SELECT id FROM territory_people WHERE lower(created_by)=lower(?)))) OR (${alias}.kind='business' AND ${alias}.id IN (SELECT id FROM businesses WHERE lower(owner_email)=lower(?))) OR (${alias}.kind='action' AND ${alias}.id IN (SELECT id FROM territory_actions WHERE lower(created_by)=lower(?))))`,values:[a.email,a.email,a.email,a.email]};
+  if (a.role === 'Comercial') return {sql:`((${alias}.kind = 'person' AND (${alias}.lead_id IN (SELECT id FROM leads WHERE lower(assigned_to_email)=lower(?) AND consent_revoked_at IS NULL) OR ${alias}.id IN (SELECT id FROM territory_people WHERE lower(created_by)=lower(?)))) OR (${alias}.kind='business' AND ${alias}.id IN (SELECT id FROM businesses WHERE lower(owner_email)=lower(?))) OR (${alias}.kind='action' AND ${alias}.id IN (SELECT id FROM territory_actions WHERE lower(created_by)=lower(?) OR lower(responsible)=lower(?))))`,values:[a.email,a.email,a.email,a.email,a.email]};
   return {sql:'1=0',values:[]};
 }
 function scope(a:AccessView,alias='r') {const local=localScope(a,alias);return {sql:`(${local.sql}) AND ${alias}.city_id IN (SELECT id FROM cities WHERE organization_id=?)`,values:[...local.values,a.organizationId]};}
@@ -222,7 +222,7 @@ async function importPeople(a:AccessView,input:unknown){
   const body=input as {rows?:unknown[];commit?:boolean};
   const blocked=await featureBlocked(a.organizationId,'imports');if(blocked)throw new TerritoryError(blocked,403);
   if(!Array.isArray(body?.rows)||body.rows.length<1||body.rows.length>50) throw new TerritoryError('Importe de 1 a 50 pessoas por lote.');
-  const output:{line:number;ok:boolean;status:string}[]=[];const seen=new Set<string>();const places=new Map<number,{id:string;key:string}[]>();
+  const output:{line:number;ok:boolean;status:string}[]=[];const seen=new Set<string>();const places=new Map<number,{id:string;key:string;sector:string;type:string}[]>();
   for(const [index,item] of body.rows.entries()){
     try{
       const r=importPersonSchema.parse(item);if(isTemplateExample(r.name))throw new TerritoryError(TEMPLATE_EXAMPLE_ERROR);await allowedCity(a,r.cityId);
@@ -230,11 +230,13 @@ async function importPeople(a:AccessView,input:unknown){
       if((await samePeople(r.cityId,r.name)).length)throw new TerritoryError('Já existe uma pessoa com esse nome nesta cidade.');
       let placeId:string|null=null,placeLink='';
       if(r.place){
-        if(!places.has(r.cityId))places.set(r.cityId,(await dbRows('SELECT id,name FROM businesses WHERE organization_id=? AND city_id=? LIMIT 5000',[a.organizationId,r.cityId])).map(p=>({id:str(p.id),key:nameKey(str(p.name))})));
+        if(!places.has(r.cityId))places.set(r.cityId,(await dbRows("SELECT id,name,sector,COALESCE(NULLIF(place_type,''),'Empresa') AS place_type FROM businesses WHERE organization_id=? AND city_id=? LIMIT 5000",[a.organizationId,r.cityId])).map(p=>({id:str(p.id),key:nameKey(str(p.name)),sector:str(p.sector),type:str(p.place_type)})));
         const found=places.get(r.cityId)!.filter(p=>p.key===nameKey(r.place));
         if(!found.length)throw new TerritoryError(`Local "${r.place}" não encontrado nesta cidade. Cadastre o local antes.`);
         if(found.length>1)throw new TerritoryError(`Há mais de um local chamado "${r.place}" nesta cidade. Ligue esta pessoa pelo mapa.`);
         const link=placeLinkFromText(r.link);if(!link)throw new TerritoryError(r.link?`Vínculo "${r.link}" não reconhecido. Use: ${PLACE_LINKS.join(', ')}.`:'Informe o vínculo com o local.');
+        // Sem caixa de confirmação na planilha: associação e escola com "Frequenta" são recusadas com o motivo.
+        const refusal=linkRefusal({type:found[0].type,sector:found[0].sector},link,{},true);if(refusal)throw new TerritoryError(refusal);
         placeId=found[0].id;placeLink=link;
       }
       const role=r.role?personRoleFromText(r.role):null;if(r.role&&!role)throw new TerritoryError(`Papel "${r.role}" não reconhecido. Use: ${PERSON_ROLES.join(', ')}.`);
@@ -309,7 +311,11 @@ export async function mutateTerritory(a:AccessView,action:string,input:unknown,o
     if(v.referrerId&&!keptReferrer){const ref=await entity(a,`person:${v.referrerId}`);if(Number(ref.city_id)!==v.cityId) throw new TerritoryError('A indicação deve pertencer à cidade autorizada.');
       const seen=new Set([id]);let current:string|null=v.referrerId;
       while(current){if(seen.has(current)) throw new TerritoryError('A indicação criaria um ciclo.');seen.add(current);const p=await dbRows('SELECT referrer_id FROM territory_people WHERE id=?',[current]);current=p[0]?.referrer_id?str(p[0].referrer_id):null;}}
-    if(v.placeId&&!(await dbRows('SELECT id FROM businesses WHERE id=? AND organization_id=? AND city_id=?',[v.placeId,a.organizationId,v.cityId]))[0]) throw new TerritoryError('O local vinculado deve ser da mesma cidade e da sua organização.');
+    if(v.placeId){const b=(await dbRows("SELECT id,sector,COALESCE(NULLIF(place_type,''),'Empresa') AS place_type FROM businesses WHERE id=? AND organization_id=? AND city_id=?",[v.placeId,a.organizationId,v.cityId]))[0];if(!b) throw new TerritoryError('O local vinculado deve ser da mesma cidade e da sua organização.');
+      // Ligação nova (ou com vínculo trocado) passa pela regra dos setores sensíveis; a antiga, sem mudança, fica como está.
+      const same=v.id?(await dbRows('SELECT 1 FROM territory_people WHERE id=? AND place_id=? AND place_link=?',[id,v.placeId,v.placeLink]))[0]:null;
+      if(!same){const refusal=linkRefusal({type:str(b.place_type),sector:str(b.sector)},v.placeLink,{association:v.confirmAssociation,school:v.confirmSchool});if(refusal)throw new TerritoryError(refusal);}
+      if(v.id&&(await dbRows('SELECT 1 FROM person_places WHERE person_id=? AND business_id=?',[id,v.placeId]))[0])await db.prepare('DELETE FROM person_places WHERE person_id=? AND business_id=?').bind(id,v.placeId).run();}
     if(v.regionId&&!(await dbRows('SELECT id FROM territory_regions WHERE id=? AND city_id=?',[v.regionId,v.cityId]))[0]) throw new TerritoryError('O bairro deve ser da mesma cidade.');
     const previousLeader=v.id?(await dbRows('SELECT name,leader FROM territory_people WHERE id=?',[id]))[0]:null;
     const statements=[db.prepare(`INSERT INTO territory_people(id,city_id,name,leader,referrer_id,place_id,place_link,region_id,source,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,leader=excluded.leader,referrer_id=excluded.referrer_id,place_id=excluded.place_id,place_link=excluded.place_link,region_id=excluded.region_id,updated_at=excluded.updated_at`).bind(id,v.cityId,v.name,Number(v.leader),v.referrerId,v.placeId,v.placeId?v.placeLink:'',v.regionId,origin,a.email,now,now)];
@@ -323,7 +329,13 @@ export async function mutateTerritory(a:AccessView,action:string,input:unknown,o
     if(!v.id&&v.requestId){const existing=await dbRows('SELECT created_by,city_id FROM '+'territory_actions'+' WHERE id=?',[id]);if(existing[0]){if(existing[0].created_by!==a.email||Number(existing[0].city_id)!==v.cityId)throw new TerritoryError('Este registro já foi criado por outra pessoa. Atualize a página para ver o cadastro atual.',409);return {id};}}
     if(v.id){const old=await entity(a,`action:${id}`);if(Number(old.city_id)!==v.cityId) throw new TerritoryError('Mantenha a cidade original da ação.');}
     if(v.personId){const p=await entity(a,`person:${v.personId}`);if(Number(p.city_id)!==v.cityId) throw new TerritoryError('Pessoa fora da cidade selecionada.');}
-    await db.batch([db.prepare(`INSERT INTO territory_actions(id,city_id,person_id,name,category,status,responsible,due_date,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,status=excluded.status,responsible=excluded.responsible,due_date=excluded.due_date,updated_at=excluded.updated_at`).bind(id,v.cityId,v.personId,v.name,v.category,v.status,v.responsible,v.dueDate,a.email,now,now),auditStatement(a,'save_activity',id)]);return {id};
+    // Visita com local: só "Visita", nome da lista fixa, responsável da equipe e ponte que passa na regra dos setores.
+    if(v.businessId){const b=(await dbRows("SELECT id,sector,COALESCE(NULLIF(place_type,''),'Empresa') AS place_type FROM businesses WHERE id=? AND organization_id=? AND city_id=?",[v.businessId,a.organizationId,v.cityId]))[0];if(!b)throw new TerritoryError('O local da visita deve ser da mesma cidade e da sua organização.');
+      if(v.category!=='Visita')throw new TerritoryError('Com local, a ação é sempre uma "Visita".');if(!visitNameAllowed(v.name))throw new TerritoryError('Escolha o passo da visita na lista.');
+      if(a.role==='Comercial'&&v.responsible.toLowerCase()!==a.email.toLowerCase())throw new TerritoryError('Você só programa visitas para você mesmo.',403);
+      if(!(await dbRows("SELECT 1 FROM app_users WHERE organization_id=? AND lower(email)=lower(?) AND active=1 AND role IN ('Administrador','Coordenação','Líder','Comercial')",[a.organizationId,v.responsible]))[0])throw new TerritoryError('Escolha alguém ativo da equipe como responsável.');
+      if(v.personId){const link=(await dbRows("SELECT tp.place_link AS link FROM territory_people tp WHERE tp.id=? AND tp.place_id=? UNION ALL SELECT pp.link FROM person_places pp WHERE pp.person_id=? AND pp.business_id=?",[v.personId,v.businessId,v.personId,v.businessId]))[0];if(!link||linkNeedsReview({type:str(b.place_type),sector:str(b.sector)},str(link.link)))throw new TerritoryError('Esta pessoa não pode ser ponte neste local (vínculo sensível ou a revisar).');}}
+    await db.batch([db.prepare(`INSERT INTO territory_actions(id,city_id,person_id,name,category,status,responsible,due_date,business_id,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,status=excluded.status,responsible=excluded.responsible,due_date=excluded.due_date,business_id=excluded.business_id,updated_at=excluded.updated_at`).bind(id,v.cityId,v.personId,v.name,v.category,v.status,v.responsible,v.dueDate,v.businessId,a.email,now,now),auditStatement(a,'save_activity',id)]);return {id};
   }
   if(action==='event_status') {
     const v=input as {id?:unknown;status?:unknown};if(!['Planejado','Confirmado','Realizado','Cancelado'].includes(String(v.status))||!Number.isInteger(v.id)) throw new TerritoryError('Evento ou situação inválida.');

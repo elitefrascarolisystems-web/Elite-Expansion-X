@@ -147,6 +147,7 @@ function subscribeFicha(listener: () => void) {
   window.addEventListener("popstate", listener); window.addEventListener(FICHA_EVENT, listener);
   return () => { window.removeEventListener("popstate", listener); window.removeEventListener(FICHA_EVENT, listener); };
 }
+const PlantingToday = lazy(() => import("@/app/plant-dialogs").then((m) => ({ default: m.PlantingToday })));
 const GoalCard = lazy(() => import("@/app/goal-card").then((m) => ({ default: m.GoalCard })));
 const HowWeCalculate = lazy(() => import("@/app/goal-calculator").then((m) => ({ default: m.HowWeCalculate })));
 const PortalAdmin = lazy(() => import("@/app/portal-admin").then((m) => ({ default: m.PortalAdmin })));
@@ -248,6 +249,7 @@ function TodayPanel({ data, view, onGo, onFollowup, shortcuts }: { data: Dashboa
       <Kpi label="Receita confirmada" value={money(summary.revenueCents, true)} helper="Somente pagamentos confirmados" icon={Banknote} emphasis trend={trendOf(view.timeline, "revenue")} series={seriesOf(view.timeline, "revenue", "Receita confirmada", (value) => money(value * 100, true))} />
     </section>
     {["Administrador", "Coordenação", "Líder", "Comercial"].includes(data.access.role) && <Suspense fallback={<article className="elite-card h-[84px]" aria-hidden />}><GoalCard access={data.access} onGo={onGo} /></Suspense>}
+    {["Administrador", "Coordenação", "Líder", "Comercial"].includes(data.access.role) && <Suspense fallback={null}><PlantingToday /></Suspense>}
     {agenda && (agenda.late || agenda.today) ? <AgendaBanner agenda={agenda} onAll={() => onGo("vendas/agenda")} onOpen={onFollowup} />
       : <article className="elite-card flex flex-wrap items-center gap-4 p-5"><span className="rounded-xl bg-emerald-400/10 p-3 text-emerald-300"><Check /></span><div className="mr-auto"><p className="font-semibold text-white">Nenhum retorno atrasado ou para hoje</p><p className="mt-1 text-sm text-subtle">Quando houver, eles aparecem aqui primeiro.</p></div><Button variant="outline" onClick={() => onGo("vendas/agenda")} className="border-white/10 bg-white/5 text-white">Abrir a agenda</Button></article>}
     {manage && <GettingStarted data={data} onGo={onGo} />}
@@ -440,6 +442,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const pagePushed = useRef(false);
   const [attendPerson, setAttendPerson] = useState<AttendancePerson | null>(null);
   const [mappingOpen, setMappingOpen] = useState(false);
+  const [mappingPlace, setMappingPlace] = useState<string | undefined>();
   // Ficha do atendimento → dados da oportunidade ou nova atividade.
   const [opportunityEdit, setOpportunityEdit] = useState<OpportunityEdit | null>(null);
   // "Usar gancho" na ficha: dados do atendimento para preencher a mensagem.
@@ -528,6 +531,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
     else if (action.type === "sale") setDialog({ name: "sale", entityId: action.leadId });
     else if (action.type === "start") setAttendPerson(action.person);
     else if (action.type === "go") go(action.target);
+    else if (action.type === "mapKey") openMapKey(action.key);
+    else if (action.type === "mapear") { setMappingPlace(action.businessId); setMappingOpen(true); }
   };
   const openMapKey = (key: string) => { setMapPersonId(undefined); setMapLeadId(undefined); setMapFocusKey(key); navigate({ area: "territorio", view: "mapa" }); };
 
@@ -615,7 +620,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
 
         {location.area === "hoje" && <TodayPanel data={data} view={fullView} onGo={go} onFollowup={openFollowup} shortcuts={actions.filter((action) => action.group === "dia" && action.id !== "atendimento-mapa")} />}
 
-        {here === "territorio/mapa" && <>{/* Mapa em primeiro lugar: as ações principais ficam na barra do próprio mapa. */}<TerritorialMap guideChip={firstVisit && guide ? <TabGuideChip label="Como usar o mapa" onOpen={openGuide} onDone={() => guides.markSeen("territorio/mapa")} /> : undefined} actions={canMap ? <><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-gold text-black"><MapPin /><span>Mapear<span className="territory-bar-label"> local e pessoas</span></span></Button><Button asChild variant="outline" title="Imprimir mapa (A3/PDF)"><a href={`/imprimir/mapa?org=${data.access.organizationId}`} target="_blank" rel="noopener"><Printer /><span className="territory-bar-label">Imprimir</span><span className="sr-only"> mapa (A3/PDF)</span></a></Button></> : undefined} key={`${mapFocusKey || mapPersonId || mapLeadId || "map"}${mapIntent ?? ""}`} focusKey={mapFocusKey} focusPersonId={mapPersonId} focusLeadId={mapLeadId} focusIntent={mapIntent} onPersonPage={openPersonPage} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canImport && <PeopleImport data={data} onSaved={refreshDashboard} />}</>}
+        {here === "territorio/mapa" && <>{/* Mapa em primeiro lugar: as ações principais ficam na barra do próprio mapa. */}<TerritorialMap guideChip={firstVisit && guide ? <TabGuideChip label="Como usar o mapa" onOpen={openGuide} onDone={() => guides.markSeen("territorio/mapa")} /> : undefined} actions={canMap ? <><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-gold text-black"><MapPin /><span>Mapear<span className="territory-bar-label"> local e pessoas</span></span></Button><Button asChild variant="outline" title="Imprimir mapa (A3/PDF)"><a href={`/imprimir/mapa?org=${data.access.organizationId}`} target="_blank" rel="noopener"><Printer /><span className="territory-bar-label">Imprimir</span><span className="sr-only"> mapa (A3/PDF)</span></a></Button></> : undefined} key={`${mapFocusKey || mapPersonId || mapLeadId || "map"}${mapIntent ?? ""}`} focusKey={mapFocusKey} focusPersonId={mapPersonId} focusLeadId={mapLeadId} focusIntent={mapIntent} onPersonPage={openPersonPage} onMapPlace={(id) => { setMappingPlace(id); setMappingOpen(true); }} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canImport && <PeopleImport data={data} onSaved={refreshDashboard} />}</>}
         {here === "territorio/cidades" && <><ActionBar hint="Saúde de cada cidade, decisão registrada e fechamentos consolidados.">{canPerform(data.access, "record_city") && <Button onClick={() => setDialog({ name: "city-result" })} variant="outline" className={outline}><Activity /> Fechamento consolidado</Button>}{canCity && <Button onClick={() => setDialog({ name: "city" })} className="bg-gold text-black">Cadastrar cidade</Button>}</ActionBar><CityTable cities={view.cities} onCreate={canCity ? () => setDialog({ name: "city" }) : undefined} onEdit={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canMap && data.cities.length > 0 && <RegionPanel data={data} onChanged={refreshDashboard} />}<TerritoryDecisions data={data} /></>}
         {here === "territorio/locais" && <CommercialWorkspace data={data} mode="businesses" onRefresh={refreshDashboard} />}
 
@@ -632,7 +637,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
         {here === "rede/materiais" && <><ActionBar hint="Mensagens, vídeos e roteiros aprovados. Escolha para quem: embaixadores, mentorados ou todos.">{canContent && <Button onClick={() => setDialog({ name: "content" })} className="bg-gold text-black"><Library /> Adicionar material</Button>}</ActionBar><Materials data={data} onCreate={canContent ? () => setDialog({ name: "content" }) : undefined} /></>}
 
         {here === "resultados/visao" && <ResultsOverview view={view} canExport={data.plan?.exports !== false} />}
-        {here === "resultados/calculadora" && <GoalCalculator access={data.access} cities={data.cities.map((c) => ({ id: c.id, name: c.name }))} organizationName={data.access.organizationName} onPersonPage={openPersonPage} />}
+        {here === "resultados/calculadora" && <GoalCalculator access={data.access} cities={data.cities.map((c) => ({ id: c.id, name: c.name }))} organizationName={data.access.organizationName} onPersonPage={openPersonPage} onMapKey={openMapKey} />}
         {here === "resultados/metas" && <CommercialWorkspace data={data} mode="team" onRefresh={refreshDashboard} />}
         {here === "resultados/mapeamento" && (data.mappingStats ? <MappingStatsPanel stats={data.mappingStats} /> : <article className="elite-card"><EmptyState title="Sem dados de mapeamento" description="Os indicadores aparecem quando houver locais e pessoas no mapa." /></article>)}
         {here === "resultados/custos" && <><ActionBar hint="Quanto custa cada resultado, por origem.">{canCost && <Button onClick={() => setDialog({ name: "cost" })} className="bg-gold text-black"><CircleDollarSign /> Registrar custo</Button>}</ActionBar><CostsPanel data={data} view={view} onCreate={canCost ? () => setDialog({ name: "cost" }) : undefined} /></>}
@@ -659,6 +664,6 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
     <TabGuideSheet guide={guide} open={guideOpen} onOpenChange={closeGuide} action={guideAction} onResetAll={resetGuides} />
     {personPageId && <Suspense fallback={null}><PersonPageSheet personId={personPageId} access={data.access} organizationName={data.access.organizationName} guide={guideFetch.content ? guideFetch.content.resolveGuide("pessoa", data.access.role, data.access.organizationName) : null} guideSeen={guides.seen.has("pessoa")} onGuideSeen={() => guides.markSeen("pessoa")} onClose={closePersonPage} onAction={personAction} /></Suspense>}
     {attendPerson && <Suspense fallback={null}><StartAttendanceDialog person={attendPerson} data={data} onClose={() => setAttendPerson(null)} onStarted={(leadId) => { setAttendPerson(null); refreshDashboard().catch(() => undefined); openFollowup(leadId); }} /></Suspense>}
-    {canMap && mappingOpen && <Suspense fallback={null}><MappingWizard open data={data} onClose={() => setMappingOpen(false)} onSaved={refreshDashboard} /></Suspense>}
+    {canMap && mappingOpen && <Suspense fallback={null}><MappingWizard key={mappingPlace ?? "novo"} open data={data} initialPlaceId={mappingPlace} onClose={() => { setMappingOpen(false); setMappingPlace(undefined); }} onSaved={refreshDashboard} /></Suspense>}
   </>;
 }

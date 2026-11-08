@@ -27,6 +27,8 @@ export const privacyRequestSchema = z.object({
   note: z.string().trim().max(300, "Observação: no máximo 300 caracteres.").default(""),
 });
 export const correctionSchema = privacyRequestSchema.extend({
+  /** Lugares (ids dos locais) que a pessoa pediu para tirar. */
+  removePlaces: z.array(z.string().uuid()).max(10).optional(),
   name: z.string().trim().min(2, "Nome: pelo menos 2 letras.").max(200),
   email: z.union([z.literal(""), z.string().trim().max(200).email("E-mail inválido.")]).optional(),
   whatsapp: z.string().trim().max(40).optional().refine((v) => !v || /^\d{10,13}$/.test(v.replace(/\D/g, "")), "WhatsApp: DDD e número (10 a 13 dígitos)."),
@@ -40,6 +42,8 @@ export type PrivacyDetails = PrivacySubject & {
   email: string; whatsapp: string; consent: "vigente" | "revogada" | "sem contato";
   counts: { roles: number; actions: number; activities: number; history: number; sale: boolean; updates: number };
   platformAccess: string[];
+  /** Lugares de relacionamento além do principal (para "Corrigir dados" poder tirar um). */
+  places: { businessId: string; name: string; link: string }[];
 };
 export type PrivacyRequestRow = {
   id: string; kind: PrivacyKind; subjectLabel: string; channel: string; receivedAt: string; completedAt: string;

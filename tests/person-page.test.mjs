@@ -153,7 +153,7 @@ test('Onde buscar: contagens e listas só no escopo de quem vê, até 50, só no
  person({name:'Mapeado Outra Cidade',cityId:c2,created:'2026-09-01T10:00:00-03:00'});
  person({name:'Do Vendedor',by:'vend@x.invalid',created:'2026-09-01T10:00:00-03:00'});
  const all=await whereToLook(admin);
- assert.deepEqual(all.counts,{clientes:1,indicacoes:1,mapeados:4});
+ assert.deepEqual(all.counts,{clientes:1,indicacoes:1,mapeados:4,lugares:0});
  const coord=await whereToLook(await accessFor('coord@x.invalid',1));assert.equal(coord.counts.mapeados,3,'sem a outra cidade');
  const seller=await whereToLook(await accessFor('vend@x.invalid',1),'mapeados');
  assert.deepEqual(seller.people.map(p=>p.name),['Do Vendedor']);assert.deepEqual(Object.keys(seller.people[0]).sort(),['id','name','reason']);

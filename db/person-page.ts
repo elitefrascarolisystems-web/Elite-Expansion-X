@@ -14,7 +14,9 @@ import { fillHook } from "@/lib/hooks";
 import { nextStep, type NextStep } from "@/lib/next-step";
 import { sensitiveLink } from "@/lib/person-places";
 import { buildPersonTimeline, brazilDay, type PersonEvent, type PersonTimelineItem } from "@/lib/person-timeline";
-import { hookSituationFor, plantingTips, type Level } from "@/lib/planting-tips";
+import { fillTip, hookSituationFor, tipsFor, type Level } from "@/lib/planting-tips";
+import { canHaveExtraPlaces, personPlacesOf, placeSummaries, plantTeam } from "@/db/person-places";
+import { MAX_PLACES } from "@/lib/person-places";
 import { ANONYMOUS_LABEL, PRIVACY_KIND_LABEL, type PrivacyKind } from "@/lib/privacy";
 
 export class PersonPageError extends Error { constructor(message: string, public status = 400) { super(message); } }
@@ -55,6 +57,11 @@ export type PersonPage = {
   ambassador: { status: string; level: string; training: number; lastUpdate: string; openTasks: number; doneTasks: number; leads: number; sales: number } | null;
   tips: string[];
   hook: { title: string; text: string } | null;
+  places: Awaited<ReturnType<typeof personPlacesOf>>;
+  /** "Ligar a outro lugar": desligado com o motivo quando a pessoa não pode ter lugares extras ou já tem 5. */
+  linkPlace: { allowed: boolean; reason: string };
+  /** Quem pode fazer a visita de plantio (gestão: a equipe; Comercial: ele mesmo). */
+  team: { email: string; name: string }[];
   timeline: { items: PersonTimelineItem[]; more: boolean };
   next: NextStep;
   can: { startAttendance: boolean; recordSale: boolean; edit: boolean; markLeader: boolean; manageMentorship: boolean; addAmbassador: boolean };
@@ -132,11 +139,15 @@ export async function getPersonPage(a: AccessView, id: string, opts: { all?: boo
   const ambassador = amb && management ? { status: str(amb.status), level: str(amb.level), training: num(amb.training_progress), lastUpdate: str(amb.last_update), openTasks: num(amb.open_tasks), doneTasks: num(amb.done_tasks), leads: num(amb.leads), sales: num(amb.sales) } : null;
 
   // Como abordar: dicas pelo nível e pelo local seguro, e 1 gancho aprovado casado com ela.
-  const tips = plantingTips(level, place ? { type: place.type, sector: place.sector } : null);
-  const situation = hookSituationFor(level, !!liveLead);
+  const places = await personPlacesOf(a, person);
+  const mainSummary = place ? places.find((x) => x.main)?.summary ?? null : null;
+  const orgName0 = str((await all("SELECT name FROM organizations WHERE id=?", [a.organizationId]))[0]?.name);
+  const tips = tipsFor({ nivel: level, tipo: place?.type ?? null, setor: place?.sector ?? null, vinculo: place?.link ?? null, situacao: mainSummary?.situation ?? null, semAtendimento: !liveLead, indicacaoSemCompra: childRows.length > 0 && bought === 0 })
+    .map((t) => fillTip(t, { firstName: str(person.name).split(/\s+/)[0], place: place?.name, company: orgName0 }));
+  const situation = hookSituationFor(level, !!liveLead, { late: attendance !== null && !attendance.hidden && attendance.late });
   const hookRow = (await all(`SELECT title,body FROM prospect_hooks WHERE organization_id=? AND status='Aprovado' AND situation=? AND (sector='' OR sector=?) ORDER BY sector=? DESC, updated_at DESC LIMIT 1`, [a.organizationId, situation, place?.sector ?? "", place?.sector ?? ""]))[0];
   const orgName = str((await all("SELECT name FROM organizations WHERE id=?", [a.organizationId]))[0]?.name);
-  const hook = hookRow ? { title: str(hookRow.title), text: fillHook(str(hookRow.body), { name: str(person.name), city: str(person.city_name), owner: nameOf.get(owner) || "", organization: orgName }) } : null;
+  const hook = hookRow ? { title: str(hookRow.title), text: fillHook(str(hookRow.body), { name: str(person.name), city: str(person.city_name), owner: nameOf.get(owner) || "", organization: orgName, place: place?.name ?? "" }) } : null;
 
   // Histórico: uma consulta por fonte, com limite; a regra de quem vê o quê fica aqui.
   const events: PersonEvent[] = [];
@@ -178,6 +189,9 @@ export async function getPersonPage(a: AccessView, id: string, opts: { all?: boo
     amb && management ? all(`SELECT id,title,completed_at FROM tasks WHERE ambassador_id=? AND status='Concluída' AND completed_at IS NOT NULL ORDER BY completed_at DESC LIMIT 50`, [num(amb.id)]) : Promise.resolve([]),
     a.role === "Administrador" ? all(`SELECT id,kind,completed_at FROM privacy_requests WHERE organization_id=? AND (subject_ref=? OR subject_ref IN (${leads.map(() => "?").join(",") || "''"})) ORDER BY completed_at DESC LIMIT 50`, [a.organizationId, `person:${id}`, ...leads.map((l) => `lead:${num(l.id)}`)]) : Promise.resolve([]),
   ]);
+  // A única marca que fica depois de remover um lugar: quem removeu (a própria pessoa no portal ou a equipe), sem dizer qual.
+  const removals = await all(`SELECT l.id,l.created_at,EXISTS(SELECT 1 FROM app_users u WHERE u.organization_id=l.organization_id AND lower(u.email)=lower(l.actor_email) AND u.role='Mentorado') AS self FROM audit_logs l WHERE l.organization_id=? AND l.action='remove_person_place' AND l.summary=? ORDER BY l.id DESC LIMIT 50`, [a.organizationId, `Registro territorial person:${id}.`]);
+  for (const r of removals) push({ id: `lugar-removido-${str(r.id)}`, kind: "interacao", date: str(r.created_at), title: num(r.self) ? "Um lugar removido pela própria pessoa" : "Um lugar removido pela equipe" });
   for (const t of actions) push({ id: `acao-${str(t.id)}`, kind: "interacao", date: str(t.status) === "Realizado" ? str(t.due_date) || str(t.updated_at) : str(t.updated_at), title: `${str(t.category)}: ${str(t.name)}`, detail: str(t.status) });
   for (const st of steps) push({ id: `mentoria-${str(st.step_id)}`, kind: "mentoria", date: str(st.done_at), title: `Etapa da mentoria concluída: ${str(st.title)}` });
   for (const u of updates) push({ id: `atualizacao-${str(u.id)}`, kind: "embaixador", date: str(u.created_at), title: `Atualização de embaixador (${str(u.period)})` });
@@ -201,6 +215,8 @@ export async function getPersonPage(a: AccessView, id: string, opts: { all?: boo
     isClient, referredCount: childRows.length,
     mentoradoWithoutMeeting: a.role === "Administrador" && !!mentorship && (!mentorship.nextMeeting || mentorship.nextMeeting.slice(0, 10) < today),
     referredWithoutAttendance: childRows.filter((c) => !num(c.has_lead)).length,
+    plantingVisitOverdue: actions.some((t) => str(t.status) === "Programado" && str(t.category) === "Visita" && str(t.due_date) < today),
+    placeAdvanceWithoutPlan: places.some((x) => !x.review && x.summary?.situation === "Avançar" && !x.summary.planned.length),
     multiplierWithoutAmbassador: level === "Multiplicador" && !amb,
     canAddAmbassador: can.addAmbassador,
   });
@@ -212,7 +228,10 @@ export async function getPersonPage(a: AccessView, id: string, opts: { all?: boo
     attendance,
     referrer,
     referred: { total: childRows.length, bought, withoutAttendance: childRows.filter((c) => !num(c.has_lead)).length, people: childRows.slice(0, 50).map((c) => ({ id: str(c.id), name: str(c.name), client: !!num(c.client) })) },
-    mentorship, ambassador, tips, hook,
+    mentorship, ambassador, tips, hook, places, team: management || a.role === "Comercial" ? await plantTeam(a) : [],
+    linkPlace: !(management || a.role === "Comercial") ? { allowed: false, reason: "Seu perfil não liga lugares." }
+      : !(await canHaveExtraPlaces(id)) ? { allowed: false, reason: "Lugares além do principal só com autorização de contato vigente ou papel de Mentorado ou Embaixador ativo." }
+      : places.length >= MAX_PLACES ? { allowed: false, reason: `Já são ${MAX_PLACES} lugares, contando o local principal.` } : { allowed: true, reason: "" },
     timeline: buildPersonTimeline(events, opts.all ? 500 : 30),
     next, can, updatedAt: brazilTimestamp(),
   };
@@ -223,25 +242,42 @@ export const WHERE_LISTS = {
   clientes: "Clientes que ainda não indicaram ninguém",
   indicacoes: "Indicações sem atendimento",
   mapeados: "Pessoas mapeadas sem atendimento há mais de 14 dias",
+  lugares: "Lugares em Avançar sem plano de plantio",
 } as const;
 export type WhereList = keyof typeof WHERE_LISTS;
+type PeopleList = Exclude<WhereList, "lugares">;
+
+/** Lugares em Avançar (pelo menos 1 cliente, sem chegar a Dominado) e sem visita programada, no escopo de quem vê. */
+async function advanceWithoutPlan(a: AccessView, cityId?: number | null) {
+  const s = personScopeSql(a, "tp");
+  const cityFilter = cityId && a.role === "Administrador" ? " AND b.city_id=?" : "";
+  const candidates = await all(`SELECT DISTINCT b.id FROM businesses b JOIN territory_people tp ON tp.place_id=b.id OR EXISTS(SELECT 1 FROM person_places pp WHERE pp.person_id=tp.id AND pp.business_id=b.id)
+    WHERE b.organization_id=?${cityFilter} AND EXISTS(SELECT 1 FROM leads l JOIN sales sa ON sa.lead_id=l.id WHERE l.person_id=tp.id AND l.consent_revoked_at IS NULL AND sa.status='Pagamento confirmado' AND sa.paid_at IS NOT NULL)
+    AND NOT EXISTS(SELECT 1 FROM territory_actions t WHERE t.business_id=b.id AND t.status='Programado') AND ${s.sql} LIMIT 500`, [a.organizationId, ...(cityFilter ? [cityId!] : []), ...s.args]);
+  const summaries = await placeSummaries(a, candidates.map((r) => str(r.id)));
+  return [...summaries.values()].filter((x) => x.situation === "Avançar" && !x.planned.length).sort((x, y) => x.name.localeCompare(y.name));
+}
 
 export async function whereToLook(a: AccessView, list?: WhereList | null, cityId?: number | null) {
   const s = personScopeSql(a);
   const extra = cityId && a.role === "Administrador" ? { sql: " AND p.city_id=?", args: [cityId] as Value[] } : { sql: "", args: [] as Value[] };
   const hidden = "NOT EXISTS(SELECT 1 FROM leads lx WHERE lx.person_id=p.id AND lx.consent_revoked_at IS NOT NULL)";
   const cutoff = brazilTimestamp(new Date(Date.now() - 14 * 86_400_000)).slice(0, 10);
-  const conditions: Record<WhereList, { sql: string; args: Value[] }> = {
+  const conditions: Record<PeopleList, { sql: string; args: Value[] }> = {
     clientes: { sql: `EXISTS(SELECT 1 FROM leads l JOIN sales sa ON sa.lead_id=l.id WHERE l.person_id=p.id AND l.consent_revoked_at IS NULL AND sa.status='Pagamento confirmado' AND sa.paid_at IS NOT NULL) AND NOT EXISTS(SELECT 1 FROM territory_people ch WHERE ch.referrer_id=p.id)`, args: [] },
     indicacoes: { sql: `p.referrer_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM leads l WHERE l.person_id=p.id)`, args: [] },
     mapeados: { sql: `p.source='Mapeamento' AND substr(p.created_at,1,10) < ? AND NOT EXISTS(SELECT 1 FROM leads l WHERE l.person_id=p.id)`, args: [cutoff] },
   };
-  const where = (k: WhereList) => ({ sql: `${s.sql}${extra.sql} AND ${hidden} AND ${conditions[k].sql}`, args: [...s.args, ...extra.args, ...conditions[k].args] });
+  const where = (k: PeopleList) => ({ sql: `${s.sql}${extra.sql} AND ${hidden} AND ${conditions[k].sql}`, args: [...s.args, ...extra.args, ...conditions[k].args] });
+  if (list === "lugares") {
+    const places = await advanceWithoutPlan(a, cityId);
+    return { list, title: WHERE_LISTS.lugares, people: places.slice(0, 50).map((x) => ({ id: x.businessId, name: x.name, reason: x.situationText, kind: "place" as const })) };
+  }
   if (list) {
     const w = where(list);
     const rows = await all(`SELECT p.id,p.name FROM territory_people p WHERE ${w.sql} ORDER BY p.name LIMIT 50`, w.args);
     return { list, title: WHERE_LISTS[list], people: rows.map((r) => ({ id: str(r.id), name: str(r.name), reason: WHERE_LISTS[list] })) };
   }
-  const counts = await Promise.all((Object.keys(WHERE_LISTS) as WhereList[]).map(async (k) => { const w = where(k); return [k, num((await all(`SELECT COUNT(*) AS n FROM territory_people p WHERE ${w.sql}`, w.args))[0]?.n)] as const; }));
-  return { counts: Object.fromEntries(counts) as Record<WhereList, number> };
+  const counts = await Promise.all((Object.keys(conditions) as PeopleList[]).map(async (k) => { const w = where(k); return [k, num((await all(`SELECT COUNT(*) AS n FROM territory_people p WHERE ${w.sql}`, w.args))[0]?.n)] as const; }));
+  return { counts: { ...Object.fromEntries(counts), lugares: (await advanceWithoutPlan(a, cityId)).length } as Record<WhereList, number> };
 }

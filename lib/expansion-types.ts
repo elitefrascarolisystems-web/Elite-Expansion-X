@@ -270,7 +270,7 @@ export type AuditRecord = {
 export type DashboardData = {
   people?: Array<{id: string; cityId: number; name: string}>;
   /** Empresas, escritórios e networks para vincular pessoas a um local. */
-  places?: Array<{id: string; cityId: number; name: string; placeType: string}>;
+  places?: Array<{id: string; cityId: number; name: string; placeType: string; sector?: string; version?: number; ownerEmail?: string}>;
   /** Bairros das cidades autorizadas (para o campo "Bairro"); `located` diz se já tem ponto no mapa. */
   regions?: Array<{id: string; cityId: number; name: string; located: boolean}>;
   /** Pessoas no mapa e quantas estão ligadas a um local (para os Primeiros passos). */

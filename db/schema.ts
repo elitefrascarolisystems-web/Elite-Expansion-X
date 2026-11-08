@@ -316,7 +316,9 @@ export const territoryActions = sqliteTable("territory_actions", {
   category: text("category").notNull(), status: text("status").notNull(), responsible: text("responsible").notNull(),
   dueDate: text("due_date").notNull(), createdBy: text("created_by").notNull(),
   createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
-}, t => [index("territory_actions_city_date_idx").on(t.cityId,t.dueDate),index("territory_actions_person_idx").on(t.personId)]);
+  /** Visita de plantio: o local (estabelecimento) onde a equipe vai. Sem hora, GPS, foto ou texto livre. */
+  businessId: text("business_id"),
+}, t => [index("territory_actions_city_date_idx").on(t.cityId,t.dueDate),index("territory_actions_person_idx").on(t.personId),index("territory_actions_business_idx").on(t.businessId,t.dueDate)]);
 export const territoryRoles = sqliteTable('territory_roles', {
  id:text('id').primaryKey(),personId:text('person_id').notNull().references(()=>territoryPeople.id),
  cityId:integer('city_id').notNull().references(()=>cities.id),role:text('role').notNull(),status:text('status').notNull(),
@@ -472,3 +474,14 @@ export const goals = sqliteTable('goals', {
  assumptionsJson:text('assumptions_json').notNull().default('{}'),status:text('status').notNull().default('Ativa'),version:integer('version').notNull().default(1),
  createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
 },t=>[index('goals_status').on(t.organizationId,t.status,t.periodEnd),index('goals_city_owner').on(t.organizationId,t.cityId,t.ownerEmail)]);
+/**
+ * Lugares de relacionamento além do local principal (territory_people.place_id continua sendo o principal e o ponto no mapa).
+ * Só estabelecimentos já cadastrados, com a autorização da pessoa a cada lugar. Até 5 por pessoa contando o principal.
+ * Sem horário, dia, frequência, ordem, coordenada, nota ou foto. Remover apaga a linha (não fica histórico de onde ela ia).
+ */
+export const personPlaces = sqliteTable('person_places', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),cityId:integer('city_id').notNull().references(()=>cities.id),
+ personId:text('person_id').notNull().references(()=>territoryPeople.id),businessId:text('business_id').notNull(),link:text('link').notNull(),
+ authorizedBy:text('authorized_by').notNull(),authorizedAt:text('authorized_at').notNull(),
+ createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
+},t=>[uniqueIndex('person_places_unique').on(t.personId,t.businessId),index('person_places_business').on(t.organizationId,t.businessId),index('person_places_person').on(t.personId)]);

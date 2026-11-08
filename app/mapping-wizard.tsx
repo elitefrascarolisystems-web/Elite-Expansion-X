@@ -16,7 +16,7 @@ import { offlineError, type SendError } from "@/lib/offline-queue";
 import { tenantFetch } from "@/lib/tenant-request";
 
 /** `queued`: feito sem internet, guardado no aparelho até o envio (app/offline-sync.tsx). */
-type Place = { id: string; name: string; placeType: string; queued?: boolean };
+type Place = { id: string; name: string; placeType: string; queued?: boolean; sector?: string; version?: number; ownerEmail?: string };
 type Added = { id: string; name: string; link: string; role: string; attending?: boolean; queued?: boolean };
 type Found = { name: string; latitude: number; longitude: number };
 
@@ -34,11 +34,15 @@ const STEPS = ["Cidade", "Local", "Pessoas"];
  * Mapeamento guiado em 3 passos: cidade → local (escolhe ou cadastra e marca no mapa)
  * → pessoas ligadas ao local. Cada passo usa o que foi escolhido no anterior.
  */
-export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean; data: DashboardData; onClose: () => void; onSaved: () => Promise<void> }) {
-  const [step, setStep] = useState(0);
-  const [cityId, setCityId] = useState<number | null>(data.cities.length === 1 ? data.cities[0].id : null);
+/** `initialPlaceId`: abre já com o local escolhido (ex.: "Mapear pessoas deste local" depois de uma visita). */
+export function MappingWizard({ open, data, onClose, onSaved, initialPlaceId }: { open: boolean; data: DashboardData; onClose: () => void; onSaved: () => Promise<void>; initialPlaceId?: string }) {
+  const initial = initialPlaceId ? data.places?.find((p) => p.id === initialPlaceId) ?? null : null;
+  const [step, setStep] = useState(initial ? 2 : 0);
+  const [cityId, setCityId] = useState<number | null>(initial ? initial.cityId : data.cities.length === 1 ? data.cities[0].id : null);
   const [created, setCreated] = useState<(Place & { cityId: number })[]>([]);
-  const [place, setPlace] = useState<Place | null>(null);
+  const [place, setPlace] = useState<Place | null>(initial);
+  const [sectorPick, setSectorPick] = useState("");
+  const [confirm, setConfirm] = useState({ association: false, school: false });
   const [mode, setMode] = useState<"existing" | "new" | "none">("existing");
   const [filter, setFilter] = useState("");
   const [busy, setBusy] = useState(false);
@@ -84,7 +88,7 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
     const id = crypto.randomUUID();
     const segment = form.segment.trim() || form.sector || form.placeType;
     const body = { id, cityId, name: form.name.trim(), segment, district: form.district.trim(), address: form.address.trim(), source: "Mapeamento guiado", externalId: "", ownerEmail: defaultOwnerEmail(data, cityId), status: "Identificada", placeType: form.placeType, sector: form.placeType === "Empresa" ? form.sector : form.sector || "", nextAction: "", verified: false, publicBusiness: form.confirm };
-    const saved = { id, name: form.name.trim(), placeType: form.placeType, cityId };
+    const saved = { id, name: form.name.trim(), placeType: form.placeType, cityId, sector: form.sector };
     try {
       await post("/api/commercial", { action: "business", data: body });
       setCreated((list) => [...list, saved]); setPlace(saved);
@@ -123,7 +127,7 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
 
   async function savePerson(confirmDuplicate = false, retry?: { payload: Record<string, unknown>; role: string }) {
     if (!cityId) return;
-    const payload = retry?.payload ?? { requestId: crypto.randomUUID(), cityId, name: personForm.name.trim(), leader: false, referrerId: personForm.referrerId || null, regionId: place ? null : personForm.regionId || null, placeId: place?.id ?? null, placeLink: place ? personForm.link : "", authorized: true };
+    const payload = retry?.payload ?? { requestId: crypto.randomUUID(), cityId, name: personForm.name.trim(), leader: false, referrerId: personForm.referrerId || null, regionId: place ? null : personForm.regionId || null, placeId: place?.id ?? null, placeLink: place ? personForm.link : "", authorized: true, confirmAssociation: confirm.association, confirmSchool: confirm.school };
     const role = retry?.role ?? personForm.role;
     setBusy(true); setError(""); setDuplicate(null);
     const keep = () => {
@@ -147,8 +151,25 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
     } finally { setBusy(false); }
   }
 
-  const placeReady = form.name.trim().length >= 2 && form.confirm && (form.placeType !== "Empresa" || form.sector);
-  const personReady = authorized && personForm.name.trim().length >= 2 && (!place || personForm.link);
+  // Setor é obrigatório em todo local: é ele que decide se pessoas podem ser ligadas (igreja e clínica, não).
+  const placeReady = form.name.trim().length >= 2 && form.confirm && Boolean(form.sector);
+  const placeSector = place?.sector ?? (place?.queued ? "Outro" : "");
+  const canEditSector = place ? data.access.role !== "Comercial" || (place.ownerEmail ?? "").toLowerCase() === data.access.email.toLowerCase() : false;
+  const school = place && (place.placeType === "Instituição de ensino" || placeSector === "Educação");
+  const linkOptions = placeSector === "Saúde" ? PLACE_LINKS.filter((l) => ["Sócio / dono", "Colaborador", "Responsável"].includes(l)) : PLACE_LINKS;
+  const needsAssociation = placeSector === "Associação / entidade", needsSchool = Boolean(school) && personForm.link === "Frequenta";
+  async function saveSector() {
+    if (!place || !sectorPick) return;
+    setBusy(true); setError("");
+    try {
+      const r = await post("/api/commercial", { action: "business_sector", data: { id: place.id, version: place.version ?? 1, sector: sectorPick } }) as { result?: { version?: number } };
+      const next = { ...place, sector: sectorPick, version: r?.result?.version ?? (place.version ?? 1) + 1 };
+      setPlace(next); setCreated((list) => [...list.filter((x) => x.id !== next.id), { ...next, cityId: cityId! }]);
+      toast.success("Setor salvo no cadastro do local.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível salvar o setor."); }
+    finally { setBusy(false); }
+  }
+  const personReady = authorized && personForm.name.trim().length >= 2 && (!place || (personForm.link && placeSector !== "Religioso" && (!needsAssociation || confirm.association) && (!needsSchool || confirm.school)));
 
   return <Dialog open={open} onOpenChange={(value) => { if (!value) close(); }}><DialogContent className="max-h-[92dvh] overflow-y-auto border-white/10 bg-surface-raised text-white sm:max-w-2xl">
     <DialogHeader><DialogTitle>Mapear local e pessoas</DialogTitle><DialogDescription className="text-zinc-400">Siga os 3 passos. Pessoas aparecem no local ligado a elas, nunca na residência.</DialogDescription></DialogHeader>
@@ -166,14 +187,15 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
       <div className="grid grid-cols-3 gap-2 text-sm" role="radiogroup" aria-label="Como escolher o local">{([["existing", "Local já cadastrado"], ["new", "Cadastrar novo local"], ["none", "Sem local"]] as const).map(([value, label]) => <button key={value} type="button" role="radio" aria-checked={mode === value} onClick={() => { setMode(value); setError(""); }} className={`rounded-lg border px-3 py-2 ${mode === value ? "border-gold/60 bg-gold/10 text-white" : "border-white/10 text-zinc-400"}`}>{label}</button>)}</div>
       {mode === "existing" && <>
         <label className="relative"><Search className="absolute left-3 top-3.5 size-4 text-subtle" /><input aria-label="Procurar local" className="commercial-input pl-9" placeholder={`Procurar local em ${city?.name ?? "na cidade"}`} value={filter} onChange={(e) => setFilter(e.target.value)} /></label>
-        <ul className="grid max-h-64 gap-1 overflow-y-auto" aria-label="Locais da cidade">{places.map((item) => <li key={item.id}><button type="button" onClick={() => setPlace(item)} className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm ${place?.id === item.id ? "border-gold/60 bg-gold/10" : "border-white/8 hover:bg-white/5"}`}><span>{item.name}</span><span className="text-xs text-subtle">{"queued" in item && item.queued ? "Aguardando envio · " : ""}{item.placeType}</span></button></li>)}</ul>
+        <ul className="grid max-h-64 gap-1 overflow-y-auto" aria-label="Locais da cidade">{places.map((item) => <li key={item.id}><button type="button" onClick={() => { setPlace(item); setSectorPick(""); setConfirm({ association: false, school: false }); }} className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm ${place?.id === item.id ? "border-gold/60 bg-gold/10" : "border-white/8 hover:bg-white/5"}`}><span>{item.name}</span><span className="text-xs text-subtle">{"queued" in item && item.queued ? "Aguardando envio · " : ""}{item.placeType} · {"sector" in item && item.sector ? item.sector : "sem setor"}</span></button></li>)}</ul>
+        {place && !placeSector && !place.queued && <div className="grid gap-2 rounded-lg border border-amber-300/30 bg-amber-300/5 p-3 text-sm">{canEditSector ? <><span>Este local está sem setor. Escolha o setor antes de ligar pessoas a ele (ele fica gravado no cadastro do local).</span><div className="flex flex-wrap gap-2"><select aria-label="Setor do local" className="commercial-input max-w-xs" value={sectorPick} onChange={(e) => setSectorPick(e.target.value)}><option value="">Selecione</option>{SECTORS.map((item) => <option key={item}>{item}</option>)}</select><Button size="sm" disabled={busy || !sectorPick} onClick={saveSector}>Salvar setor</Button></div></> : <span>Peça à gestão para escolher o setor deste local.</span>}</div>}
         {!places.length && <p className="text-sm text-zinc-400">{filter ? "Nenhum local com esse nome." : "Nenhum local nesta cidade ainda."} Use &ldquo;Cadastrar novo local&rdquo;.</p>}
-        <div className="flex justify-between"><Button variant="ghost" onClick={() => setStep(0)}><ArrowLeft /> Cidade</Button><Button disabled={!place} onClick={() => setStep(2)} className="bg-gold text-black">Próximo: pessoas <ArrowRight /></Button></div>
+        <div className="flex justify-between"><Button variant="ghost" onClick={() => setStep(0)}><ArrowLeft /> Cidade</Button><Button disabled={!place || (!placeSector && !place.queued)} onClick={() => setStep(2)} className="bg-gold text-black">Próximo: pessoas <ArrowRight /></Button></div>
       </>}
       {mode === "new" && <>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm">Tipo de local<select className="commercial-input" value={form.placeType} onChange={(e) => setForm({ ...form, placeType: e.target.value })}>{PLACE_TYPES.map((item) => <option key={item}>{item}</option>)}</select></label>
-          <label className="grid gap-1 text-sm">{form.placeType === "Empresa" ? "Setor (define o ícone)" : "Setor (opcional)"}<select className="commercial-input" value={form.sector} onChange={(e) => setForm({ ...form, sector: e.target.value })}><option value="">Selecione</option>{SECTORS.map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label className="grid gap-1 text-sm">Setor (define o ícone e quem pode ser ligado)<select className="commercial-input" value={form.sector} onChange={(e) => setForm({ ...form, sector: e.target.value })}><option value="">Selecione</option>{SECTORS.map((item) => <option key={item}>{item}</option>)}</select></label>
           <label className="grid gap-1 text-sm sm:col-span-2">Nome {form.placeType === "Empresa" ? "da empresa" : "do local"}<input className="commercial-input" value={form.name} maxLength={200} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex.: Padaria Pão Dourado" /></label>
           <label className="grid gap-1 text-sm">Atividade (opcional)<input className="commercial-input" value={form.segment} maxLength={80} onChange={(e) => setForm({ ...form, segment: e.target.value })} placeholder="Ex.: padaria e café" /></label>
           <label className="grid gap-1 text-sm">Bairro<input className="commercial-input" value={form.district} maxLength={200} onChange={(e) => setForm({ ...form, district: e.target.value })} /></label>
@@ -200,9 +222,13 @@ export function MappingWizard({ open, data, onClose, onSaved }: { open: boolean;
       <label className="flex items-start gap-2 text-sm text-zinc-300"><input type="checkbox" className="mt-1" checked={authorized} onChange={(e) => setAuthorized(e.target.checked)} />Confirmo que posso registrar estas pessoas só com nome, cidade e vínculo (sem dados de residência).</label>
       <div className="grid gap-3 sm:grid-cols-[1.4fr_1fr_1fr]">
         <label className="grid gap-1 text-sm">Nome<input className="commercial-input" value={personForm.name} maxLength={200} onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter" && personReady && !busy) { e.preventDefault(); savePerson(); } }} /></label>
-        <label className="grid gap-1 text-sm">Vínculo{!place && " (sem local)"}<select className="commercial-input" disabled={!place} value={personForm.link} onChange={(e) => setPersonForm({ ...personForm, link: e.target.value })}><option value="">Selecione</option>{PLACE_LINKS.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="grid gap-1 text-sm">Vínculo{!place && " (sem local)"}<select className="commercial-input" disabled={!place} value={personForm.link} onChange={(e) => setPersonForm({ ...personForm, link: e.target.value })}><option value="">Selecione</option>{linkOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="grid gap-1 text-sm">Papel (opcional)<select className="commercial-input" value={personForm.role} onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}><option value="">Nenhum</option>{PERSON_ROLES.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
+      {placeSector === "Religioso" && <p role="alert" className="rounded-lg border border-amber-300/30 bg-amber-300/5 p-3 text-sm text-amber-100">Igreja revela religião (dado sensível). Mapeie o lugar, mas não ligue pessoas a ele.</p>}
+      {placeSector === "Saúde" && <p className="text-xs text-subtle">Em local de saúde, só vínculo de trabalho: ser paciente revela dado de saúde.</p>}
+      {needsAssociation && <label className="flex items-start gap-2 text-sm text-zinc-300"><input type="checkbox" className="mt-1" checked={confirm.association} onChange={(e) => setConfirm({ ...confirm, association: e.target.checked })} />Não é sindicato, partido nem entidade religiosa.</label>}
+      {needsSchool && <label className="flex items-start gap-2 text-sm text-zinc-300"><input type="checkbox" className="mt-1" checked={confirm.school} onChange={(e) => setConfirm({ ...confirm, school: e.target.checked })} />A própria pessoa estuda ou trabalha aqui (não use para a escola dos filhos).</label>}
       {cityId !== null && !place && <div className="grid gap-1 text-sm"><span>Bairro (opcional · a pessoa aparece no centro do bairro, nunca na residência)</span><RegionSelect key={`reg-${cityId}`} regions={data.regions ?? []} cityId={cityId} initialValue={personForm.regionId} onChange={(id) => setPersonForm((form) => ({ ...form, regionId: id }))} canAdd /></div>}
       {cityId !== null && <div className="grid gap-1 text-sm"><span>Quem indicou (opcional)</span><TerritoryPersonPicker key={`ref-${cityId}-${added.length}`} cityId={cityId} name="referrerId" onChange={(id) => setPersonForm((form) => ({ ...form, referrerId: id }))} /></div>}
       {duplicate && <div role="alert" className="grid gap-2 rounded-lg border border-amber-300/30 bg-amber-300/10 p-3 text-sm text-amber-100"><p>{duplicate.message}</p><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" className="border-white/10 bg-white/5 text-white" disabled={busy} onClick={() => savePerson(true, duplicate)}>É outra pessoa: salvar mesmo assim</Button><Button size="sm" variant="ghost" onClick={() => setDuplicate(null)}>Não salvar</Button></div></div>}

@@ -4,7 +4,10 @@ import {featureBlocked} from '@/db/plan';
 import type {AccessView} from '@/lib/expansion-types';
 import {canAccessCity,canAccessLead} from '@/lib/expansion-permissions';
 import {decisionInput,businessSchema,opportunitySchema,activityInput,goalInput,reportInput,businessIdentity,daySchema} from '@/lib/commercial';
-import {isTemplateExample,TEMPLATE_EXAMPLE_ERROR} from '@/lib/places';
+import {isTemplateExample,TEMPLATE_EXAMPLE_ERROR,SECTORS} from '@/lib/places';
+import {z} from 'zod';
+import {placeSummaries} from '@/db/person-places';
+const REVIEW_NAME_SQL="(((lower(r.name||' '||r.segment) LIKE '%igreja%' OR lower(r.name||' '||r.segment) LIKE '%templo%') AND r.sector<>'Religioso') OR ((lower(r.name||' '||r.segment) LIKE '%sindicato%' OR lower(r.name||' '||r.segment) LIKE '%partido%') AND r.sector<>'Associação / entidade') OR ((lower(r.name||' '||r.segment) LIKE '%clínica%' OR lower(r.name||' '||r.segment) LIKE '%clinica%' OR lower(r.name||' '||r.segment) LIKE '%hospital%') AND r.sector<>'Saúde') OR lower(r.name||' '||r.segment) LIKE '%condom%' OR lower(r.name||' '||r.segment) LIKE '%residencial%')";
 export class CommercialError extends Error{constructor(message:string,public status=400){super(message);}}
 type Row=Record<string,unknown>;type Value=string|number|null;
 const rows=async(sql:string,args:Value[]=[])=> (await database().prepare(sql).bind(...args).all()).results as Row[];
@@ -18,7 +21,14 @@ export async function getCommercial(a:AccessView,p:URLSearchParams){
  const s=scope(a);const conditions=[s.sql],args=[...s.args];const cityId=Number(p.get('city'));if(cityId){conditions.push('r.city_id=?');args.push(cityId);}const seller=p.get('owner');if(seller){conditions.push('lower(r.owner_email)=lower(?)');args.push(seller);}
  const common=conditions.join(' AND '),q=(p.get('q')||'').slice(0,100),segment=p.get('segment')||'',stage=p.get('stage')||'',temperature=p.get('temperature')||'';
  const day=daySchema.parse(p.get('day')||brazilTimestamp().slice(0,10));
- const businesses=await rows(`SELECT r.*,CASE WHEN EXISTS(SELECT 1 FROM opportunities o JOIN sales s ON s.lead_id=o.lead_id WHERE o.business_id=r.id AND s.status='Pagamento confirmado' AND s.paid_at IS NOT NULL) THEN 'Cliente' WHEN EXISTS(SELECT 1 FROM opportunities o JOIN leads l ON l.id=o.lead_id WHERE o.business_id=r.id AND l.consent_revoked_at IS NULL AND l.status<>'Cancelado') THEN 'Contato autorizado' WHEN r.status IN ('Cliente','Contato autorizado') THEN 'Selecionada' ELSE r.status END AS status,c.name AS city_name FROM businesses r JOIN cities c ON c.id=r.city_id WHERE ${common} AND r.name LIKE ? AND (?='' OR r.segment=?) ORDER BY r.updated_at DESC LIMIT 201`,[...args,'%'+q+'%',segment,segment]);
+ // "A revisar": locais com vínculo fora da regra dos setores ou com nome que fala em igreja, sindicato, clínica ou condomínio sem o setor certo.
+ const reviewSql=`(EXISTS(SELECT 1 FROM territory_people tp WHERE tp.place_id=r.id AND (r.sector='' OR r.sector='Religioso' OR r.sector='Associação / entidade' OR (r.sector='Saúde' AND tp.place_link IN ('Frequenta','Membro do network','Mentorado')) OR ((r.place_type='Instituição de ensino' OR r.sector='Educação') AND tp.place_link='Frequenta'))) OR ${REVIEW_NAME_SQL})`;
+ const review=p.get('review')==='1';
+ const businesses=await rows(`SELECT r.*,${reviewSql} AS review,CASE WHEN EXISTS(SELECT 1 FROM opportunities o JOIN sales s ON s.lead_id=o.lead_id WHERE o.business_id=r.id AND s.status='Pagamento confirmado' AND s.paid_at IS NOT NULL) THEN 'Cliente' WHEN EXISTS(SELECT 1 FROM opportunities o JOIN leads l ON l.id=o.lead_id WHERE o.business_id=r.id AND l.consent_revoked_at IS NULL AND l.status<>'Cancelado') THEN 'Contato autorizado' WHEN r.status IN ('Cliente','Contato autorizado') THEN 'Selecionada' ELSE r.status END AS status,c.name AS city_name FROM businesses r JOIN cities c ON c.id=r.city_id WHERE ${common} AND r.name LIKE ? AND (?='' OR r.segment=?)${review?` AND ${reviewSql}`:''} ORDER BY r.updated_at DESC LIMIT 201`,[...args,'%'+q+'%',segment,segment]);
+ // Situação do lugar (pessoas da rede ligadas, no escopo de quem vê); o filtro vale sobre os locais listados.
+ const summaries=await placeSummaries(a,businesses.slice(0,200).map(b=>String(b.id)));
+ for(const b of businesses){const x=summaries.get(String(b.id));b.situation=x?.situation??'Abrir';b.situation_text=x?.situationText??'';b.network_people=x?.people??0;b.last_visit=x?.lastVisit??'';}
+ const situation=p.get('situation')||'';if(situation){const keep=businesses.filter(b=>b.situation===situation);businesses.length=0;businesses.push(...keep);}
  const liveLeadScope=a.role==='Comercial'?` AND lower(l.assigned_to_email)=lower(?)`:'';const liveLeadArgs=a.role==='Comercial'?[a.email]:[];
  const oppWhere=`${common}${liveLeadScope} AND l.consent_revoked_at IS NULL AND l.status<>'Cancelado' AND l.name LIKE ? AND (?='' OR r.stage=?) AND (?='' OR r.temperature=?)`;
  const oppArgs=[...args,...liveLeadArgs,'%'+q+'%',stage,stage,temperature,temperature];
@@ -77,6 +87,13 @@ export async function saveCommercial(a:AccessView,action:string,input:unknown){
   const v=activityInput.parse(input),o=await entity(a,'opportunities',v.opportunityId);const l=(await rows('SELECT consent_revoked_at,status FROM leads WHERE id=?',[Number(o.lead_id)]))[0];if(l.consent_revoked_at||l.status==='Cancelado')throw new CommercialError('Autorização revogada.');if(v.day>now.slice(0,10))throw new CommercialError('Atividade realizada não pode ter data futura.');
   const prior=(await rows('SELECT organization_id,owner_email,opportunity_id FROM commercial_activities WHERE id=?',[v.id]))[0];if(prior){if(Number(prior.organization_id)!==a.organizationId||prior.owner_email!==a.email||prior.opportunity_id!==v.opportunityId)throw new CommercialError('Este registro já foi criado por outra pessoa. Atualize a página para ver o cadastro atual.',409);return {id:v.id};}
   await db.batch([db.prepare('INSERT INTO commercial_activities(id,organization_id,city_id,opportunity_id,owner_email,kind,note,activity_date,created_at) VALUES(?,?,?,?,?,?,?,?,?)').bind(v.id,a.organizationId,o.city_id,v.opportunityId,a.email,v.kind,v.note,v.day,now),audit(a,'commercial_activity',v.id)]);return {id:v.id};
+ }
+ // Só o setor do local (mapeamento guiado: local sem setor antes de ligar pessoas). A gestão ou o responsável pelo local.
+ if(action==='business_sector'){
+  const v=z.object({id:z.string().uuid(),version:z.number().int().positive(),sector:z.enum(SECTORS)}).parse(input);const b=await entity(a,'businesses',v.id);
+  if(a.role==='Comercial'&&String(b.owner_email).toLowerCase()!==a.email.toLowerCase())throw new CommercialError('Peça à gestão para escolher o setor deste local.',403);
+  const result=await db.batch([db.prepare('UPDATE businesses SET sector=?,updated_at=?,version=version+1 WHERE id=? AND organization_id=? AND version=?').bind(v.sector,now,v.id,a.organizationId,v.version),audit(a,'save_business',v.id,true)]);
+  if(!result[0].meta.changes)throw new CommercialError('Outra pessoa alterou este registro agora há pouco. Atualize a página e repita a alteração.',409);return {id:v.id,version:v.version+1};
  }
  if(action==='link_partner'){
   if(a.role==='Comercial')throw new CommercialError('Somente a gestão vincula parceiros.',403);const v=input as {id:string;partnerId:number};const b=await entity(a,'businesses',v.id);const partner=(await rows('SELECT id,city_id FROM partners WHERE id=?',[Number(v.partnerId)]))[0];if(!partner||Number(partner.city_id)!==Number(b.city_id))throw new CommercialError('Parceiro fora da cidade.');const linked=(await rows('SELECT id FROM businesses WHERE partner_id=? AND id<>?',[Number(v.partnerId),v.id]))[0];if(linked)throw new CommercialError('Parceiro já vinculado a outra empresa.');

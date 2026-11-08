@@ -23,6 +23,8 @@ export const personSchema = z.object({
   /** Bairro (região) da pessoa: sem local, ela aparece no centro do bairro. */
   regionId: z.string().uuid().nullable().default(null),
   authorized: z.literal(true),
+  /** Confirmações dos setores que pedem (lib/person-places.ts): associação e escola com "Frequenta". */
+  confirmAssociation: z.boolean().default(false), confirmSchool: z.boolean().default(false),
   /** A pessoa já foi avisada de que existe alguém com o mesmo nome na cidade e confirmou que é outra. */
   confirmDuplicate: z.boolean().default(false),
 }).refine(v => !v.placeId || v.placeLink !== '', { message: 'Informe o vínculo da pessoa com o local.', path: ['placeLink'] });
@@ -30,6 +32,8 @@ export const activitySchema = z.object({
   id: z.string().uuid().optional(), requestId: z.string().uuid().optional(), cityId: id, personId: z.string().uuid().nullable().default(null),
   name: text.min(2), category: z.enum(['Ação','Visita','Follow-up','Interação','Missão']),
   status: z.enum(['Programado','Realizado','Cancelado']), responsible: text,
+  /** Visita de plantio: o local. Com ele, só "Visita", nome e responsável de listas fixas (lib/person-places.ts). */
+  businessId: z.string().uuid().nullable().default(null),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => { const d = new Date(value + 'T00:00:00Z'); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0,10) === value; }, 'Informe uma data válida no formato AAAA-MM-DD.'),
 });
 export function displayedCoordinates(kind: string, latitude: number | null, longitude: number | null) {

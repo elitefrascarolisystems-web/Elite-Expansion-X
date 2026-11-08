@@ -1,4 +1,5 @@
 import { ZodError } from "zod";
+import { linkRefusal } from "@/lib/person-places";
 import { isTemplateExample, nameKey, PERSON_ROLES, PLACE_LINKS, personRoleFromText, placeLinkFromText, TEMPLATE_EXAMPLE_ERROR } from "@/lib/places";
 import { canPerform } from "@/lib/expansion-permissions";
 import { importNetworkRowSchema } from "@/lib/territory-validation";
@@ -41,7 +42,7 @@ export async function importNetwork(a: AccessView, input: unknown) {
   const fileKeys = new Set((Array.isArray(body.fileKeys) ? body.fileKeys : []).map(String));
   const db = database();
   const seen = new Set<string>();
-  const places = new Map<number, { id: string; key: string }[]>();
+  const places = new Map<number, { id: string; key: string; sector: string; type: string }[]>();
   const output: NetworkOutcome[] = [];
 
   for (const item of body.rows) {
@@ -68,12 +69,15 @@ export async function importNetwork(a: AccessView, input: unknown) {
       // Local (opcional): precisa existir na cidade.
       let placeId: string | null = null, placeLink = "";
       if (r.place && !person) {
-        if (!places.has(r.cityId)) places.set(r.cityId, (await rows("SELECT id,name FROM businesses WHERE organization_id=? AND city_id=? LIMIT 5000", [a.organizationId, r.cityId])).map((p) => ({ id: str(p.id), key: nameKey(str(p.name)) })));
+        if (!places.has(r.cityId)) places.set(r.cityId, (await rows("SELECT id,name,sector,COALESCE(NULLIF(place_type,''),'Empresa') AS place_type FROM businesses WHERE organization_id=? AND city_id=? LIMIT 5000", [a.organizationId, r.cityId])).map((p) => ({ id: str(p.id), key: nameKey(str(p.name)), sector: str(p.sector), type: str(p.place_type) })));
         const found = places.get(r.cityId)!.filter((p) => p.key === nameKey(r.place));
         if (!found.length) throw new TerritoryError(`Local "${r.place}" não encontrado nesta cidade. Cadastre o local antes ou deixe em branco.`);
         if (found.length > 1) throw new TerritoryError(`Há mais de um local chamado "${r.place}" nesta cidade. Ligue esta pessoa pelo mapa.`);
         const link = placeLinkFromText(r.link || "Frequenta");
         if (!link) throw new TerritoryError(`Vínculo "${r.link}" não reconhecido. Use: ${PLACE_LINKS.join(", ")}.`);
+        // Sem caixa de confirmação na planilha: os setores sensíveis recusam a linha com o motivo.
+        const refusal = linkRefusal({ type: found[0].type, sector: found[0].sector }, link, {}, true);
+        if (refusal) throw new TerritoryError(refusal);
         placeId = found[0].id; placeLink = link;
       }
       // Bairro: usa o já cadastrado na cidade ou cadastra sem ponto (a gestão localiza depois em Território → Cidades).
