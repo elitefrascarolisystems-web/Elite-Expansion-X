@@ -28,7 +28,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
         "paraQueServe": "Começar o dia: seus retornos, seus números e atalhos.",
         "passos": [
           "Toque em \"Abrir a agenda\" e comece pelos retornos atrasados.",
-          "Use os atalhos do alto: \"Mapear local e pessoas\" ou \"Novo atendimento · contato novo\".",
+          "Use os atalhos do alto: \"Mapear local e pessoas\" ou \"Novo atendimento\".",
           "Em \"Avisos por e-mail\", deixe ligado o \"Lembrete diário dos retornos\": chega às 7h30."
         ],
         "exemplo": "Maria abriu Hoje e viu 2 retornos atrasados. Tocou em \"Abrir a agenda\", começou por Carla, que já tinha autorizado o contato, e registrou o retorno para quinta. No alto, os números são só dos atendimentos de Maria.",
@@ -362,7 +362,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Em \"Estamos crescendo com lucro?\", compare receita e custo por mês; \"Ver tabela\" dá os números.",
       "Em \"Saúde das cidades\", veja a \"Decisão\" e o motivo escrito logo abaixo dela."
     ],
-    "exemplo": "Em outubro, a Cidade Exemplo teve 20 leads válidos, 4 clientes pagos, R$ 8.000 de receita e R$ 2.000 de custo: CAC (custo por cliente pago) de R$ 500. Cada lead é um atendimento com autorização registrada. A venda conta no mês em que o atendimento começou.",
+    "exemplo": "Em outubro, a Cidade Exemplo teve 20 atendimentos válidos, 4 clientes pagos, R$ 8.000 de receita e R$ 2.000 de custo: CAC (custo por cliente pago) de R$ 500. A venda conta no mês em que o atendimento começou.",
     "porFuncao": {
       "Coordenação": {
         "cuidado": "Você vê só os números da sua cidade."
@@ -448,7 +448,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Em \"Eficiência por canal\", compare o CAC (custo por cliente pago) de cada canal.",
       "Em \"Custos registrados\", confira se cada custo entrou uma vez só e no mês certo."
     ],
-    "exemplo": "Em outubro, Ana registrou R$ 1.000 de anúncios na Cidade Exemplo, com categoria e canal \"Mídia paga\". Vieram 10 leads com autorização registrada e 2 clientes pagos: CAC de R$ 500. O custo de um evento já entra pelo cadastro do evento: não registre de novo.",
+    "exemplo": "Em outubro, Ana registrou R$ 1.000 de anúncios na Cidade Exemplo, com categoria e canal \"Mídia paga\". Vieram 10 atendimentos com autorização registrada e 2 clientes pagos: CAC de R$ 500. O custo de um evento já entra pelo cadastro do evento: não registre de novo.",
     "cuidado": "Na \"Observação\", não escreva nome nem contato de cliente.",
     "acao": "novo:custo"
   },

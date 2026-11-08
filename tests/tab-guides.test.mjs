@@ -87,7 +87,7 @@ test('guias: "Fazer agora" só com ação que a função pode fazer (mesma regra
  const can=(action)=>(a)=>perm.canPerform(a,action);
  const map=(a)=>['Administrador','Coordenação','Líder','Comercial'].includes(a.role);
  // Mesmas condições do + Novo em app/expansion-dashboard.tsx.
- const NOVO={mapear:map,'atendimento-mapa':map,'atendimento-novo':can('create_lead'),venda:can('record_sale'),cidade:can('create_city'),embaixador:can('create_ambassador'),parceiro:can('create_partner'),evento:can('create_partner'),material:can('create_content'),tarefa:can('create_task'),custo:can('create_cost'),convidar:(a)=>a.role==='Administrador'};
+ const NOVO={mapear:map,'atendimento-novo':can('create_lead'),venda:can('record_sale'),cidade:can('create_city'),embaixador:can('create_ambassador'),parceiro:can('create_partner'),evento:can('create_partner'),material:can('create_content'),custo:can('create_cost'),convidar:(a)=>a.role==='Administrador'};
  assert.deepEqual([...block.matchAll(/id: "([a-z-]+)"/g)].map((m)=>m[1]).sort(),Object.keys(NOVO).sort(),'a lista do + Novo mudou: atualize este teste');
  const PORTAL={'portal:embaixador':['portal:atendimento','portal:atividade'],'portal:mentorado':['portal:indicar']};
  for(const key of keys.GUIDE_KEYS){

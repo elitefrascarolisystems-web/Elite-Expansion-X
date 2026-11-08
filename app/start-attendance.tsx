@@ -52,7 +52,7 @@ export function StartAttendanceDialog({ person, data, onClose, onStarted }: { pe
     finally { setBusy(false); }
   }
   return <Dialog open={person !== null} onOpenChange={(value) => { if (!value && !busy) { setError(null); onClose(); } }}><DialogContent className="max-h-[92dvh] overflow-y-auto border-white/10 bg-surface-raised text-white sm:max-w-xl">
-    <DialogHeader><DialogTitle>Iniciar atendimento</DialogTitle><DialogDescription className="text-zinc-400">A pessoa do mapa vira lead e oportunidade de uma vez, já com o primeiro retorno na agenda.</DialogDescription></DialogHeader>
+    <DialogHeader><DialogTitle>Iniciar atendimento</DialogTitle><DialogDescription className="text-zinc-400">A pessoa do mapa vira atendimento, já com o primeiro retorno na agenda.</DialogDescription></DialogHeader>
     {person && <form onSubmit={submit} className="grid gap-3 text-sm">
       <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2.5"><p className="font-medium text-white">{person.name}</p><p className="text-xs text-subtle">{[person.cityName, person.placeName].filter(Boolean).join(" · ") || "Pessoa do mapa"}</p></div>
       <div className="grid gap-3 sm:grid-cols-2">

@@ -132,3 +132,7 @@ UNION ALL SELECT 'locais com situação manual (Identificada, Selecionada)', COU
 ```
 
 Mande o resultado (só os números) e eu ajusto o que for usado de verdade: sai da lista "tirar" e vai para "simplificar".
+
+## 7. Andamento
+
+- **Parte 1 (sem risco) — feita.** T1 (sai "Novo atendimento · pessoa do mapa" do + Novo), T2 e T3 (sem UTM e Campanha; um só "Como chegou" com a pergunta extra conforme o canal), T6 (interação do mapa: Interação ou Visita; as antigas aparecem marcadas "(antigo)" ao editar), T9 (Fase da cidade sai das telas; o valor gravado continua), T10 (Evento sem alcance, leads e vendas informativos), T11 (Material sem Versão), S1 (Novo atendimento com 6 campos visíveis e o resto em "Mais detalhes"), S3 ("lead" vira "atendimento" nas telas; "oportunidade" sai junto com a parte 2, que mexe nas abas de Vendas), S8 (Material com 5 campos; Canal, Situação e Validade em "Mais detalhes", com padrão Aprovado) e S13 (+ Novo em dois grupos; Tarefa fica em Rede → Embaixadores). "Registrar visita" no + Novo fica para a parte 3, que trata de Locais e lugares (precisa escolher o local antes).
