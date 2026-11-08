@@ -1,0 +1,1 @@
+ALTER TABLE `app_users` ADD `person_confirmed_at` text;

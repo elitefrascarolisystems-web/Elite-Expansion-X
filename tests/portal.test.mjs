@@ -157,3 +157,52 @@ test('convite: o e-mail do exemplo (@exemplo.com) nunca vira acesso',async()=>{
  assert.deepEqual(body.results.map(x=>[x.email,x.ok,x.error??'']),[['ana@exemplo.com',false,'Troque o e-mail de exemplo pelo e-mail real da pessoa.'],['real@cliente.invalid',true,'']]);
  assert.equal(sqlite.prepare("SELECT count(*) n FROM app_users WHERE email LIKE '%@exemplo.com'").get().n,0);
 });
+
+test('Seus lugares: só depois da confirmação da gestão; só os do próprio mentorado; "Não frequento mais" tira um extra e não o principal; homônimos separados',async()=>{
+ const {admin,mentee,company}=await setup();const p=await portal();
+ const uuid=()=>crypto.randomUUID();
+ const place=(name,sector)=>{const id=uuid();sqlite.prepare("INSERT INTO businesses(id,organization_id,city_id,name,segment,source,identity_key,owner_email,status,place_type,sector,created_by,created_at,updated_at) VALUES(?,1,1,?,'x','teste',?,?,'Selecionada','Empresa',?,?,'2026-01-01','2026-01-01')").run(id,name,id,ADMIN,sector,ADMIN);return id;};
+ const person=(name,placeId)=>{const id=uuid();sqlite.prepare("INSERT INTO territory_people(id,city_id,name,leader,place_id,place_link,source,created_by,created_at,updated_at) VALUES(?,1,?,0,?,'Sócio / dono','Mapeamento',?,'2026-01-01','2026-01-01')").run(id,name,placeId,ADMIN);sqlite.prepare("INSERT INTO territory_roles(id,person_id,city_id,role,status,source,authorized_by,created_at,updated_at) VALUES(?,?,1,'Mentorado','Ativo','Portal',?,'2026-01-01','2026-01-01')").run(uuid(),id,ADMIN);return id;};
+ const loja=place('Loja da Maria','Comércio e varejo'),academia=place('Academia Exemplo','Esporte e lazer'),outraLoja=place('Loja do Homônimo','Comércio e varejo');
+ // Duas pessoas com o mesmo nome na cidade: cada login fica com a sua, confirmada pela gestão.
+ const maria=person('Maria Mentorada',loja),homonima=person('Maria Mentorada',outraLoja);
+ const {savePersonPlace}=await vite.ssrLoadModule('/db/person-places.ts');
+ await savePersonPlace(admin,{personId:maria,businessId:academia,link:'Frequenta',authorized:true});
+ await savePersonPlace(admin,{personId:homonima,businessId:academia,link:'Frequenta',authorized:true});
+ sqlite.prepare("UPDATE app_users SET person_id=? WHERE id=?").run(maria,mentee);
+ sqlite.prepare("UPDATE app_users SET person_id=?,name='Maria Mentorada' WHERE id=?").run(homonima,company);
+ const me=await access('mentorado@cliente.invalid');
+ // Sem a confirmação: nada de lugares nem do local principal, e place_remove recusa.
+ let data=await p.getPortalData(me);
+ assert.equal(data.confirmed,false);assert.equal(data.place,null);assert.deepEqual(data.places,[]);
+ await assert.rejects(p.portalAction(me,'place_remove',{businessId:academia}),/confirmar seu cadastro/);
+ // A gestão confirma em Rede → Mentorados.
+ await p.portalAdminAction(admin,'set_member',{userId:mentee,personId:maria,ownerEmail:'',nextMeetingAt:null,nextMeetingNote:'',confirmPerson:true});
+ await p.portalAdminAction(admin,'set_member',{userId:company,personId:homonima,ownerEmail:'',nextMeetingAt:null,nextMeetingNote:'',confirmPerson:true});
+ data=await p.getPortalData(me);
+ assert.equal(data.confirmed,true);
+ assert.deepEqual(data.places.map(x=>[x.name,x.main]),[['Loja da Maria',true],['Academia Exemplo',false]]);
+ assert.ok(data.places.every(x=>x.tip.includes(x.name)),'dica em 2ª pessoa com o lugar');
+ const text=JSON.stringify(data);
+ for(const word of ['Loja do Homônimo','latitude','bairro','people'])assert.ok(!text.includes(word),word);
+ assert.ok(data.tips.length>=1&&data.tips.length<=2);
+ // O principal não sai pelo portal; o extra sai e a marca no Histórico é "pela própria pessoa".
+ await assert.rejects(p.portalAction(me,'place_remove',{businessId:loja}),/Para mudar seu local principal, fale com/);
+ await p.portalAction(me,'place_remove',{businessId:academia});
+ assert.deepEqual(sqlite.prepare('SELECT business_id FROM person_places WHERE person_id=?').all(maria),[]);
+ assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM person_places WHERE person_id=?').get(homonima).n,1,'o lugar da homônima continua');
+ const log=sqlite.prepare("SELECT summary,actor_email FROM audit_logs WHERE action='remove_person_place'").get();
+ assert.equal(log.summary,`Registro territorial person:${maria}.`);assert.equal(log.actor_email,'mentorado@cliente.invalid');
+ const {getPersonPage}=await vite.ssrLoadModule('/db/person-page.ts');
+ const pageData=await getPersonPage(admin,maria,{all:true});
+ assert.ok(pageData.timeline.items.some(i=>i.title==='Um lugar removido pela própria pessoa'));
+ // A homônima não consegue tirar lugares da Maria.
+ const other=await access('outro@cliente.invalid');
+ await savePersonPlace(admin,{personId:maria,businessId:academia,link:'Frequenta',authorized:true});
+ await assert.rejects(p.portalAction(other,'place_remove',{businessId:loja}),/local principal/);
+ await p.portalAction(other,'place_remove',{businessId:academia});
+ assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM person_places WHERE person_id=?').get(maria).n,1,'o lugar da Maria continua');
+ // Trocar a pessoa sem confirmar tira a liberação.
+ await p.portalAdminAction(admin,'set_member',{userId:mentee,personId:homonima,ownerEmail:'',nextMeetingAt:null,nextMeetingNote:''});
+ assert.equal((await p.getPortalData(me)).confirmed,false);
+});

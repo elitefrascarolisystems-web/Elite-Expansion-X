@@ -48,6 +48,7 @@ O que fazer, em que ordem e as regras do mapeamento. A mesma versão fica na pla
 - Círculos dourados com número juntam vários cadastros: clique para abrir. Passe o mouse para ver o que há em cada ponto.
 - Modos de ver, no alto do mapa: Explorar (o padrão), Calor (onde está a força), Cobertura (hexágonos: os tracejados vazios mostram onde mapear a seguir), Funil (cada local na etapa mais avançada dos atendimentos), Linha do tempo (a expansão mês a mês, com play) e Cidade acesa (torres de luz em 3D).
 - O modo fica no endereço da página: copie o link para mostrar o mesmo modo a alguém.
+- Ficha de um local: a situação do lugar (Abrir, Plantar, Avançar ou Dominado), as pessoas da rede ligadas a ele que você pode ver, o plano de plantio e “Registrar visita” (só o dia, sem horário).
 - Os filtros ficam no botão Filtros; a legenda e os números de cada modo ficam sobre o mapa (no celular, no botão Legenda). A lista ao lado mostra os mesmos dados para quem prefere ler.
 
 ## Dúvidas

@@ -34,6 +34,8 @@ export const memberSchema = z.object({
   ownerEmail: z.union([z.string().trim().toLowerCase().email(), z.literal("")]).default(""),
   nextMeetingAt: z.union([z.string().refine(day, "Informe data e hora do encontro."), z.literal(""), z.null()]).default(null),
   nextMeetingNote: z.string().trim().max(300).default(""),
+  /** A gestão confirma que esta pessoa do mapa é o mentorado (libera "Seus lugares" no portal). */
+  confirmPerson: z.boolean().default(false),
 });
 
 export type PortalStep = { id: number; title: string; description: string; doneAt: string | null };
@@ -42,6 +44,12 @@ export type PortalData = {
   owner: { name: string; email: string; title: string } | null;
   nextMeeting: { at: string; note: string } | null;
   place: { name: string; link: string } | null;
+  /** A gestão já confirmou qual pessoa do mapa é este mentorado. Sem isso: "Peça à equipe para confirmar seu cadastro". */
+  confirmed: boolean;
+  /** "Seus lugares": nome, vínculo, 1 dica em 2ª pessoa e, se houver plano, só o passo combinado. */
+  places: { businessId: string; name: string; link: string; main: boolean; tip: string; agreed: string | null }[];
+  /** "Dicas para você": até 2, pelo nível dele na rede. */
+  tips: string[];
   steps: PortalStep[];
   materials: { id: number; title: string; type: string; url: string; instructions: string }[];
   referrals: { name: string; createdAt: string; status: "Recebida" | "Em conversa" | "Virou cliente" }[];
@@ -51,5 +59,5 @@ export type PortalData = {
 };
 export type PortalAdminData = {
   steps: (Omit<PortalStep, "doneAt"> & { audience: string; position: number })[];
-  members: { userId: number; name: string; email: string; role: string; cityId: number | null; cityName: string; personId: string | null; personName: string; ownerEmail: string; nextMeetingAt: string | null; nextMeetingNote: string; done: number; total: number; referrals: number; hasPassword: boolean }[];
+  members: { userId: number; name: string; email: string; role: string; cityId: number | null; cityName: string; personId: string | null; personName: string; personConfirmedAt: string | null; ownerEmail: string; nextMeetingAt: string | null; nextMeetingNote: string; done: number; total: number; referrals: number; hasPassword: boolean }[];
 };

@@ -81,3 +81,10 @@ export function hookSituationFor(level: Level, hasAttendance: boolean, extra: { 
   if (extra.oldClient) return "Pós-venda";
   return level ? "Indicação" : "Retomada";
 }
+
+/** Portal do mentorado → "Dicas para você": até 2, pelo nível dele (em 2ª pessoa). */
+export function memberTips(referred: number, bought: number): string[] {
+  if (bought > 0) return [`${bought === 1 ? "Uma pessoa que você indicou já comprou" : `${bought} pessoas que você indicou já compraram`}: você é Multiplicador. Conte para a equipe se quer um papel na rede, como embaixador.`, "Agradeça a quem você indicou e, se a pessoa gostou, pergunte se ela conhece mais alguém que quer crescer."];
+  if (referred > 0) return [`Você já indicou ${referred} ${referred === 1 ? "pessoa" : "pessoas"}; quando uma comprar, você vira Multiplicador.`, "Antes de indicar alguém, conte para a pessoa e peça a autorização dela."];
+  return ["Pense em quem você conhece que quer crescer e use \"Indicar alguém\" (com a autorização da pessoa).", "Nos lugares onde você já circula, uma conversa curta com o responsável pode abrir portas."];
+}

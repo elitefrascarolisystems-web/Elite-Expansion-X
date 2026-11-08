@@ -28,7 +28,7 @@ const places=()=>vite.ssrLoadModule('/db/person-places.ts');
 const T=()=>new Date(Date.now()-3*3600_000).toISOString().slice(0,10);
 const daysAgo=(n)=>new Date(Date.now()-3*3600_000-n*86400_000).toISOString().slice(0,10);
 const link=(personId,businessId,linkName='Colaborador',extra={})=>({personId,businessId,link:linkName,authorized:true,...extra});
-const actions=()=>sqlite.prepare("SELECT name,category,status,person_id,business_id,responsible,due_date FROM territory_actions ORDER BY created_at,id").all();
+const actions=()=>sqlite.prepare("SELECT name,category,status,person_id,business_id,responsible,due_date FROM territory_actions ORDER BY rowid").all();
 
 test('ligar lugares: as recusas do servidor, com a mensagem exata',async()=>{
  const admin=await accessFor();const {savePersonPlace}=await places();const c2=city('Outra Cidade');

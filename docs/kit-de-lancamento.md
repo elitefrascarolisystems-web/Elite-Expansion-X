@@ -83,11 +83,12 @@ Testes automáticos: 78 passando. Não verificável neste ambiente (sem internet
 
 ## 8. Portal de mentorados
 
-Mentorados têm um **portal só deles**: a jornada (etapas que marcam como concluídas), o próximo encontro, o contato da equipe, os materiais liberados e o botão **Indicar alguém**. Eles **não veem nada** da operação da equipe.
+Mentorados têm um **portal só deles**: a jornada (etapas que marcam como concluídas), o próximo encontro, o contato da equipe, os materiais liberados, o botão **Indicar alguém**, **Seus lugares** (o local principal e os lugares extras dele, com 1 dica em cada um e, se houver plano, só o passo combinado) e **Dicas para você**. Eles **não veem nada** da operação da equipe: nem mapa, bairro, outras pessoas do lugar, contagens ou planos internos.
 
 1. **Convidar** — *+ Novo → Convidar equipe*, com a função `Mentorado` (ex.: `Marina Souza; marina@...; Mentorada exclusiva; Esmeraldas; ; 2`). A mensagem do convite já fala do portal.
 2. **Montar a jornada** — *Rede → Mentorados* → *Jornada*. Dá para começar com a sugestão e ajustar ao método Elite.
-3. **Ligar cada mentorado** — *Rede → Mentorados* → *Editar*: contato da equipe e próximo encontro.
+3. **Ligar e confirmar cada mentorado** — *Rede → Mentorados* → *Editar*: contato da equipe, próximo encontro e a pessoa do mapa. Marque **Confirmo que esta pessoa do mapa é este mentorado**: só depois disso o portal mostra os lugares dele (antes, ele vê "Peça à equipe para confirmar seu cadastro"). Isso evita ligar o login à pessoa errada quando há duas com o mesmo nome na cidade.
+   No portal, **Não frequento mais** tira um lugar extra (vale como correção feita pelo próprio titular; a página da pessoa mostra só "Um lugar removido pela própria pessoa"). O local principal não sai pelo portal: ele fala com o contato da equipe.
 4. **Materiais** — *Rede → Materiais* (ou *+ Novo → Adicionar material*), com *Para quem: Mentorados ou Todos* e situação *Aprovado*.
 5. **Indicações** — o que o mentorado indica entra como lead com origem *Indicação*, direto na agenda do contato dele. Todo mentorado com cidade entra no mapa na hora (pessoa com o papel *Mentorado*); quem foi cadastrado antes ganha o botão *Colocar no mapa* em *Rede → Mentorados*.
 

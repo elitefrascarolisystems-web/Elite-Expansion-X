@@ -77,6 +77,8 @@ export const appUsers = sqliteTable("app_users", {
   portalOwnerEmail: text("portal_owner_email").notNull().default(""),
   nextMeetingAt: text("next_meeting_at"),
   nextMeetingNote: text("next_meeting_note").notNull().default(""),
+  /** Dia em que a gestão confirmou qual pessoa do mapa é este mentorado (Rede → Mentorados). Sem isso, o portal não mostra lugares. */
+  personConfirmedAt: text("person_confirmed_at"),
   createdBy: text("created_by").notNull().default(""),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [

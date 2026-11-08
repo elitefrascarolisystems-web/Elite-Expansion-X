@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { BookOpen, CalendarClock, Check, ExternalLink, GraduationCap, HeartHandshake, LoaderCircle, LogOut, Mail, Send, Sparkles, X } from "lucide-react";
+import { BookOpen, CalendarClock, Check, ExternalLink, GraduationCap, HeartHandshake, LoaderCircle, LogOut, Mail, MapPin, Send, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { GuideButton, TabGuideCard, TabGuideSheet, useGuideContent, useGuidesSeen, type GuideRun } from "@/components/elite/tab-guide";
@@ -55,6 +55,14 @@ export function ClientPortal({ initialData, signOutPath, guideStorageKey }: { in
     const response = await tenantFetch("/api/portal");
     const result = await response.json().catch(() => ({}));
     if (response.ok) setData(result.data);
+  }
+  const [removing, setRemoving] = useState("");
+  async function removePlace(businessId: string, name: string) {
+    if (!window.confirm(`Não frequenta mais ${name}? A equipe deixa de ver este lugar ligado a você.`)) return;
+    setRemoving(businessId);
+    try { await post("place_remove", { businessId }); toast.success("Lugar retirado."); await reload(); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível agora. Tente de novo."); }
+    finally { setRemoving(""); }
   }
   async function toggle(stepId: number, value: boolean) {
     setBusyStep(stepId);
@@ -137,6 +145,21 @@ export function ClientPortal({ initialData, signOutPath, guideStorageKey }: { in
               <Button type="submit" disabled={sending} className="bg-gold text-black">{sending ? <LoaderCircle className="animate-spin" /> : <Send />} Enviar indicação</Button>
             </form>
             {data.referrals.length > 0 && <div className="mt-5 border-t border-white/8 pt-4"><p className="mb-2 text-xs uppercase tracking-[0.14em] text-subtle">Suas indicações ({data.referrals.length})</p><ul className="grid gap-1.5">{data.referrals.slice(0, 8).map((r, i) => <li key={i} className="flex items-center justify-between gap-2 text-sm"><span className="truncate text-zinc-200">{r.name}</span><span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${statusTone[r.status]}`}>{r.status}</span></li>)}</ul></div>}
+          </article>
+
+          <article className="elite-card p-6" aria-label="Seus lugares">
+            <p className="section-kicker">Onde você já circula</p><h2 className="flex items-center gap-2 text-xl font-semibold text-white"><MapPin className="size-5 text-gold-soft" />Seus lugares</h2>
+            {!data.confirmed ? <p className="mt-2 text-sm text-zinc-300">Peça à equipe para confirmar seu cadastro{data.owner ? ` (${data.owner.name})` : ""}. Depois disso, seus lugares aparecem aqui.</p>
+              : !data.places.length ? <p className="mt-2 text-sm text-zinc-300">Nenhum lugar ligado a você ainda. Conte para {data.owner?.name ?? "a equipe"} onde você trabalha ou participa (trabalho, negócios e comunidades).</p>
+              : <ul className="mt-3 grid gap-3">{data.places.map((pl) => <li key={pl.businessId} className="rounded-lg border border-white/8 p-3 text-sm">
+                <p className="font-medium text-white">{pl.name}{pl.main && <span className="elite-guide-badge ml-2">Principal</span>}</p>
+                <p className="text-xs text-subtle">{pl.link}</p>
+                {pl.agreed && <p className="mt-1 text-xs text-emerald-200">Combinado com a equipe: {pl.agreed}</p>}
+                <p className="mt-2 text-zinc-300">{pl.tip}</p>
+                {pl.main ? <p className="mt-2 text-xs text-subtle">Para mudar seu local principal, fale com {data.owner?.name ?? "a equipe"}.</p>
+                  : <Button type="button" size="sm" variant="ghost" className="mt-2" disabled={removing === pl.businessId} onClick={() => removePlace(pl.businessId, pl.name)}>Não frequento mais</Button>}
+              </li>)}</ul>}
+            {data.tips.length > 0 && <div className="mt-5 border-t border-white/8 pt-4"><p className="mb-2 text-xs uppercase tracking-[0.14em] text-subtle">Dicas para você</p><ul className="grid gap-2 text-sm text-zinc-300">{data.tips.map((t) => <li key={t} className="flex gap-2"><Sparkles className="mt-0.5 size-4 shrink-0 text-gold-soft" aria-hidden />{t}</li>)}</ul></div>}
           </article>
         </div>
       </div>

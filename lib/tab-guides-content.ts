@@ -625,14 +625,14 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "funcoes": [
       "Mentorado"
     ],
-    "paraQueServe": "Acompanhar sua jornada, encontros e indicações.",
+    "paraQueServe": "Acompanhar sua jornada, suas indicações e seus lugares.",
     "passos": [
       "Em \"Sua jornada\", toque no círculo de cada etapa quando concluir.",
-      "Em \"Indicar alguém\", escreva nome e contato de quem aceitou conversar e toque em \"Enviar indicação\".",
-      "Em \"Suas indicações\", acompanhe cada pessoa: Recebida, Em conversa ou Virou cliente."
+      "Em \"Indicar alguém\", envie quem aceitou conversar e acompanhe em \"Suas indicações\".",
+      "Em \"Seus lugares\", veja como abrir portas onde você já circula."
     ],
-    "exemplo": "Bruno indicou a dona da academia onde treina, que aceitou conversar. Ela aparece em \"Suas indicações\" como Recebida, depois Em conversa e, quando comprar, Virou cliente.",
-    "cuidado": "Só indique quem sabe da indicação e autorizou o contato.",
+    "exemplo": "Bruno indicou a dona da academia onde treina, que aceitou conversar; ela aparece em \"Suas indicações\" como Recebida. Em \"Seus lugares\", a academia traz uma dica para propor uma conversa com o responsável.",
+    "cuidado": "Só indique quem sabe da indicação e autorizou o contato. Se deixou de frequentar um lugar, toque em \"Não frequento mais\".",
     "acao": "portal:indicar"
   },
   "pessoa": {

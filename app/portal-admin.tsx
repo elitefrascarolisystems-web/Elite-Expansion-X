@@ -38,7 +38,7 @@ function MemberDialog({ member, data, onClose, onSaved }: { member: Member | nul
     const f = new FormData(event.currentTarget);
     setBusy(true);
     try {
-      await post("set_member", { userId: member.userId, ownerEmail: f.get("ownerEmail") || "", nextMeetingAt: f.get("nextMeetingAt") || null, nextMeetingNote: f.get("nextMeetingNote") || "", personId: f.get("personId") || null });
+      await post("set_member", { userId: member.userId, ownerEmail: f.get("ownerEmail") || "", nextMeetingAt: f.get("nextMeetingAt") || null, nextMeetingNote: f.get("nextMeetingNote") || "", personId: f.get("personId") || null, confirmPerson: f.get("confirmPerson") === "on" });
       toast.success("Portal atualizado."); onSaved();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível salvar. Confira a conexão e tente de novo."); }
     finally { setBusy(false); }
@@ -51,7 +51,8 @@ function MemberDialog({ member, data, onClose, onSaved }: { member: Member | nul
       <fieldset className="grid gap-2 rounded-lg border border-white/8 p-3"><legend className="px-1 text-xs text-zinc-400">Pessoa no mapa (opcional): liga as indicações à rede de indicações</legend>
         <select aria-label="Cidade da pessoa" value={cityId} onChange={(e) => setCityId(Number(e.target.value))} className="commercial-input">{data.cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
         {cityId > 0 && <TerritoryPersonPicker key={cityId} cityId={cityId} name="personId" initialValue={member.personId ?? ""} />}
-        {member.personName && <p className="text-xs text-subtle">Ligada hoje a: {member.personName}</p>}
+        {member.personName && <p className="text-xs text-subtle">Ligada hoje a: {member.personName}{member.personConfirmedAt ? ` · confirmada em ${member.personConfirmedAt.slice(8, 10)}/${member.personConfirmedAt.slice(5, 7)}` : " · ainda não confirmada"}</p>}
+        <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="confirmPerson" className="mt-1" defaultChecked={false} />Confirmo que esta pessoa do mapa é este mentorado. Só depois disso o portal mostra os lugares dele.</label>
       </fieldset>
       <div className="flex justify-end gap-2"><Button type="button" variant="ghost" disabled={busy} onClick={onClose}>Cancelar</Button><Button type="submit" disabled={busy} className="bg-gold text-black">{busy && <LoaderCircle className="animate-spin" />}Salvar</Button></div>
     </form>}

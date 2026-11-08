@@ -26,11 +26,16 @@ Objetivo: em uma semana, ter no mapa quem já existe (mentorados, vendas e indic
 - Toda manhã: *Hoje → Sua agenda* (atrasados e de hoje).
 - Novo contato: *+ Novo → Novo atendimento*, com **Quem indicou** logo no começo.
 - Fechou: na ficha da pessoa no mapa, **Registrar venda** → *Pagamento confirmado*. O pino fica dourado na hora.
+- Para ver tudo de alguém num lugar só: **Abrir página da pessoa** (na ficha do mapa ou pela busca, Ctrl+K) e siga o **Próximo passo**. Em *Lugares*, ligue os lugares onde ela tem vínculo (com a autorização dela), planeje e registre as visitas de plantio.
 
 **Mentorado (portal, celular)**
+- Antes: a gestão confirma em *Rede → Mentorados* qual pessoa do mapa é o mentorado (libera **Seus lugares**).
 - Entra no portal e usa **Indicar alguém**. A indicação cai na agenda de quem o acompanha e já entra no mapa ligada a ele. Quando a pessoa indicada compra, o portal mostra “Virou cliente” e o mentorado vira Multiplicador no mapa.
 
 ## Dia 6 — Olhar o mapa e decidir (gestão, 20 min)
+
+- *Resultados → Calculadora*: digite a meta e a data, veja quanto falta e o que muda a data em *E se…?*; quando fizer sentido, **Aplicar como meta** e **Dividir pela equipe**. A meta passa a aparecer em *Hoje*, em *Metas e rotina* e em *Saúde das cidades*. Em **Onde buscar**, abra as listas e a página de cada pessoa.
+- *Território → Locais → A revisar*: corrija setor, local ou vínculo dos lugares marcados (igreja, clínica, associação, escola, sem setor).
 
 - *Território → Mapa → Explorar*: a legenda conta Leads, Clientes, Indicadores e Multiplicadores no filtro atual. Onde há clientes e nenhum indicador, falta pedir indicação. Onde só há leads, falta atendimento.
 - *Rede → Indicações → Árvore por ramos*: quem puxa a rede e quem ainda não indicou ninguém (botão **Quem indicou?** para completar).
@@ -44,4 +49,6 @@ Para cada pessoa que usou, três perguntas: onde travou, o que não entendeu, o 
 
 - Nunca cadastre endereço de residência: pessoas aparecem no local de trabalho, no centro do bairro ou no centro da cidade.
 - Contato (WhatsApp ou e-mail) só com autorização da pessoa; na importação, a confirmação vale para a planilha inteira.
+- Cada aba tem o guia **Como usar** (botão no topo): 3 passos, um exemplo e um cuidado.
+- Lugares de pessoas só com a autorização delas: trabalho, negócios e comunidades; nunca a casa, sem horários. Igreja não recebe pessoas; em clínica, só quem trabalha ali.
 - Os links de acesso são pessoais. Quem sair da equipe é desativado em *Time e acessos*.

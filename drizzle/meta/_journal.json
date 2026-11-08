@@ -225,6 +225,13 @@
       "when": 1794161208694,
       "tag": "0031_person_places",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1794165700206,
+      "tag": "0032_portal_person_confirmed",
+      "breakpoints": true
     }
   ]
 }
