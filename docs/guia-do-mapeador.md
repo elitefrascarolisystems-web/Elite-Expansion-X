@@ -22,6 +22,7 @@ O que fazer, em que ordem e as regras do mapeamento. A mesma versão fica na pla
 9. Venda: na ficha da pessoa no mapa, “Registrar venda”. Com o pagamento confirmado o círculo fica dourado (Cliente); se ela indicar alguém vira Indicador; se a indicação comprar, Multiplicador.
 10. Atendimento: se a pessoa autorizou o contato, use “Iniciar atendimento” (na ficha do mapa ou logo depois de cadastrá-la). O atendimento começa com o primeiro retorno já marcado na agenda. Depois siga em Vendas → Agenda com o roteiro do Método F.E.C.H.A.; ao confirmar o pagamento, a oportunidade fecha sozinha como Ganho.
 11. Agenda: ao entrar, “Sua agenda” mostra seus retornos atrasados e os de hoje. Comece por eles.
+12. Página da pessoa: na ficha do mapa, “Abrir página da pessoa” mostra tudo dela num lugar só e o próximo passo, a um toque. Ela não mostra contato nem pode ser impressa; o envio continua pela ficha do atendimento.
 
 ## No celular e sem internet
 

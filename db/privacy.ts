@@ -202,6 +202,8 @@ export async function anonymizeSubject(a: AccessView, input: unknown) {
       db.prepare("DELETE FROM territory_roles WHERE person_id=?").bind(id),
       db.prepare("DELETE FROM territory_locations WHERE entity_key=?").bind(`person:${id}`),
       db.prepare("UPDATE territory_actions SET name=?,updated_at=? WHERE person_id=?").bind(REMOVED_NOTE, now, id),
+      // Vínculos de indicação antigos guardavam uma observação livre: o resumo vira só o fato.
+      db.prepare("UPDATE audit_logs SET summary='Vínculo de indicação (dados do titular anonimizados).' WHERE organization_id=? AND action='link_referral' AND instr(summary, ?)>0").bind(a.organizationId, id),
     );
   }
   if (s.lead) {

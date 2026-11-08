@@ -77,7 +77,7 @@ function SearchDialog({ sales, commands, onClose, onRun, onPick }: { sales: bool
         ]);
         const places: Hit[] = territory.slice(0, 8).map((r) => ({
           id: r.key, group: r.kind === "city" ? "Cidades" : "Pessoas e locais", title: r.name,
-          detail: [KIND_LABEL[r.kind] ?? r.kind, r.kind === "city" ? r.state : r.cityName, r.place?.name].filter(Boolean).join(" · "),
+          detail: [KIND_LABEL[r.kind] ?? r.kind, r.kind === "city" ? r.state : r.cityName, r.place && !r.place.review ? r.place.name : ""].filter(Boolean).join(" · "),
           icon: r.kind === "city" ? MapPin : r.kind === "person" ? UserRound : Building2, run: () => pickRef.current({ kind: "territory", key: r.key }),
         }));
         const deals: Hit[] = followup.slice(0, 6).map((r) => ({

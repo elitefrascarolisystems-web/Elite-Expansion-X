@@ -10,10 +10,12 @@ export type TerritoryRecord = {
   name: string; roles: string[]; status: string; responsible: string; lastActivity: string;
   nextAction: string; dueDate: string; location: TerritoryLocation | null;
   ambassadorId: number | null; leadId: number | null; referrerId: string | null;referrerName?:string;
+  /** Comercial: indicada por alguém fora do acesso dele (sem id nem nome). */
+  referrerOutside?: boolean;
   /** Quem esta pessoa indicou (nome só para a gestão) e se já comprou. */
   referred?: { name: string; client: boolean }[];
   /** Local (empresa, escritório, network) ao qual a pessoa se liga. */
-  place?: { id: string; name: string; type: string; link: string };
+  place?: { id: string; name: string; type: string; link: string; review?: boolean };
   /** Bairro da pessoa; `located` diz se o bairro já tem ponto no mapa. */
   region?: { id: string; name: string; located: boolean };
 };

@@ -136,16 +136,17 @@ function ImportDialog({ open, onClose, onSaved }: { open: boolean; onClose: () =
 }
 
 /** Na ficha do atendimento: escolhe um gancho aprovado, já preenchido, e copia. */
-export function HookPicker({ context, onClose }: { context: HookContext | null; onClose: () => void }) {
+/** `initialSituation`: a situação já escolhida (ex.: "Indicação" na página da pessoa). */
+export function HookPicker({ context, onClose, initialSituation = "" }: { context: HookContext | null; onClose: () => void; initialSituation?: string }) {
   return <Dialog open={context !== null} onOpenChange={(open) => { if (!open) onClose(); }}><DialogContent className="max-h-[92dvh] overflow-y-auto text-white sm:max-w-xl">
-    {context && <PickerBody context={context} />}
+    {context && <PickerBody context={context} initialSituation={initialSituation} />}
   </DialogContent></Dialog>;
 }
 
-function PickerBody({ context }: { context: HookContext }) {
+function PickerBody({ context, initialSituation = "" }: { context: HookContext; initialSituation?: string }) {
   const [data, setData] = useState<Loaded | null>(null);
   const [error, setError] = useState("");
-  const [situation, setSituation] = useState("");
+  const [situation, setSituation] = useState(initialSituation);
   useEffect(() => { let alive = true; load().then((v) => { if (alive) setData(v); }).catch((e) => { if (alive) setError(e instanceof Error ? e.message : "Não foi possível carregar."); }); return () => { alive = false; }; }, []);
   const approved = (data?.hooks ?? []).filter((h) => h.status === "Aprovado" && (!situation || h.situation === situation));
   return <>

@@ -4,6 +4,7 @@ import {scope,entity,CommercialError} from '@/db/commercial';
 import type {AccessView} from '@/lib/expansion-types';
 import {commandSchema,transition,fechaStatus,rowDue,type Followup,type FollowupRow} from '@/lib/followup';
 import {z} from 'zod';
+import {ANONYMOUS_LABEL} from '@/lib/privacy';
 const rows=async(sql:string,args:(string|number|null)[]=[])=> (await database().prepare(sql).bind(...args).all()).results as Record<string,unknown>[];
 export async function getFollowup(a:AccessView,p:URLSearchParams){
  const s=scope(a),args=[...s.args],where=[s.sql,"l.consent_revoked_at IS NULL AND l.status<>'Cancelado'"];
@@ -39,8 +40,11 @@ export async function saveFollowup(a:AccessView,input:unknown){
 }
 function peopleScope(a:AccessView){scope(a);const args:(string|number|null)[]=[a.organizationId];let sql='p.city_id IN (SELECT id FROM cities WHERE organization_id=?)';
  if(a.role!=='Administrador'&&a.cityId){sql+=' AND p.city_id=?';args.push(a.cityId);}else if(a.role!=='Administrador'&&a.role!=='Comercial')sql+=' AND 1=0';
- if(a.role==='Comercial'){sql+=" AND EXISTS(SELECT 1 FROM leads l WHERE l.person_id=p.id AND lower(l.assigned_to_email)=lower(?) AND l.consent_revoked_at IS NULL AND l.status<>'Cancelado')";args.push(a.email);}
- sql+=" AND NOT EXISTS(SELECT 1 FROM leads l WHERE l.person_id=p.id AND (l.consent_revoked_at IS NOT NULL OR l.status='Cancelado'))";return {sql,args};}
+ // O mesmo escopo do mapa e da página da pessoa: com atendimento dele, ou cadastradas por ele.
+ if(a.role==='Comercial'){sql+=" AND (EXISTS(SELECT 1 FROM leads l WHERE l.person_id=p.id AND lower(l.assigned_to_email)=lower(?) AND l.consent_revoked_at IS NULL AND l.status<>'Cancelado') OR lower(p.created_by)=lower(?))";args.push(a.email,a.email);}
+ sql+=" AND NOT EXISTS(SELECT 1 FROM leads l WHERE l.person_id=p.id AND (l.consent_revoked_at IS NOT NULL OR l.status='Cancelado'))";
+ // Titular anonimizado some da Rede, tenha sido embaixador ou não.
+ sql+=` AND p.name NOT LIKE '${ANONYMOUS_LABEL}%'`;return {sql,args};}
 export async function getNetwork(a:AccessView,p:URLSearchParams){
  const s=peopleScope(a),base=`WITH visible AS (SELECT p.* FROM territory_people p WHERE ${s.sql}) `,args=[...s.args];let where='1=1';
  if(p.get('city')){where+=' AND p.city_id=?';args.push(p.get('city')!);}
@@ -63,6 +67,6 @@ export async function linkReferral(a:AccessView,input:unknown){
  const db=database(),now=brazilTimestamp();
  const result=await db.batch([
  db.prepare(`WITH RECURSIVE ancestors(id,referrer_id) AS (SELECT id,referrer_id FROM territory_people WHERE id=? UNION SELECT p.id,p.referrer_id FROM territory_people p JOIN ancestors a ON p.id=a.referrer_id) UPDATE territory_people SET referrer_id=?,updated_at=? WHERE id=? AND referrer_id IS NULL AND NOT EXISTS(SELECT 1 FROM ancestors WHERE id=?)`).bind(v.referrerId,v.referrerId,now,v.personId,v.personId),
- db.prepare("INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,summary,created_at) SELECT ?,?,'link_referral','territory',?,? WHERE changes()>0").bind(a.organizationId,a.email,`${v.referrerId} → ${v.personId}${v.note?`: ${v.note}`:''}`,now)
+ db.prepare("INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,summary,created_at) SELECT ?,?,'link_referral','territory',?,? WHERE changes()>0").bind(a.organizationId,a.email,`${v.referrerId} → ${v.personId}`,now)
  ]);if(!result[0].meta.changes)throw new CommercialError('O vínculo mudou ou criaria um ciclo. Atualize a rede.',409);return {id:v.personId};
 }

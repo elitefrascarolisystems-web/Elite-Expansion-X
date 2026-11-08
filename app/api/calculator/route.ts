@@ -3,6 +3,7 @@ import { getTeamAccess } from "@/db/access";
 import { CalculatorError, getCalculatorBase } from "@/db/calculator";
 import { applyGoal, goalHistory, goalProgress, GoalError, listGoals, managementPremises, splitBase, splitGoal } from "@/db/goals";
 import { sameOrigin } from "@/lib/session-cookie";
+import { PersonPageError, whereToLook, WHERE_LISTS, type WhereList } from "@/db/person-page";
 import { organizationFromRequest } from "@/lib/tenant-request";
 import { ZodError } from "zod";
 
@@ -18,7 +19,7 @@ async function access(request: Request) {
 }
 
 function fail(error: unknown) {
-  if (error instanceof CalculatorError || error instanceof GoalError) return Response.json({ error: error.message }, { status: error.status, headers });
+  if (error instanceof CalculatorError || error instanceof GoalError || error instanceof PersonPageError) return Response.json({ error: error.message }, { status: error.status, headers });
   if (error instanceof ZodError) return Response.json({ error: error.issues[0]?.message ?? "Dados inválidos." }, { status: 400, headers });
   return Response.json({ error: "Não foi possível calcular agora. Tente de novo." }, { status: 503, headers });
 }
@@ -36,6 +37,11 @@ export async function GET(request: Request) {
     const raw = params.get("cityId");
     const cityId = raw && /^\d+$/.test(raw) ? Number(raw) : null;
     const view = params.get("view");
+    // "Onde buscar": à parte da resposta das taxas; a lista (até 50, só nome e motivo) vem por pedido.
+    if (view === "where") {
+      const list = params.get("list");
+      return Response.json({ data: await whereToLook(a, list && list in WHERE_LISTS ? list as WhereList : null, cityId) }, { headers });
+    }
     if (view === "goals") return Response.json({ data: await goalProgress(a) }, { headers });
     if (view === "split") {
       if (!cityId) throw new GoalError("Escolha a cidade.");

@@ -48,7 +48,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "passos": [
       "Toque em \"Mapear\" e siga: cidade, local e pessoas.",
       "No alto do mapa, troque o jeito de ver: \"Explorar\" para agir, \"Cobertura\" para ver o que falta.",
-      "Toque num ponto para abrir a ficha e use \"Iniciar atendimento\"."
+      "Toque num ponto e em \"Abrir página da pessoa\" para ver o próximo passo."
     ],
     "exemplo": "Ana mapeou a Padaria Pão Dourado e ligou Bruno como Colaborador. Bruno aparece no ponto da padaria, nunca na casa dele; sem local, apareceria no centro do bairro ou da cidade. Ele autorizou o contato, e Ana registrou isso em \"Iniciar atendimento\".",
     "cuidado": "Nunca cadastre endereço de casa; atendimento só com a autorização de contato registrada.",
@@ -634,5 +634,22 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "exemplo": "Bruno indicou a dona da academia onde treina, que aceitou conversar. Ela aparece em \"Suas indicações\" como Recebida, depois Em conversa e, quando comprar, Virou cliente.",
     "cuidado": "Só indique quem sabe da indicação e autorizou o contato.",
     "acao": "portal:indicar"
+  },
+  "pessoa": {
+    "titulo": "Como usar: Página da pessoa",
+    "funcoes": [
+      "Administrador",
+      "Coordenação",
+      "Líder",
+      "Comercial"
+    ],
+    "paraQueServe": "Ver tudo de uma pessoa num lugar só e o próximo passo com ela.",
+    "passos": [
+      "Comece pelo \"Próximo passo\": é a ação mais importante agora.",
+      "Em \"Resumo\", veja o atendimento, quem indicou e como abordar.",
+      "Em \"Histórico\", veja o que já aconteceu, dia a dia."
+    ],
+    "exemplo": "Maria é Cliente e sócia da Padaria Pão Dourado. O Próximo passo dela é \"Pedir indicação\": o gancho já vem pronto em \"Como abordar\", com \"Copiar\".",
+    "cuidado": "A página não mostra contato: o envio continua pela ficha do atendimento. Ela não pode ser impressa nem exportada."
   }
 };

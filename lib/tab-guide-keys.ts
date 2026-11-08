@@ -15,6 +15,8 @@ export const GUIDE_KEYS = [
   "gestao/time", "gestao/regras", "gestao/identidade", "gestao/plano", "gestao/historico", "gestao/privacidade", "gestao/avisos", "gestao/assessoria",
   "plataforma/assinaturas", "plataforma/pedidos", "plataforma/assessores",
   "portal:embaixador", "portal:mentorado",
+  // Página da pessoa: abre por cima de qualquer tela (&ficha=pessoa:<id>), sem aba própria.
+  "pessoa",
 ] as const;
 
 export type GuideKey = (typeof GUIDE_KEYS)[number];

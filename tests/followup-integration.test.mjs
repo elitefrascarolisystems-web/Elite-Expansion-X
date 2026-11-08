@@ -100,6 +100,8 @@ test('referrals use existing people, reject cycles and second origin, preserve s
 test('network hides unauthorized ancestors and refuses direct parent traversal',async()=>{
  const m=await setup(),p=await m.mutateTerritory(m.access,'person',person('Private ancestor'));
  await m.linkReferral(m.access,{personId:m.personId,referrerId:p.id,note:'Indicação confirmada'});
+ // O ancestral foi cadastrado por outra pessoa: fora do escopo do Comercial (com atendimento dele ou cadastrado por ele).
+ sqlite.prepare("UPDATE territory_people SET created_by='outra@test.invalid' WHERE id=?").run(p.id);
  const seller={...m.access,role:'Comercial'};const result=await m.getNetwork(seller,new URLSearchParams());
  assert.equal(result.total,1);assert.equal(result.records[0].referrer_id,null);assert.equal(result.records[0].referrer_name,null);assert.ok(!JSON.stringify(result).includes('Private ancestor'));
  await assert.rejects(m.getNetwork(seller,new URLSearchParams('parent='+p.id)),/fora do seu acesso/);

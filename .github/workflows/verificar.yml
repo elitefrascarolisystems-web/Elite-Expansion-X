@@ -55,6 +55,7 @@ jobs:
             tests/notifications.test.mjs \
             tests/offline-queue.test.mjs \
             tests/password-login.test.mjs \
+            tests/person-page.test.mjs \
             tests/places.test.mjs \
             tests/portal.test.mjs \
             tests/privacy.test.mjs \

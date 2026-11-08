@@ -7,6 +7,8 @@ import { QuickSearch } from "@/app/quick-search";
 import { IdentityPanel, logoUrl } from "@/app/identity-panel";
 import type { HookContext } from "@/lib/hooks";
 import type { OpportunityEdit } from "@/app/opportunity-dialog";
+import type { PersonPageAction } from "@/app/person-page";
+import type { AttendancePerson } from "@/app/start-attendance";
 import { copyText } from "@/lib/copy-text";
 import { GettingStarted, WelcomeDialog } from "@/app/getting-started";
 import { NoticesCard, NotificationsPanel } from "@/app/notifications-panel";
@@ -14,7 +16,7 @@ import { OfflineSync } from "@/app/offline-sync";
 import { AgendaBanner } from "@/app/agenda-banner";
 /* eslint-disable @next/next/no-img-element -- QR remoto gerado somente após o administrador configurar o link-base. */
 
-import { lazy, Suspense, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import {
   Activity,
@@ -133,6 +135,18 @@ const HooksBank = lazy(() => import("@/app/hooks-bank").then((m) => ({ default: 
 const HookPicker = lazy(() => import("@/app/hooks-bank").then((m) => ({ default: m.HookPicker })));
 const GoalCalculator = lazy(() => import("@/app/goal-calculator").then((m) => ({ default: m.GoalCalculator })));
 import { GoalCell, useGoalProgress } from "@/app/goal-card";
+/** Página da pessoa no endereço: &ficha=pessoa:<uuid>. Id que não é uuid fecha a página sem erro. */
+const FICHA_EVENT = "elite-ficha";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function fichaPerson(): string | null {
+  const raw = new URLSearchParams(window.location.search).get("ficha") ?? "";
+  const id = raw.startsWith("pessoa:") ? raw.slice(7) : "";
+  return UUID_RE.test(id) ? id : null;
+}
+function subscribeFicha(listener: () => void) {
+  window.addEventListener("popstate", listener); window.addEventListener(FICHA_EVENT, listener);
+  return () => { window.removeEventListener("popstate", listener); window.removeEventListener(FICHA_EVENT, listener); };
+}
 const GoalCard = lazy(() => import("@/app/goal-card").then((m) => ({ default: m.GoalCard })));
 const HowWeCalculate = lazy(() => import("@/app/goal-calculator").then((m) => ({ default: m.HowWeCalculate })));
 const PortalAdmin = lazy(() => import("@/app/portal-admin").then((m) => ({ default: m.PortalAdmin })));
@@ -145,6 +159,8 @@ const SubscriptionRequestsPanel = lazy(() => import("@/app/subscription-requests
 const AdvisorsPanel = lazy(() => import("@/app/advisors-panel").then((m) => ({ default: m.AdvisorsPanel })));
 const ExpansionDialog = lazy(() => import("@/app/expansion-forms").then((m) => ({ default: m.ExpansionDialog })));
 const OpportunityDialog = lazy(() => import("@/app/opportunity-dialog").then((m) => ({ default: m.OpportunityDialog })));
+const PersonPageSheet = lazy(() => import("@/app/person-page").then((m) => ({ default: m.PersonPageSheet })));
+const StartAttendanceDialog = lazy(() => import("@/app/start-attendance").then((m) => ({ default: m.StartAttendanceDialog })));
 const MappingWizard = lazy(() => import("@/app/mapping-wizard").then((m) => ({ default: m.MappingWizard })));
 
 /** Depois que a tela abre, baixa em segundo plano as janelas e telas mais usadas (e o app as guarda para usar sem internet). */
@@ -419,6 +435,10 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const [mapLeadId, setMapLeadId] = useState<number | undefined>();
   // Registro do mapa aberto pela busca (cidade, pessoa, local, parceiro, evento).
   const [mapFocusKey, setMapFocusKey] = useState<string | undefined>();
+  const [mapIntent, setMapIntent] = useState<"edit" | "activity" | undefined>();
+  const personPageId = useSyncExternalStore(subscribeFicha, fichaPerson, () => null);
+  const pagePushed = useRef(false);
+  const [attendPerson, setAttendPerson] = useState<AttendancePerson | null>(null);
   const [mappingOpen, setMappingOpen] = useState(false);
   // Ficha do atendimento → dados da oportunidade ou nova atividade.
   const [opportunityEdit, setOpportunityEdit] = useState<OpportunityEdit | null>(null);
@@ -440,7 +460,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const firstVisit = guideKey !== null && guides.ready && !welcomeOpen && !guides.seen.has(guideKey);
   // Sem internet antes de o texto do guia chegar: avisa e fecha (o navegador guarda a falha do download até recarregar).
   const wantGuide = useRef(false);
-  const guideFetch = useGuideContent(guideKey !== null && (guideOpen || firstVisit), () => {
+  const guideFetch = useGuideContent((guideKey !== null && (guideOpen || firstVisit)) || personPageId !== null, () => {
     if (!wantGuide.current) return;
     wantGuide.current = false; setGuideOpen(false);
     toast.error("Sem conexão: o guia não abriu. Com internet, recarregue a página.");
@@ -475,7 +495,10 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
     if (next.view) url.searchParams.set("ver", next.view); else url.searchParams.delete("ver");
     // O modo do mapa (&modo=calor) só vale na tela do mapa.
     if (next.area !== "territorio" || next.view !== "mapa") url.searchParams.delete("modo");
+    // A página da pessoa fecha ao trocar de área.
+    url.searchParams.delete("ficha"); pagePushed.current = false;
     window.history.pushState(null, "", url);
+    window.dispatchEvent(new Event(FICHA_EVENT));
     window.scrollTo({ top: 0 });
   }
   /** "mapear" abre o mapeamento guiado; "area/sub-aba" leva até a tela. */
@@ -485,8 +508,27 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
     navigate(resolveLocation(areas, data.access, area, sub));
   };
   const openFollowup = (leadId: number) => { setFollowupLeadId(leadId); navigate({ area: "vendas", view: "agenda" }); };
-  const openMapPerson = (personId: string) => { setMapPersonId(personId); setMapLeadId(undefined); setMapFocusKey(undefined); navigate({ area: "territorio", view: "mapa" }); };
+  const openMapPerson = (personId: string) => { setMapIntent(undefined); setMapPersonId(personId); setMapLeadId(undefined); setMapFocusKey(undefined); navigate({ area: "territorio", view: "mapa" }); };
   const openMapLead = (leadId: number) => { setMapPersonId(undefined); setMapLeadId(leadId); setMapFocusKey(undefined); navigate({ area: "territorio", view: "mapa" }); };
+  /** Abre a página da pessoa por cima da tela atual: voltar fecha e devolve para onde estava. */
+  const openPersonPage = (personId: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("ficha", `pessoa:${personId}`);
+    if (pagePushed.current) window.history.replaceState(null, "", url); else window.history.pushState(null, "", url);
+    pagePushed.current = true;
+    window.dispatchEvent(new Event(FICHA_EVENT));
+  };
+  const dropFicha = () => { const url = new URL(window.location.href); url.searchParams.delete("ficha"); window.history.replaceState(null, "", url); pagePushed.current = false; window.dispatchEvent(new Event(FICHA_EVENT)); };
+  const closePersonPage = () => { if (pagePushed.current) { pagePushed.current = false; window.history.back(); } else dropFicha(); };
+  const personAction = (action: PersonPageAction) => {
+    dropFicha();
+    if (action.type === "map") openMapPerson(action.personId);
+    else if (action.type === "edit" || action.type === "interaction") { openMapPerson(action.personId); setMapIntent(action.type === "edit" ? "edit" : "activity"); }
+    else if (action.type === "followup") openFollowup(action.leadId);
+    else if (action.type === "sale") setDialog({ name: "sale", entityId: action.leadId });
+    else if (action.type === "start") setAttendPerson(action.person);
+    else if (action.type === "go") go(action.target);
+  };
   const openMapKey = (key: string) => { setMapPersonId(undefined); setMapLeadId(undefined); setMapFocusKey(key); navigate({ area: "territorio", view: "mapa" }); };
 
   async function refreshDashboard(){const r=await tenantFetch("/api/dashboard");const v=await r.json();if(!r.ok)throw new Error(v.error);setData(v.data);}
@@ -564,7 +606,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const outline = "border-white/10 bg-white/5 text-white";
 
   return <>
-    <AppShell logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={{ ...(pending ? { vendas: pending } : {}), ...(data.subscriptionRequests ? { plataforma: data.subscriptionRequests } : {}) }} actions={actions} onNavigate={(next) => navigate(next)} onGuide={guideKey ? openGuide : undefined} search={<QuickSearch sales={canPipeline} commands={{ areas, current: location, actions, onNavigate: (next) => navigate(next), help: { role: data.access.role, organizationName: data.access.organizationName, onOpen: (next) => { navigate(next); openGuide(); }, onReset: resetGuides } }} onPick={(pick) => (pick.kind === "territory" ? openMapKey(pick.key) : openFollowup(pick.leadId))} />} notice={<><OfflineSync access={data.access} cities={data.cities} onSynced={refreshDashboard} /><InstallAppBanner /></>}>
+    <AppShell logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={{ ...(pending ? { vendas: pending } : {}), ...(data.subscriptionRequests ? { plataforma: data.subscriptionRequests } : {}) }} actions={actions} onNavigate={(next) => navigate(next)} onGuide={guideKey ? openGuide : undefined} search={<QuickSearch sales={canPipeline} commands={{ areas, current: location, actions, onNavigate: (next) => navigate(next), help: { role: data.access.role, organizationName: data.access.organizationName, onOpen: (next) => { navigate(next); openGuide(); }, onReset: resetGuides } }} onPick={(pick) => (pick.kind === "territory" ? (pick.key.startsWith("person:") ? openPersonPage(pick.key.slice(7)) : openMapKey(pick.key)) : openFollowup(pick.leadId))} />} notice={<><OfflineSync access={data.access} cities={data.cities} onSynced={refreshDashboard} /><InstallAppBanner /></>}>
       {/* Telas que vêm sob demanda: enquanto o código delas chega, o esqueleto no formato da tela. */}
       <Suspense fallback={<PanelSkeleton label="Carregando a tela…" />}><div className="space-y-5">
         {firstVisit && guide && here !== "territorio/mapa" && <TabGuideCard guide={guide} action={guideAction} onOpen={openGuide} onDone={() => guides.markSeen(guide.key)} />}
@@ -573,24 +615,24 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
 
         {location.area === "hoje" && <TodayPanel data={data} view={fullView} onGo={go} onFollowup={openFollowup} shortcuts={actions.filter((action) => action.group === "dia" && action.id !== "atendimento-mapa")} />}
 
-        {here === "territorio/mapa" && <>{/* Mapa em primeiro lugar: as ações principais ficam na barra do próprio mapa. */}<TerritorialMap guideChip={firstVisit && guide ? <TabGuideChip label="Como usar o mapa" onOpen={openGuide} onDone={() => guides.markSeen("territorio/mapa")} /> : undefined} actions={canMap ? <><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-gold text-black"><MapPin /><span>Mapear<span className="territory-bar-label"> local e pessoas</span></span></Button><Button asChild variant="outline" title="Imprimir mapa (A3/PDF)"><a href={`/imprimir/mapa?org=${data.access.organizationId}`} target="_blank" rel="noopener"><Printer /><span className="territory-bar-label">Imprimir</span><span className="sr-only"> mapa (A3/PDF)</span></a></Button></> : undefined} key={mapFocusKey || mapPersonId || mapLeadId || "map"} focusKey={mapFocusKey} focusPersonId={mapPersonId} focusLeadId={mapLeadId} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canImport && <PeopleImport data={data} onSaved={refreshDashboard} />}</>}
+        {here === "territorio/mapa" && <>{/* Mapa em primeiro lugar: as ações principais ficam na barra do próprio mapa. */}<TerritorialMap guideChip={firstVisit && guide ? <TabGuideChip label="Como usar o mapa" onOpen={openGuide} onDone={() => guides.markSeen("territorio/mapa")} /> : undefined} actions={canMap ? <><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-gold text-black"><MapPin /><span>Mapear<span className="territory-bar-label"> local e pessoas</span></span></Button><Button asChild variant="outline" title="Imprimir mapa (A3/PDF)"><a href={`/imprimir/mapa?org=${data.access.organizationId}`} target="_blank" rel="noopener"><Printer /><span className="territory-bar-label">Imprimir</span><span className="sr-only"> mapa (A3/PDF)</span></a></Button></> : undefined} key={`${mapFocusKey || mapPersonId || mapLeadId || "map"}${mapIntent ?? ""}`} focusKey={mapFocusKey} focusPersonId={mapPersonId} focusLeadId={mapLeadId} focusIntent={mapIntent} onPersonPage={openPersonPage} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canImport && <PeopleImport data={data} onSaved={refreshDashboard} />}</>}
         {here === "territorio/cidades" && <><ActionBar hint="Saúde de cada cidade, decisão registrada e fechamentos consolidados.">{canPerform(data.access, "record_city") && <Button onClick={() => setDialog({ name: "city-result" })} variant="outline" className={outline}><Activity /> Fechamento consolidado</Button>}{canCity && <Button onClick={() => setDialog({ name: "city" })} className="bg-gold text-black">Cadastrar cidade</Button>}</ActionBar><CityTable cities={view.cities} onCreate={canCity ? () => setDialog({ name: "city" }) : undefined} onEdit={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canMap && data.cities.length > 0 && <RegionPanel data={data} onChanged={refreshDashboard} />}<TerritoryDecisions data={data} /></>}
         {here === "territorio/locais" && <CommercialWorkspace data={data} mode="businesses" onRefresh={refreshDashboard} />}
 
         {here === "vendas/atendimentos" && <PendingAttendances data={data} onDone={refreshDashboard} />}
-        {followupView && <FollowupWorkspace key={followupLeadId ?? "all"} view={followupView} data={data} focusLeadId={followupLeadId} onRefresh={refreshDashboard} onMap={openMapPerson} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} onNewLead={() => setDialog({ name: "lead" })} onEditOpportunity={(mode, row) => setOpportunityEdit({ mode, row })} onHook={(row) => setHookContext({ name: row.lead_name, city: row.city_name, owner: row.owner_name || row.owner_email, organization: data.access.organizationName })} onCRM={() => navigate({ area: "vendas", view: "atendimentos" })} />}
+        {followupView && <FollowupWorkspace key={followupLeadId ?? "all"} view={followupView} data={data} focusLeadId={followupLeadId} onRefresh={refreshDashboard} onMap={openMapPerson} onPersonPage={openPersonPage} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} onNewLead={() => setDialog({ name: "lead" })} onEditOpportunity={(mode, row) => setOpportunityEdit({ mode, row })} onHook={(row) => setHookContext({ name: row.lead_name, city: row.city_name, owner: row.owner_name || row.owner_email, organization: data.access.organizationName })} onCRM={() => navigate({ area: "vendas", view: "atendimentos" })} />}
         {here === "vendas/ganchos" && <HooksBank />}
         {here === "vendas/pagamentos" && <><ActionBar hint="Cada atendimento com a etapa, a venda e o valor. A receita só conta depois do pagamento confirmado.">{canSale && <Button disabled={!eligibleLeads.length} title={!eligibleLeads.length ? "Comece um atendimento antes de registrar uma venda." : undefined} onClick={() => setDialog({ name: "sale" })} className="bg-gold text-black"><Banknote /> Registrar venda e pagamento</Button>}</ActionBar><Pipeline view={view} filtered={showFilters} onCreate={canPipeline ? () => setDialog({ name: "lead" }) : undefined} onMap={openMapLead} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} canEdit={canPerform(data.access, "update_lead") || canSale} /></>}
 
         {here === "rede/embaixadores" && <><ActionBar hint="Etapa, treinamento, atividade e resultado de cada embaixador, e as missões da semana.">{canPerform(data.access, "record_ambassador") && <Button disabled={!data.ambassadors.length} title={!data.ambassadors.length ? "Cadastre um embaixador antes de registrar atividade." : undefined} onClick={() => setDialog({ name: "ambassador-activity" })} variant="outline" className={outline}><Activity /> Registrar atividade</Button>}{canTask && <Button disabled={!data.ambassadors.length} onClick={() => setDialog({ name: "task" })} variant="outline" className={outline}><ClipboardCheck /> Criar tarefa</Button>}{canAmbassador && <Button onClick={() => setDialog({ name: "ambassador" })} className="bg-gold text-black">Cadastrar embaixador</Button>}</ActionBar><AmbassadorTable ambassadors={view.ambassadors} onCreate={canAmbassador ? () => setDialog({ name: "ambassador" }) : undefined} onEdit={canPerform(data.access, "update_ambassador") ? (id) => setDialog({ name: "ambassador-edit", entityId: id }) : undefined} /><Missions data={data} onCompleteTask={(id) => save("complete_task", { taskId: id })} saving={saving} onCreate={canTask && data.ambassadors.length ? () => setDialog({ name: "task" }) : undefined} /></>}
         {here === "rede/indicacoes" && canImport && <NetworkImport data={data} onSaved={refreshDashboard} onMap={() => navigate({ area: "territorio", view: "mapa" })} />}
-        {here === "rede/indicacoes" && <FollowupWorkspace view="network" data={data} onFocusLead={openFollowup} onRefresh={refreshDashboard} onMap={openMapPerson} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} onNewLead={() => setDialog({ name: "lead" })} onCRM={() => navigate({ area: "vendas", view: "atendimentos" })} />}
+        {here === "rede/indicacoes" && <FollowupWorkspace view="network" data={data} onFocusLead={openFollowup} onRefresh={refreshDashboard} onMap={openMapPerson} onPersonPage={openPersonPage} onLead={(id) => setDialog({ name: "lead-status", entityId: id })} onSale={(id) => setDialog({ name: "sale", entityId: id })} onNewLead={() => setDialog({ name: "lead" })} onCRM={() => navigate({ area: "vendas", view: "atendimentos" })} />}
         {here === "rede/mentorados" && <PortalAdmin data={data} onGo={go} />}
         {here === "rede/parceiros" && <><ActionBar hint="Quem abre portas na cidade e as ações locais planejadas.">{canOperation && <><Button onClick={() => setDialog({ name: "partner" })} variant="outline" className={outline}><Handshake /> Cadastrar parceiro</Button><Button onClick={() => setDialog({ name: "event" })} className="bg-gold text-black"><CalendarDays /> Cadastrar evento</Button></>}</ActionBar><PartnersEvents data={data} onPartner={canOperation ? () => setDialog({ name: "partner" }) : undefined} onEvent={canOperation ? () => setDialog({ name: "event" }) : undefined} /></>}
         {here === "rede/materiais" && <><ActionBar hint="Mensagens, vídeos e roteiros aprovados. Escolha para quem: embaixadores, mentorados ou todos.">{canContent && <Button onClick={() => setDialog({ name: "content" })} className="bg-gold text-black"><Library /> Adicionar material</Button>}</ActionBar><Materials data={data} onCreate={canContent ? () => setDialog({ name: "content" }) : undefined} /></>}
 
         {here === "resultados/visao" && <ResultsOverview view={view} canExport={data.plan?.exports !== false} />}
-        {here === "resultados/calculadora" && <GoalCalculator access={data.access} cities={data.cities.map((c) => ({ id: c.id, name: c.name }))} organizationName={data.access.organizationName} />}
+        {here === "resultados/calculadora" && <GoalCalculator access={data.access} cities={data.cities.map((c) => ({ id: c.id, name: c.name }))} organizationName={data.access.organizationName} onPersonPage={openPersonPage} />}
         {here === "resultados/metas" && <CommercialWorkspace data={data} mode="team" onRefresh={refreshDashboard} />}
         {here === "resultados/mapeamento" && (data.mappingStats ? <MappingStatsPanel stats={data.mappingStats} /> : <article className="elite-card"><EmptyState title="Sem dados de mapeamento" description="Os indicadores aparecem quando houver locais e pessoas no mapa." /></article>)}
         {here === "resultados/custos" && <><ActionBar hint="Quanto custa cada resultado, por origem.">{canCost && <Button onClick={() => setDialog({ name: "cost" })} className="bg-gold text-black"><CircleDollarSign /> Registrar custo</Button>}</ActionBar><CostsPanel data={data} view={view} onCreate={canCost ? () => setDialog({ name: "cost" }) : undefined} /></>}
@@ -615,6 +657,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
     {hookContext && <Suspense fallback={null}><HookPicker context={hookContext} onClose={() => setHookContext(null)} /></Suspense>}
     <WelcomeDialog access={data.access} onStart={go} onClose={() => setWelcomeOpen(false)} />
     <TabGuideSheet guide={guide} open={guideOpen} onOpenChange={closeGuide} action={guideAction} onResetAll={resetGuides} />
+    {personPageId && <Suspense fallback={null}><PersonPageSheet personId={personPageId} access={data.access} organizationName={data.access.organizationName} guide={guideFetch.content ? guideFetch.content.resolveGuide("pessoa", data.access.role, data.access.organizationName) : null} guideSeen={guides.seen.has("pessoa")} onGuideSeen={() => guides.markSeen("pessoa")} onClose={closePersonPage} onAction={personAction} /></Suspense>}
+    {attendPerson && <Suspense fallback={null}><StartAttendanceDialog person={attendPerson} data={data} onClose={() => setAttendPerson(null)} onStarted={(leadId) => { setAttendPerson(null); refreshDashboard().catch(() => undefined); openFollowup(leadId); }} /></Suspense>}
     {canMap && mappingOpen && <Suspense fallback={null}><MappingWizard open data={data} onClose={() => setMappingOpen(false)} onSaved={refreshDashboard} /></Suspense>}
   </>;
 }

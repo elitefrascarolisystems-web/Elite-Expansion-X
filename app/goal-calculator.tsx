@@ -18,6 +18,7 @@ import {
 import { copyText } from "@/lib/copy-text";
 import { tenantFetch } from "@/lib/tenant-request";
 import { GoalPanel, type GoalsPayload } from "@/app/goal-apply";
+import { WhereToLook } from "@/app/where-to-look";
 
 const GoalPaceChart = lazy(() => import("@/app/charts/goal-pace-chart"));
 
@@ -58,7 +59,7 @@ function Origin({ rate, typed }: { rate?: Rate; typed?: boolean }) {
 }
 
 /** Resultados → Calculadora: simula a meta com as taxas reais da empresa (nada é gravado). */
-export function GoalCalculator({ access, cities, organizationName }: { access: AccessView; cities: { id: number; name: string }[]; organizationName: string }) {
+export function GoalCalculator({ access, cities, organizationName, onPersonPage }: { access: AccessView; cities: { id: number; name: string }[]; organizationName: string; onPersonPage?: (personId: string) => void }) {
   const fixedCity = access.role === "Coordenação" || access.role === "Líder" ? access.cityId : null;
   const [cityId, setCityId] = useState<number | null>(fixedCity);
   const [state, setState] = useState<{ loading: boolean; error?: string; offline?: boolean; base?: CalculatorBaseResponse }>({ loading: true });
@@ -241,6 +242,8 @@ export function GoalCalculator({ access, cities, organizationName }: { access: A
       <p className="text-sm text-zinc-200"><TrendingUp className="mr-1 inline size-4 text-gold" aria-hidden />Menor equipe que bate a data: {combo.status === "basta" ? "a equipe de hoje basta." : combo.status === "nenhuma" ? "nem com +10 mapeadores e +5 vendedores: revise a meta ou a data." : combo.status === "sem-dados" ? `sem dados suficientes: digite ${combo.needs === "conversao" ? "a conversão" : combo.needs === "tempo" ? "o tempo até pagar" : "a capacidade"}.` : `+${combo.extraMappers} ${combo.extraMappers === 1 ? "mapeador" : "mapeadores"} e +${combo.extraSellers} ${combo.extraSellers === 1 ? "vendedor" : "vendedores"} (${combo.arrival.kind === "date" ? shortDate(combo.arrival.date, true) : ""}).`}</p>
       <p className="text-sm text-zinc-300">Bônus da rede: {bonus === null ? (base.r === null ? "Sem dados suficientes" : "—") : `≈ ${floor6(bonus)} indicações a mais até o prazo (fora da data)`}.</p>
     </article>}
+
+    <WhereToLook cityId={api.scope.kind === "Cidade" ? api.scope.cityId : null} onPersonPage={onPersonPage} />
 
     {/* 8. Chegamos lá? */}
     {chart.length > 0 && g.M !== null && <ChartFrame kicker="Projeção" title="Chegamos lá?" takeaway={`Vendas pagas acumuladas desde ${shortDate(api.periodStart)}${unit === "receita" ? " (receita em vendas equivalentes)" : ""}. Tracejado = projeção, não é resultado.`}

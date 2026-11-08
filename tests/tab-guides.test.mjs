@@ -32,11 +32,12 @@ function visible(){
  }
  seen.set('portal:embaixador',new Set(['Embaixador']));
  seen.set('portal:mentorado',new Set(['Mentorado']));
+ seen.set('pessoa',new Set(['Administrador','Coordenação','Líder','Comercial']));
  return seen;
 }
 
-test('guias: 33 chaves, uma por tela e uma por portal, cada uma com o seu guia',()=>{
- assert.equal(keys.GUIDE_KEYS.length,33);
+test('guias: 34 chaves, uma por tela e uma por portal, cada uma com o seu guia',()=>{
+ assert.equal(keys.GUIDE_KEYS.length,34);
  assert.deepEqual(Object.keys(guides.TAB_GUIDES).sort(),[...keys.GUIDE_KEYS].sort());
  const seen=visible();
  assert.deepEqual([...seen.keys()].sort(),[...keys.GUIDE_KEYS].sort(),'toda chave é uma tela que alguém vê');
@@ -105,7 +106,7 @@ test('guias: "Fazer agora" só com ação que a função pode fazer (mesma regra
 
 // Seções com o mesmo nome de uma aba: o painel "Avisos por e-mail" de Hoje (preferências da
 // própria pessoa) não é a aba Gestão → Avisos por e-mail.
-const SECTIONS={'Avisos por e-mail':['hoje/']};
+const SECTIONS={'Avisos por e-mail':['hoje/'],'Histórico':['pessoa']};
 
 test('guias: nenhum guia cita aba que a função não tem',()=>{
  // Todas as abas e áreas, com o rótulo da tela; cada função só pode citar as que vê.
