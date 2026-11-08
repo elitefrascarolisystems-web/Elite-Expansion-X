@@ -17,6 +17,7 @@ import {
 } from "@/lib/goal-calculator";
 import { copyText } from "@/lib/copy-text";
 import { tenantFetch } from "@/lib/tenant-request";
+import { GoalPanel, type GoalsPayload } from "@/app/goal-apply";
 
 const GoalPaceChart = lazy(() => import("@/app/charts/goal-pace-chart"));
 
@@ -67,6 +68,8 @@ export function GoalCalculator({ access, cities, organizationName }: { access: A
   const [until, setUntil] = useState("");
   const [premises, setPremises] = useState<Premises>({});
   const [levers, setLevers] = useState<Levers>({});
+  const [goals, setGoals] = useState<GoalsPayload | null>(null);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     let live = true;
@@ -76,11 +79,17 @@ export function GoalCalculator({ access, cities, organizationName }: { access: A
         const body = await response.json().catch(() => ({}));
         if (!live) return;
         if (!response.ok) setState({ loading: false, error: body.error || "Não foi possível calcular agora." });
-        else { setState({ loading: false, base: body.data }); setLevers({}); }
+        else {
+          setState({ loading: false, base: body.data }); setLevers({}); setGoals(body.goals ?? null);
+          // A meta aplicada no escopo vira o ponto de partida da simulação.
+          const today = body.data.today as string;
+          const applied = (body.goals?.active ?? []).find((g: GoalsPayload["active"][number]) => (cityId === null ? g.scope === "Empresa" : g.scope === "Cidade" && g.cityId === cityId) && (g.metric === "Vendas pagas" || g.metric === "Receita confirmada") && g.periodStart <= today && today <= g.periodEnd);
+          if (applied) { setMetric(applied.metric); setGoal(String(applied.metric === "Receita confirmada" ? applied.target / 100 : applied.target)); if (applied.periodEnd !== lastOfMonth(today)) { setPeriod("data"); setUntil(applied.periodEnd); } }
+        }
       })
       .catch(() => { if (live) setState({ loading: false, offline: true }); });
     return () => { live = false; };
-  }, [cityId]);
+  }, [cityId, reload]);
 
   const api = state.base;
   const today = api?.today ?? "";
@@ -163,6 +172,12 @@ export function GoalCalculator({ access, cities, organizationName }: { access: A
       {api.scope.consolidated && <p className="text-xs text-subtle">Cidade em modo Consolidado: o realizado vem dos fechamentos consolidados, e as taxas ficam sem dados.</p>}
       {api.scope.kind === "Empresa" && api.scope.consolidatedCities > 0 && <p className="text-xs text-subtle">As taxas usam só as cidades em modo Detalhado ({api.scope.detailedCities}); {api.scope.consolidatedCities} em Consolidado entram só no realizado.</p>}
     </article>
+
+    <GoalPanel access={access} cityId={api.scope.kind === "Cidade" ? api.scope.cityId : null} scopeName={scopeName} today={today} periodStart={api.periodStart} periodEnd={target}
+      metric={metric} target={base.goal > 0 ? base.goal : null} goals={goals} onSaved={() => setReload((n) => n + 1)}
+      plan={funnel.status === "precisa" && funnel.totalLeads !== null && funnel.startBy ? { leads: ceil6(funnel.totalLeads), people: funnel.peopleTotal === null ? null : ceil6(funnel.peopleTotal), startBy: funnel.startBy } : null}
+      assumptions={Object.fromEntries(PREMISES.map((p) => { const rate = api.rates[p.rate] as Rate; const typedValue = premises[p.key]; const key = p.key === "ticket" ? "ticketCents" : p.key === "cpl" ? "cplCents" : p.key;
+        return [key, typedValue !== undefined ? { value: p.key === "ticket" || p.key === "cpl" ? Math.round(typedValue * 100) : typedValue, source: "estimativa" as const } : { value: rate.value, source: rate.source }]; }).concat([["v", { value: api.rates.v.value, source: api.rates.v.source }], ["N", { value: api.rates.N.value, source: api.rates.N.source }]]))} />
 
     {/* 2 e 3. Quanto falta e no ritmo atual */}
     <div className="grid gap-4 lg:grid-cols-2">

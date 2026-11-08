@@ -110,7 +110,8 @@ function CityFields({ city, saving, onSave, mode }: { city?: CityRecord; saving:
           leaderName: form.get("leaderName"),
           targetCacCents: cents(form.get("targetCac")),
           ambassadorGoal: Number(form.get("ambassadorGoal") || 1),
-          salesGoal: Number(form.get("salesGoal") || 1),
+          // "Meta de vendas" saiu do cadastro (a meta fica em Resultados → Calculadora); a coluna antiga só é mantida.
+          salesGoal: city?.salesGoal ?? 100,
           status,
           budgetCents: cents(form.get("budget")),
           trackingMode,
@@ -126,7 +127,7 @@ function CityFields({ city, saving, onSave, mode }: { city?: CityRecord; saving:
       <Field label="CAC máximo (R$)" hint="Custo máximo por cliente pago."><Input name="targetCac" type="number" min="0" step="0.01" defaultValue={(city?.targetCacCents ?? 0) / 100} className={inputClass} /></Field>
       <Field label="Orçamento da cidade (R$)"><Input name="budget" type="number" min="0" step="0.01" defaultValue={(city?.budgetCents ?? 0) / 100} className={inputClass} /></Field>
       <Field label="Meta de embaixadores"><Input name="ambassadorGoal" type="number" min="1" defaultValue={city?.ambassadorGoal ?? 10} className={inputClass} /></Field>
-      <Field label="Meta de vendas"><Input name="salesGoal" type="number" min="1" defaultValue={city?.salesGoal ?? 100} className={inputClass} /></Field>
+      <p className="self-end pb-2 text-xs text-subtle">A meta fica em Resultados → Calculadora.</p>
       <Field label="Observações" wide><Textarea name="notes" defaultValue={city?.notes} placeholder="Capacidade, restrições e próximos passos" className={inputClass} /></Field>
     </FormShell>
   );

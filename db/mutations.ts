@@ -346,15 +346,21 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     const consentRevoked = Boolean(input.consentRevoked) || Boolean(lead.consentRevokedAt);
     const revocationNow = Boolean(input.consentRevoked) && !lead.consentRevokedAt;
     const status = consentRevoked ? "Cancelado" : text(input, "status");
-    await db.prepare(`
-      UPDATE leads SET status = ?, assigned_to_email = ?,
-        consent_revoked_at = CASE WHEN ? THEN COALESCE(consent_revoked_at, ?) ELSE consent_revoked_at END,
-        consent_revocation_reason = CASE WHEN ? THEN ? ELSE consent_revocation_reason END,
-        updated_at = ? WHERE id = ?
-    `).bind(
-      status, text(input, "assignedToEmail").toLowerCase(), revocationNow, timestamp,
-      revocationNow, text(input, "consentRevocationReason"), timestamp, leadId,
-    ).run();
+    const assigned = text(input, "assignedToEmail").toLowerCase();
+    await db.batch([
+      db.prepare(`
+        UPDATE leads SET status = ?, assigned_to_email = ?,
+          consent_revoked_at = CASE WHEN ? THEN COALESCE(consent_revoked_at, ?) ELSE consent_revoked_at END,
+          consent_revocation_reason = CASE WHEN ? THEN ? ELSE consent_revocation_reason END,
+          updated_at = ? WHERE id = ?
+      `).bind(
+        status, assigned, revocationNow, timestamp,
+        revocationNow, text(input, "consentRevocationReason"), timestamp, leadId,
+      ),
+      // O responsável da oportunidade acompanha o do atendimento, na mesma gravação (as metas por pessoa contam por ele).
+      db.prepare("UPDATE opportunities SET owner_email = ?, updated_at = ?, version = version + 1 WHERE lead_id = ? AND ? <> '' AND lower(owner_email) <> ?")
+        .bind(assigned, timestamp, leadId, assigned, assigned),
+    ]);
     await audit(db, access.organizationId, access.email, action, "lead", leadId, revocationNow ? "Autorização revogada e contato cancelado." : `Etapa alterada para ${status}.`);
     return;
   }

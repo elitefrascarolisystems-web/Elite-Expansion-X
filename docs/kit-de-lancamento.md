@@ -52,7 +52,7 @@ Na primeira visita a cada aba (e nos portais do Embaixador e do Mentorado) apare
 - **Resultados → Mapeamento** → *Cobertura por cidade* (locais validados, pessoas ligadas a locais) e *Produção por mapeador* (total e últimos 7 dias).
 - **Gestão → Time e acessos** → quem ainda não entrou.
 - **Resultados → Metas e rotina** e **Vendas → Pagamentos** → funil e vendas confirmadas.
-- **Resultados → Calculadora** → quanto falta para a meta, quando ela chega no ritmo atual e o que muda a data (mais vendedores, mapeadores, conversão, indicações ou mídia). É só simulação: nada é salvo. Taxas e fórmulas em **Gestão → Regras e cálculos** → *Como a Calculadora calcula*.
+- **Resultados → Calculadora** → quanto falta para a meta, quando ela chega no ritmo atual e o que muda a data (mais vendedores, mapeadores, conversão, indicações ou mídia). Simular não grava nada; **Aplicar como meta** (Administrador e Coordenação) grava a meta com período e, se marcado, o plano de atendimentos e pessoas mapeadas até a data de começar; **Dividir pela equipe** (Administrador, Coordenação e Líder) reparte a meta da cidade por pessoa. A meta aparece no cartão *Quanto falta* de **Hoje**, na linha *Meta* de **Resultados → Metas e rotina** e na coluna *Meta* de **Território → Cidades**. A antiga "Meta de vendas" saiu do cadastro da cidade, e a meta do dia de cada pessoa passou a se chamar *Rotina do dia*. Taxas e fórmulas em **Gestão → Regras e cálculos** → *Como a Calculadora calcula*.
 
 ## 6. Regras que não mudam (LGPD)
 

@@ -383,10 +383,10 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "passos": [
       "Digite a meta e a data: por exemplo, 40 vendas pagas até 28/12.",
       "Leia \"Quanto falta\", \"No ritmo atual\" e \"O que precisa acontecer\".",
-      "Mexa em \"E se…?\" para ver o que muda a data: nada é gravado."
+      "Mexa em \"E se…?\" e toque em \"Aplicar como meta\"; depois, \"Dividir pela equipe\"."
     ],
-    "exemplo": "Faltam 36 vendas em 8 semanas. No ritmo de hoje (3 por semana), a meta chega em 25/01, quase um mês depois. Com +3 mapeadores e +1 vendedor, chega em 25/12. Subir a conversão de 20% para 25% ganha 2 semanas.",
-    "cuidado": "Onde aparecer \"Sem dados suficientes\", digite sua estimativa: ela fica marcada como premissa. Projeção não é resultado."
+    "exemplo": "Faltam 36 vendas em 8 semanas. No ritmo de hoje (3 por semana), a meta chega em 25/01. Com +3 mapeadores e +1 vendedor, chega em 25/12. Ao aplicar, a janela mostra o que será gravado: 40 vendas pagas até 28/12 e o plano de 150 atendimentos até 14/12.",
+    "cuidado": "Simular não grava nada: só \"Aplicar como meta\" e \"Dividir pela equipe\" gravam, sem criar tarefa nem mensagem. Onde aparecer \"Sem dados suficientes\", digite sua estimativa."
   },
   "resultados/metas": {
     "titulo": "Como usar: Metas e rotina",
@@ -396,23 +396,23 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Líder",
       "Comercial"
     ],
-    "paraQueServe": "Definir a meta do dia de cada pessoa e ver o que fez.",
+    "paraQueServe": "Ver a meta de cada pessoa e definir a rotina do dia.",
     "passos": [
-      "Toque em \"Definir meta\" e preencha frios, quentes e contatos.",
-      "Escolha o \"Dia\" e compare \"Frios / meta\", \"Quentes / meta\" e \"Contatos / meta\".",
+      "Leia a linha \"Meta\" de cada pessoa.",
+      "Toque em \"Definir rotina do dia\" e compare \"Frios / rotina\" e \"Contatos / rotina\".",
       "Leia \"Relatos diários · autodeclarados\" e mande o seu em \"Meu relatório diário\"."
     ],
-    "exemplo": "Para segunda, Ana deu a Bruno a meta de 10 frios, 5 quentes e 20 contatos. O cartão de Bruno mostrou 20 / 20 contatos e 1 retorno atrasado. No relato, ele contou que a Padaria Pão Dourado quer conversar na quarta. Só contam atendimentos com autorização.",
+    "exemplo": "O cartão de Bruno mostra \"Meta: 3 de 8 vendas · Semana: 4 de 10 atendimentos\". Para segunda, Ana deu a ele a rotina de 10 frios, 5 quentes e 20 contatos, e o cartão mostrou 20 / 20 contatos. A meta vem da Calculadora; a rotina do dia não é meta.",
     "cuidado": "O Comercial vê só os próprios números. No relato, não escreva contato de cliente.",
     "porFuncao": {
       "Comercial": {
-        "paraQueServe": "Ver sua meta do dia, o que já fez e mandar seu relato.",
+        "paraQueServe": "Ver sua meta, sua rotina do dia e mandar seu relato.",
         "passos": [
-          "Escolha o \"Dia\" e veja \"Frios / meta\" e \"Contatos / meta\".",
+          "Leia sua linha \"Meta\" e veja \"Contatos / rotina\" do \"Dia\".",
           "Use \"Registrar atividade\" na ficha do atendimento, na Agenda, para somar contatos.",
           "Toque em \"Meu relatório diário\" no fim do dia e conte impedimentos e o plano de amanhã."
         ],
-        "exemplo": "Sua meta de segunda: 10 frios, 5 quentes e 20 contatos. O cartão mostrou 20 / 20 contatos e 1 retorno atrasado. Você fez o retorno e, no relato, contou que a Padaria Pão Dourado quer conversar na quarta. Só contam atendimentos com autorização.",
+        "exemplo": "Sua linha mostra \"Meta: 3 de 8 vendas · Semana: 4 de 10 atendimentos\". Na rotina de segunda, o cartão mostrou 20 / 20 contatos. No relato, você contou que a Padaria Pão Dourado quer conversar na quarta.",
         "cuidado": "Você vê só os seus números. No relato, não escreva contato de cliente.",
         "acao": "aba:vendas/agenda"
       }

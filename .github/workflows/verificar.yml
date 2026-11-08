@@ -46,6 +46,7 @@ jobs:
             tests/followup-integration.test.mjs \
             tests/form-payloads.test.mjs \
             tests/goal-calculator.test.mjs \
+            tests/goals.test.mjs \
             tests/hooks.test.mjs \
             tests/map-modes.test.mjs \
             tests/navigation.test.mjs \

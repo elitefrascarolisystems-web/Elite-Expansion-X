@@ -465,3 +465,10 @@ export const notificationRuns = sqliteTable('notification_runs', {
  id:text('id').primaryKey(),ranAt:text('ran_at').notNull(),configured:integer('configured').notNull(),
  sent:integer('sent').notNull(),failed:integer('failed').notNull(),skipped:integer('skipped').notNull(),detail:text('detail').notNull().default(''),
 });
+/** Metas com período (fonte única): gravadas só por "Aplicar como meta" e "Dividir pela equipe" na Calculadora. */
+export const goals = sqliteTable('goals', {
+ id:text('id').primaryKey(),organizationId:integer('organization_id').notNull(),scope:text('scope').notNull(),cityId:integer('city_id').references(()=>cities.id),ownerEmail:text('owner_email').notNull().default(''),
+ metric:text('metric').notNull(),target:integer('target').notNull(),periodStart:text('period_start').notNull(),periodEnd:text('period_end').notNull(),
+ assumptionsJson:text('assumptions_json').notNull().default('{}'),status:text('status').notNull().default('Ativa'),version:integer('version').notNull().default(1),
+ createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
+},t=>[index('goals_status').on(t.organizationId,t.status,t.periodEnd),index('goals_city_owner').on(t.organizationId,t.cityId,t.ownerEmail)]);
