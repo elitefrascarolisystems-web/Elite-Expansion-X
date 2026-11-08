@@ -123,7 +123,7 @@ export async function exportSubject(a: AccessView, input: unknown) {
     observacao: "Dados pessoais tratados por esta empresa na plataforma Elite Expansion X. Endereço residencial nunca é registrado: a pessoa aparece no local ligado a ela, no centro do bairro ou no centro da cidade.",
     titular: { nome: nameOf(s), cidade: s.city },
     mapa: p ? {
-      nome: str(p.name), cidade: str(p.city_name), bairro: str(p.region_name) || null, local: str(p.place_name) || null, vinculo: str(p.place_link) || null,
+      nome: str(p.name), cidade: str(p.city_name), origemDoCadastro: str(p.source) || "não registrada", bairro: str(p.region_name) || null, local: str(p.place_name) || null, vinculo: str(p.place_link) || null,
       exibidoNoMapa: p.place_id ? "No local ligado à pessoa" : p.region_id ? "No centro do bairro" : "No centro da cidade", lider: Boolean(Number(p.leader)),
       // Rede: só se a pessoa foi indicada e quantas indicou; nomes de outras pessoas não entram na cópia.
       rede: { foiIndicada: Boolean(p.referrer_id), pessoasIndicadas: Number(p.referred_count ?? 0) },

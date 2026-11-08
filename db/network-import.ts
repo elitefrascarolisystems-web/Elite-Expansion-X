@@ -122,7 +122,7 @@ export async function importNetwork(a: AccessView, input: unknown) {
 
       if (commit) {
         if (!person) {
-          const saved = await mutateTerritory(a, "person", { requestId: crypto.randomUUID(), cityId: r.cityId, name: r.name, placeId, placeLink, referrerId, regionId, authorized: true, confirmDuplicate: true }) as { id: string };
+          const saved = await mutateTerritory(a, "person", { requestId: crypto.randomUUID(), cityId: r.cityId, name: r.name, placeId, placeLink, referrerId, regionId, authorized: true, confirmDuplicate: true }, "Importação") as { id: string };
           person = { id: saved.id, name: r.name, referrerId };
         } else if (referrerId && !person.referrerId) {
           const result = await db.prepare(`WITH RECURSIVE ancestors(id,referrer_id) AS (SELECT id,referrer_id FROM territory_people WHERE id=? UNION SELECT p.id,p.referrer_id FROM territory_people p JOIN ancestors x ON p.id=x.referrer_id) UPDATE territory_people SET referrer_id=?,updated_at=? WHERE id=? AND referrer_id IS NULL AND NOT EXISTS(SELECT 1 FROM ancestors WHERE id=?)`).bind(referrerId, referrerId, brazilTimestamp(), person.id, person.id).run();

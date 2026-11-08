@@ -35,8 +35,8 @@ function visible(){
  return seen;
 }
 
-test('guias: 32 chaves, uma por tela e uma por portal, cada uma com o seu guia',()=>{
- assert.equal(keys.GUIDE_KEYS.length,32);
+test('guias: 33 chaves, uma por tela e uma por portal, cada uma com o seu guia',()=>{
+ assert.equal(keys.GUIDE_KEYS.length,33);
  assert.deepEqual(Object.keys(guides.TAB_GUIDES).sort(),[...keys.GUIDE_KEYS].sort());
  const seen=visible();
  assert.deepEqual([...seen.keys()].sort(),[...keys.GUIDE_KEYS].sort(),'toda chave é uma tela que alguém vê');

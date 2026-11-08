@@ -235,7 +235,7 @@ async function importPeople(a:AccessView,input:unknown){
       }
       const role=r.role?personRoleFromText(r.role):null;if(r.role&&!role)throw new TerritoryError(`Papel "${r.role}" não reconhecido. Use: ${PERSON_ROLES.join(', ')}.`);
       if(body.commit===true){
-        const saved=await mutateTerritory(a,'person',{requestId:crypto.randomUUID(),cityId:r.cityId,name:r.name,placeId,placeLink,authorized:true,confirmDuplicate:true}) as {id:string};
+        const saved=await mutateTerritory(a,'person',{requestId:crypto.randomUUID(),cityId:r.cityId,name:r.name,placeId,placeLink,authorized:true,confirmDuplicate:true},'Importação') as {id:string};
         if(role)await mutateTerritory(a,'role',{personId:saved.id,role,status:'Ativo',responsible:a.name||a.email,source:'Importação de planilha',authorized:true});
       }
       output.push({line:index+2,ok:true,status:body.commit===true?'Salvo':'Válido'});
@@ -254,7 +254,8 @@ export async function listRegions(a:AccessView,cityId:number){
   await allowedCity(a,cityId);
   return (await dbRows(`SELECT rg.id,rg.name,g.latitude,g.longitude,COALESCE(g.validated,0) AS validated,(SELECT COUNT(*) FROM territory_people tp WHERE tp.region_id=rg.id) AS people FROM territory_regions rg LEFT JOIN territory_locations g ON g.entity_key='region:'||rg.id WHERE rg.city_id=? ORDER BY rg.name LIMIT 2000`,[cityId])).map(r=>({id:str(r.id),cityId,name:str(r.name),located:Number(r.validated)===1&&r.latitude!=null,latitude:r.latitude==null?null:Number(r.latitude),longitude:r.longitude==null?null:Number(r.longitude),people:Number(r.people??0)}));
 }
-export async function mutateTerritory(a:AccessView,action:string,input:unknown) {
+/** `origin`: de onde vem o cadastro de pessoa (interno, nunca do corpo do pedido): "Mapeamento" pelo mapa e mapeamento guiado, "Importação" pelas planilhas. */
+export async function mutateTerritory(a:AccessView,action:string,input:unknown,origin:'Mapeamento'|'Importação'='Mapeamento') {
   if(!mapper(a)||(!management(a)&&action==='event_status')) throw new TerritoryError('Seu perfil não pode alterar o território.',403);
   if(action==='import_people') return importPeople(a,input);
   const db=database(),now=brazilTimestamp();
@@ -302,7 +303,7 @@ export async function mutateTerritory(a:AccessView,action:string,input:unknown) 
     if(v.placeId&&!(await dbRows('SELECT id FROM businesses WHERE id=? AND organization_id=? AND city_id=?',[v.placeId,a.organizationId,v.cityId]))[0]) throw new TerritoryError('O local vinculado deve ser da mesma cidade e da sua organização.');
     if(v.regionId&&!(await dbRows('SELECT id FROM territory_regions WHERE id=? AND city_id=?',[v.regionId,v.cityId]))[0]) throw new TerritoryError('O bairro deve ser da mesma cidade.');
     const previousLeader=v.id?(await dbRows('SELECT name,leader FROM territory_people WHERE id=?',[id]))[0]:null;
-    const statements=[db.prepare(`INSERT INTO territory_people(id,city_id,name,leader,referrer_id,place_id,place_link,region_id,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,leader=excluded.leader,referrer_id=excluded.referrer_id,place_id=excluded.place_id,place_link=excluded.place_link,region_id=excluded.region_id,updated_at=excluded.updated_at`).bind(id,v.cityId,v.name,Number(v.leader),v.referrerId,v.placeId,v.placeId?v.placeLink:'',v.regionId,a.email,now,now)];
+    const statements=[db.prepare(`INSERT INTO territory_people(id,city_id,name,leader,referrer_id,place_id,place_link,region_id,source,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,leader=excluded.leader,referrer_id=excluded.referrer_id,place_id=excluded.place_id,place_link=excluded.place_link,region_id=excluded.region_id,updated_at=excluded.updated_at`).bind(id,v.cityId,v.name,Number(v.leader),v.referrerId,v.placeId,v.placeId?v.placeLink:'',v.regionId,origin,a.email,now,now)];
     statements.push(db.prepare('UPDATE ambassadors SET name=?,updated_at=? WHERE person_id=?').bind(v.name,now,id),db.prepare('UPDATE leads SET name=?,updated_at=? WHERE person_id=?').bind(v.name,now,id));
     if(previousLeader?.leader&&!v.leader) statements.push(db.prepare("UPDATE cities SET leader_name='',updated_at=? WHERE id=? AND leader_name=?").bind(now,v.cityId,String(previousLeader.name)));
     if(v.leader) statements.push(db.prepare('UPDATE territory_people SET leader=0 WHERE city_id=? AND id<>?').bind(v.cityId,id),db.prepare('UPDATE cities SET leader_name=?,updated_at=? WHERE id=?').bind(v.name,now,v.cityId));

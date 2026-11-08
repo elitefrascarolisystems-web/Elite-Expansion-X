@@ -42,7 +42,7 @@ export function navigationFor(access: AccessView, { hasAdvisors }: NavOptions): 
     {
       id: "resultados", label: "Resultados", description: "Como estamos indo: indicadores, metas, mapeamento e custos.",
       views: [
-        ...only(manage, { id: "visao", label: "Visão geral" }), { id: "metas", label: "Metas e rotina" },
+        ...only(manage, { id: "visao", label: "Visão geral" }), ...only(manage, { id: "calculadora", label: "Calculadora" }), { id: "metas", label: "Metas e rotina" },
         ...only(manage, { id: "mapeamento", label: "Mapeamento" }), ...only(manage, { id: "custos", label: "Custos e canais" }),
       ],
     },

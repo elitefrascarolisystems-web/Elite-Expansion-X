@@ -17,6 +17,9 @@ export type GoCommand = { id: string; group: "Nesta área" | "Ir para"; title: s
  * Com texto: as telas (área → aba) cujo nome ou descrição combina, menos a tela atual.
  * Só aparecem áreas e abas que esta função já vê no menu.
  */
+/** Outras palavras que levam a uma tela pelo Ctrl+K ("Simular meta" acha a Calculadora). */
+const VIEW_WORDS: Record<string, string> = { calculadora: "simular meta quanto falta" };
+
 export function goCommands(term: string, areas: NavArea[], current: NavLocation, limit = 8): GoCommand[] {
   if (!normalize(term)) {
     const area = areas.find((item) => item.id === current.area);
@@ -29,7 +32,7 @@ export function goCommands(term: string, areas: NavArea[], current: NavLocation,
     : [{ area, view: null }]);
   return screens
     .filter(({ area, view }) => !(area.id === current.area && (view?.id ?? "") === current.view))
-    .filter(({ area, view }) => matches(term, `${area.label} ${view?.label ?? ""} ${area.description}`))
+    .filter(({ area, view }) => matches(term, `${area.label} ${view?.label ?? ""} ${area.description} ${view ? VIEW_WORDS[view.id] ?? "" : ""}`))
     .slice(0, limit)
     .map(({ area, view }) => ({
       id: `go:${area.id}/${view?.id ?? ""}`, group: "Ir para",

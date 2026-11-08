@@ -126,7 +126,7 @@ async function resolvePerson(input: Input, access: AccessView, cityId: number, t
     input.name = String(p.name);
   }
   const now = brazilTimestamp();
-  const statement = db.prepare("INSERT OR IGNORE INTO territory_people(id,city_id,name,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?)").bind(id,cityId,text(input,"name"),access.email,now,now);
+  const statement = db.prepare("INSERT OR IGNORE INTO territory_people(id,city_id,name,source,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?)").bind(id,cityId,text(input,"name"),table === "leads" ? "Novo atendimento" : "Embaixador",access.email,now,now);
   return {id,statement};
 }
 
@@ -371,8 +371,11 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     if (existing.results[0]) {
       entityId = asNumber(existing.results[0].id);
       await db.prepare(`
-        UPDATE sales SET product = ?, amount_cents = ?, status = ?, paid_at = ?, updated_at = ? WHERE id = ?
-      `).bind(text(input, "product"), number(input, "amountCents"), status, paidAt, timestamp, entityId).run();
+        UPDATE sales SET product = ?, amount_cents = ?, status = ?,
+          -- A data do pagamento só nasce na passagem para "Pagamento confirmado": salvar de novo uma venda paga mantém a data.
+          paid_at = CASE WHEN ? = 'Pagamento confirmado' THEN COALESCE(CASE WHEN status = 'Pagamento confirmado' THEN paid_at END, ?) ELSE NULL END,
+          updated_at = ? WHERE id = ?
+      `).bind(text(input, "product"), number(input, "amountCents"), status, status, paidAt, timestamp, entityId).run();
     } else {
       const result = await db.prepare(`
         INSERT INTO sales

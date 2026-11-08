@@ -43,9 +43,9 @@ export async function ensureSystemData(currentEmail: string, displayName: string
     db.prepare("INSERT OR IGNORE INTO organizations(id,name,owner_email,active,created_at) VALUES(1,'Elite Frascaroli Academy',?,1,?)").bind(OWNER_EMAIL,timestamp),
     db.prepare(`
       INSERT OR IGNORE INTO settings
-        (id, owner_email, referral_base_url, attribution_model, updated_by, updated_at)
-      VALUES (1, ?, '', 'Origem principal declarada', ?, ?)
-    `).bind(OWNER_EMAIL, OWNER_EMAIL, timestamp),
+        (id, owner_email, referral_base_url, attribution_model, origin_tracked_since, updated_by, updated_at)
+      VALUES (1, ?, '', 'Origem principal declarada', substr(?, 1, 10), ?, ?)
+    `).bind(OWNER_EMAIL, timestamp, OWNER_EMAIL, timestamp),
     // Donos da plataforma: sempre administradores da Elite e sempre assessores.
     // Os demais assessores são escolhidos por eles.
     ...PLATFORM_OWNERS.flatMap((owner) => [

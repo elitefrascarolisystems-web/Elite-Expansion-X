@@ -11,7 +11,7 @@ export const GUIDE_KEYS = [
   "territorio/mapa", "territorio/cidades", "territorio/locais",
   "vendas/agenda", "vendas/atendimentos", "vendas/ganchos", "vendas/fecha", "vendas/pagamentos", "vendas/posvenda",
   "rede/embaixadores", "rede/indicacoes", "rede/mentorados", "rede/parceiros", "rede/materiais",
-  "resultados/visao", "resultados/metas", "resultados/mapeamento", "resultados/custos",
+  "resultados/visao", "resultados/calculadora", "resultados/metas", "resultados/mapeamento", "resultados/custos",
   "gestao/time", "gestao/regras", "gestao/identidade", "gestao/plano", "gestao/historico", "gestao/privacidade", "gestao/avisos", "gestao/assessoria",
   "plataforma/assinaturas", "plataforma/pedidos", "plataforma/assessores",
   "portal:embaixador", "portal:mentorado",

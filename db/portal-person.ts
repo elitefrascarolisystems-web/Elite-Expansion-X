@@ -19,7 +19,7 @@ export async function ensurePortalPerson(access: AccessView, userId: number, cit
   const statements = [];
   if (!personId) {
     personId = crypto.randomUUID();
-    statements.push(db.prepare("INSERT INTO territory_people(id,city_id,name,leader,referrer_id,created_by,created_at,updated_at) VALUES(?,?,?,0,NULL,?,?,?)").bind(personId, cityId, name, access.email, now, now));
+    statements.push(db.prepare("INSERT INTO territory_people(id,city_id,name,leader,referrer_id,source,created_by,created_at,updated_at) VALUES(?,?,?,0,NULL,'Portal do mentorado',?,?,?)").bind(personId, cityId, name, access.email, now, now));
   }
   statements.push(
     db.prepare("INSERT INTO territory_roles(id,person_id,city_id,role,status,responsible,source,authorized_by,created_at,updated_at) VALUES(?,?,?,'Mentorado','Ativo',?,'Acesso ao portal de mentoria',?,?,?) ON CONFLICT(person_id,city_id,role) DO NOTHING").bind(crypto.randomUUID(), personId, cityId, access.name || access.email, access.email, now, now),

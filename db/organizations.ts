@@ -33,7 +33,7 @@ export async function createOrganization(access:AccessView,input:unknown){
  await db.batch([
   db.prepare('INSERT INTO organizations(name,owner_email,active,created_at,request_id) VALUES(?,?,1,?,?)').bind(v.name,v.ownerEmail,now,v.requestId),
   db.prepare("INSERT INTO app_users(organization_id,email,name,role,active,created_by,created_at) SELECT id,?,?,'Administrador',1,?,? FROM organizations WHERE request_id=?").bind(v.ownerEmail,v.ownerName,access.email,now,v.requestId),
-  db.prepare('INSERT INTO settings(id,organization_id,owner_email,updated_by,updated_at) SELECT id,id,?,?,? FROM organizations WHERE request_id=?').bind(v.ownerEmail,access.email,now,v.requestId),
+  db.prepare('INSERT INTO settings(id,organization_id,owner_email,updated_by,updated_at,origin_tracked_since) SELECT id,id,?,?,?,substr(created_at,1,10) FROM organizations WHERE request_id=?').bind(v.ownerEmail,access.email,now,v.requestId),
   db.prepare("INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,summary,created_at) SELECT id,?,'create_organization','organization',?,? FROM organizations WHERE request_id=?").bind(access.email,`Ambiente criado pela Assessoria Elite. Responsável: ${v.ownerName}.`,now,v.requestId),
   db.prepare("INSERT INTO platform_audit(organization_id,actor_email,action,reason,created_at) SELECT id,?,'create',?,? FROM organizations WHERE request_id=?").bind(access.email.toLowerCase(),`Organização criada; responsável ${v.ownerEmail}.`,now,v.requestId),
  ]);

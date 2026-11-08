@@ -52,6 +52,7 @@ Na primeira visita a cada aba (e nos portais do Embaixador e do Mentorado) apare
 - **Resultados → Mapeamento** → *Cobertura por cidade* (locais validados, pessoas ligadas a locais) e *Produção por mapeador* (total e últimos 7 dias).
 - **Gestão → Time e acessos** → quem ainda não entrou.
 - **Resultados → Metas e rotina** e **Vendas → Pagamentos** → funil e vendas confirmadas.
+- **Resultados → Calculadora** → quanto falta para a meta, quando ela chega no ritmo atual e o que muda a data (mais vendedores, mapeadores, conversão, indicações ou mídia). É só simulação: nada é salvo. Taxas e fórmulas em **Gestão → Regras e cálculos** → *Como a Calculadora calcula*.
 
 ## 6. Regras que não mudam (LGPD)
 
@@ -114,7 +115,7 @@ A plataforma da equipe é organizada em áreas, na barra lateral (computador) ou
 | **Território** | Mapa · Cidades · Locais | Toda a equipe (Comercial: Mapa e Locais) |
 | **Vendas** | Agenda · Atendimentos · Método F.E.C.H.A. · Pagamentos · Pós-venda | Toda a equipe |
 | **Rede** | Embaixadores · Indicações · Mentorados · Parceiros e eventos · Materiais | Gestão (Comercial: Indicações) |
-| **Resultados** | Visão geral · Metas e rotina · Mapeamento · Custos e canais | Gestão (Comercial: Metas e rotina) |
+| **Resultados** | Visão geral · Calculadora · Metas e rotina · Mapeamento · Custos e canais | Gestão (Comercial: Metas e rotina) |
 | **Gestão** | Time e acessos · Regras e cálculos · Identidade · Plano · Histórico · Privacidade (LGPD) · Avisos por e-mail · Assessoria Elite | Administrador |
 | **Plataforma** | Assinaturas · Assessores | Donos da plataforma |
 

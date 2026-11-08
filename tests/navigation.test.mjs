@@ -12,7 +12,7 @@ const shape=(a,opts={hasAdvisors:false})=>Object.fromEntries(nav.navigationFor(a
 test('navegação: cada função vê só as áreas dela',()=>{
  assert.deepEqual(shape(access('Administrador',{isPlatformOwner:true})),{
   hoje:[],territorio:['mapa','cidades','locais'],vendas:['agenda','atendimentos','ganchos','fecha','pagamentos','posvenda'],
-  rede:['embaixadores','indicacoes','mentorados','parceiros','materiais'],resultados:['visao','metas','mapeamento','custos'],
+  rede:['embaixadores','indicacoes','mentorados','parceiros','materiais'],resultados:['visao','calculadora','metas','mapeamento','custos'],
   gestao:['time','regras','historico','privacidade','avisos'],plataforma:['assinaturas','pedidos','assessores'],
  });
  const client=shape(access('Administrador',{organizationId:7}),{hasAdvisors:true});

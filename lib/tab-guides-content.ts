@@ -372,6 +372,22 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       }
     }
   },
+  "resultados/calculadora": {
+    "titulo": "Como usar: Calculadora",
+    "funcoes": [
+      "Administrador",
+      "Coordenação",
+      "Líder"
+    ],
+    "paraQueServe": "Saber quanto falta, quando a meta chega e o que muda a data.",
+    "passos": [
+      "Digite a meta e a data: por exemplo, 40 vendas pagas até 28/12.",
+      "Leia \"Quanto falta\", \"No ritmo atual\" e \"O que precisa acontecer\".",
+      "Mexa em \"E se…?\" para ver o que muda a data: nada é gravado."
+    ],
+    "exemplo": "Faltam 36 vendas em 8 semanas. No ritmo de hoje (3 por semana), a meta chega em 25/01, quase um mês depois. Com +3 mapeadores e +1 vendedor, chega em 25/12. Subir a conversão de 20% para 25% ganha 2 semanas.",
+    "cuidado": "Onde aparecer \"Sem dados suficientes\", digite sua estimativa: ela fica marcada como premissa. Projeção não é resultado."
+  },
   "resultados/metas": {
     "titulo": "Como usar: Metas e rotina",
     "funcoes": [

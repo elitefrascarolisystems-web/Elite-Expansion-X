@@ -96,6 +96,8 @@ export const settings = sqliteTable("settings", {
   minDataPeriods: integer("min_data_periods").notNull().default(0),
   inactivityDays: integer("inactivity_days").notNull().default(0),
   organicGoalPercent: integer("organic_goal_percent").notNull().default(0),
+  /** Dia (AAAA-MM-DD) desde quando a origem da pessoa é gravada no cadastro (taxas de mapeamento só a partir dele). */
+  originTrackedSince: text("origin_tracked_since").notNull().default(""),
   updatedBy: text("updated_by").notNull().default(""),
   updatedAt: text("updated_at").notNull().default(""),
 });
@@ -290,6 +292,8 @@ export const territoryPeople = sqliteTable("territory_people", {
   placeId: text("place_id"), placeLink: text("place_link").notNull().default(""),
   // Bairro (região) da pessoa: sem local, ela aparece no centro do bairro, nunca na residência.
   regionId: text("region_id"),
+  /** Como a pessoa entrou: Mapeamento, Novo atendimento, Embaixador, Portal do mentorado ou Importação ("" = não registrada). Nunca muda ao editar. */
+  source: text("source").notNull().default(""),
   createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
 }, t => [index("territory_people_city_idx").on(t.cityId), index("territory_people_referrer_idx").on(t.referrerId), index("territory_people_place_idx").on(t.placeId), index("territory_people_region_idx").on(t.regionId)]);
 /** Bairros de cada cidade. O ponto no mapa fica em territory_locations com a chave "region:<id>". */

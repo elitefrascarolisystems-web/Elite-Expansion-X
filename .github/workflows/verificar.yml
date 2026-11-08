@@ -39,11 +39,13 @@ jobs:
           set -o pipefail
           node --test --test-concurrency=1 --test-reporter=spec \
             tests/business-import.test.mjs \
+            tests/calculator-base.test.mjs \
             tests/elite-components.test.mjs \
             tests/expansion-domain.test.mjs \
             tests/fecha-guide.test.mjs \
             tests/followup-integration.test.mjs \
             tests/form-payloads.test.mjs \
+            tests/goal-calculator.test.mjs \
             tests/hooks.test.mjs \
             tests/map-modes.test.mjs \
             tests/navigation.test.mjs \

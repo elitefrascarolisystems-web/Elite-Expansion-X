@@ -108,7 +108,7 @@ export async function portalAction(access: AccessView, action: string, input: un
       AND (city_id=? OR (city_id IS NULL AND role IN ('Administrador','Comercial')))`, [a.organizationId, ownerEmail, v.cityId]) : null;
     const personId = crypto.randomUUID(), firstName = str(user?.name).split(" ")[0] || "membro";
     const statements = [
-      db.prepare("INSERT INTO territory_people(id,city_id,name,referrer_id,region_id,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)").bind(personId, v.cityId, v.name, referrer ? str(referrer.id) : null, region ? str(region.id) : null, a.email, now, now),
+      db.prepare("INSERT INTO territory_people(id,city_id,name,referrer_id,region_id,source,created_by,created_at,updated_at) VALUES(?,?,?,?,?,'Portal do mentorado',?,?,?)").bind(personId, v.cityId, v.name, referrer ? str(referrer.id) : null, region ? str(region.id) : null, a.email, now, now),
       db.prepare(`INSERT INTO leads(person_id,city_id,name,email,whatsapp,normalized_email,normalized_whatsapp,status,channel,source_label,campaign,utm_source,utm_medium,utm_campaign,consent_at,consent_source,consent_purpose,assigned_to_email,updated_at,created_by,created_at)
         VALUES(?,?,?,?,?,?,?,'Lead informado','Indicação',?,'','','','',?,?,?,?,?,?,?)`).bind(personId, v.cityId, v.name, v.email, v.whatsapp, normalizedEmail, normalizedWhatsapp,
         `Indicação de ${str(user?.name) || a.email} (mentorado)`, now,

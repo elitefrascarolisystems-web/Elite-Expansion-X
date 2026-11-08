@@ -59,7 +59,7 @@ export async function mutateTenant(emailValue:string,name:string,a:AccessView|nu
    const v=z.object({requestId:z.string().uuid(),name:z.string().trim().min(2).max(120),ownerEmail:email,ownerName:z.string().trim().min(2).max(120),confirmed:z.literal(true)}).parse(input);
    const existing=await row('SELECT id FROM organizations WHERE request_id=?',v.requestId);if(existing)return {organizationId:Number(existing.id)};
    await db.batch([db.prepare('INSERT INTO organizations(name,owner_email,active,created_at,request_id) VALUES(?,?,1,?,?)').bind(v.name,v.ownerEmail,now,v.requestId),
-    db.prepare('INSERT INTO settings(id,organization_id,owner_email,updated_by,updated_at) SELECT id,id,?,?,? FROM organizations WHERE request_id=?').bind(v.ownerEmail,actor,now,v.requestId),
+    db.prepare('INSERT INTO settings(id,organization_id,owner_email,updated_by,updated_at,origin_tracked_since) SELECT id,id,?,?,?,substr(created_at,1,10) FROM organizations WHERE request_id=?').bind(v.ownerEmail,actor,now,v.requestId),
     db.prepare("INSERT INTO platform_audit(organization_id,actor_email,action,reason,created_at) SELECT id,?,'create','Ambiente vazio; proprietário indicado, aguardando aceite.',? FROM organizations WHERE request_id=?").bind(actor,now,v.requestId)]);
    return {organizationId:Number((await row('SELECT id FROM organizations WHERE request_id=?',v.requestId))!.id)};
   }
