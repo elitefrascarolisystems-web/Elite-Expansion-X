@@ -222,7 +222,7 @@ export async function portalAdminAction(access: AccessView, action: string, inpu
     const user = await first("SELECT id,name,city_id,person_id FROM app_users WHERE id=? AND organization_id=? AND role='Mentorado'", [v.userId, a.organizationId]);
     if (!user) throw new PortalError("Membro do portal não encontrado.", 404);
     if (user.person_id) return {};
-    if (user.city_id === null || user.city_id === undefined) throw new PortalError("Defina a cidade do mentorado em Gestão → Time e acessos antes de colocá-lo no mapa.", 400);
+    if (user.city_id === null || user.city_id === undefined) throw new PortalError("Defina a cidade do mentorado em Gestão → Equipe antes de colocá-lo no mapa.", 400);
     await ensurePortalPerson(access, Number(user.id), Number(user.city_id), str(user.name), now);
     await audit(db, a.organizationId, a.email, "portal_member_map", "app_user", v.userId, "Mentorado colocado no mapa.");
     return {};

@@ -139,7 +139,7 @@ function SubjectCard({ subject: s, onAction }: { subject: PrivacyDetails; onActi
     </div>
     {s.anonymized ? <p className="text-sm text-zinc-400">Os dados que identificavam esta pessoa já foram apagados. Ficaram só números sem identificação.</p>
       : <p className="text-sm text-zinc-300"><span className="text-subtle">Guardado sobre esta pessoa: </span>{stored.join(" · ")}.</p>}
-    {s.platformAccess.length > 0 && !s.anonymized && <p className="flex items-start gap-2 rounded-lg border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-sm text-amber-50"><TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />Esta pessoa também tem acesso à plataforma: {s.platformAccess.join(", ")}. Se o pedido incluir o acesso, desative em Gestão → Time e acessos.</p>}
+    {s.platformAccess.length > 0 && !s.anonymized && <p className="flex items-start gap-2 rounded-lg border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-sm text-amber-50"><TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />Esta pessoa também tem acesso à plataforma: {s.platformAccess.join(", ")}. Se o pedido incluir o acesso, desative em Gestão → Equipe.</p>}
     <div className="flex flex-wrap gap-2">
       <Button variant="outline" className={outline} onClick={() => onAction("export")}><Download /> Cópia dos dados</Button>
       {!s.anonymized && <>

@@ -52,7 +52,7 @@ export function NoticesCard() {
   </section>;
 }
 
-/** Gestão → Avisos por e-mail: situação do envio, prévia dos e-mails e quem recebe. */
+/** Gestão → Empresa → Avisos por e-mail: situação do envio, prévia dos e-mails e quem recebe. */
 export function NotificationsPanel() {
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState("");

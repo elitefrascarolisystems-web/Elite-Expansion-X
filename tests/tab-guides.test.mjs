@@ -36,8 +36,8 @@ function visible(){
  return seen;
 }
 
-test('guias: 30 chaves, uma por tela e uma por portal, cada uma com o seu guia',()=>{
- assert.equal(keys.GUIDE_KEYS.length,30);
+test('guias: 25 chaves, uma por tela e uma por portal, cada uma com o seu guia',()=>{
+ assert.equal(keys.GUIDE_KEYS.length,25);
  assert.deepEqual(Object.keys(guides.TAB_GUIDES).sort(),[...keys.GUIDE_KEYS].sort());
  const seen=visible();
  assert.deepEqual([...seen.keys()].sort(),[...keys.GUIDE_KEYS].sort(),'toda chave é uma tela que alguém vê');
@@ -87,7 +87,7 @@ test('guias: "Fazer agora" só com ação que a função pode fazer (mesma regra
  const can=(action)=>(a)=>perm.canPerform(a,action);
  const map=(a)=>['Administrador','Coordenação','Líder','Comercial'].includes(a.role);
  // Mesmas condições do + Novo em app/expansion-dashboard.tsx.
- const NOVO={mapear:map,'atendimento-novo':can('create_lead'),venda:can('record_sale'),cidade:can('create_city'),embaixador:can('create_ambassador'),parceiro:can('create_partner'),evento:can('create_partner'),material:can('create_content'),custo:can('create_cost'),convidar:(a)=>a.role==='Administrador'};
+ const NOVO={mapear:map,visita:map,importar:map,'atendimento-novo':can('create_lead'),venda:can('record_sale'),cidade:can('create_city'),embaixador:can('create_ambassador'),parceiro:can('create_partner'),evento:can('create_partner'),material:can('create_content'),custo:can('create_cost'),convidar:(a)=>a.role==='Administrador'};
  assert.deepEqual([...block.matchAll(/id: "([a-z-]+)"/g)].map((m)=>m[1]).sort(),Object.keys(NOVO).sort(),'a lista do + Novo mudou: atualize este teste');
  const PORTAL={'portal:embaixador':['portal:atendimento'],'portal:mentorado':['portal:indicar']};
  for(const key of keys.GUIDE_KEYS){

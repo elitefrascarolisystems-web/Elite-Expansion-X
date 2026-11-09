@@ -23,7 +23,7 @@ export function setupSteps(data: DashboardData): Step[] {
   const ambassadors = data.ambassadors.filter((item) => item.status === "Ativo").length;
   const steps: Step[] = [
     { title: "Cidades", detail: data.cities.length ? `${data.cities.length} cidade(s) cadastrada(s).` : "Cadastre as cidades onde a operação vai atuar.", done: data.cities.length > 0, action: "Abrir cidades", tab: "territorio/cidades" },
-    { title: "Equipe com acesso", detail: others.length ? `${entered} de ${others.length} pessoa(s) já entraram.` : "Convide quem vai mapear e vender com você.", done: entered > 0, action: "Convidar equipe", tab: "gestao/time" },
+    { title: "Equipe com acesso", detail: others.length ? `${entered} de ${others.length} pessoa(s) já entraram.` : "Convide quem vai mapear e vender com você.", done: entered > 0, action: "Convidar equipe", tab: "gestao/equipe" },
     { title: "Escritórios e networks", detail: hubs ? `${hubs} local(is) de referência no mapa.` : "Marque os escritórios, networks e pontos de encontro.", done: hubs > 0, action: "Mapear local", tab: "mapear" },
     { title: "Empresas", detail: companies ? `${companies} empresa(s) com tipo e setor.` : "Cadastre as empresas com o setor de cada uma.", done: companies > 0, action: "Mapear empresa", tab: "mapear" },
     { title: "Pessoas ligadas a locais", detail: people ? `${people} pessoa(s) no mapa, ${linked} ligada(s) a um local.` : "Cadastre mentorados, parceiros e contatos, cada um no seu local.", done: linked > 0, action: "Mapear pessoas", tab: "mapear" },
@@ -31,7 +31,7 @@ export function setupSteps(data: DashboardData): Step[] {
     { title: "Atendimentos", detail: data.leads.length ? `${data.leads.length} atendimento(s) em acompanhamento.` : "Comece os primeiros atendimentos e siga o Método F.E.C.H.A.", done: data.leads.length > 0, action: "Abrir vendas", tab: "vendas/agenda" },
   ];
   // Só administradores convidam a equipe.
-  return data.access.role === "Administrador" ? steps : steps.filter((step) => step.tab !== "gestao/time");
+  return data.access.role === "Administrador" ? steps : steps.filter((step) => step.tab !== "gestao/equipe");
 }
 
 export function GettingStarted({ data, onGo }: { data: DashboardData; onGo: (tab: string) => void }) {
@@ -54,7 +54,7 @@ export function GettingStarted({ data, onGo }: { data: DashboardData; onGo: (tab
 const ROLE_WELCOME: Record<AccessView["role"], { what: string; steps: string[]; tab: string; start: string }> = {
   Administrador: {
     what: "Você organiza a operação inteira: cidades, equipe, mapa, vendas e custos.",
-    steps: ["Em Hoje, siga os Primeiros passos na ordem.", "Em Gestão → Time e acessos (ou + Novo → Convidar equipe), convide a equipe e envie o link de cada pessoa.", "Em Resultados, acompanhe o que cada cidade e cada pessoa produziu."],
+    steps: ["Em Hoje, siga os Primeiros passos na ordem.", "Em Gestão → Equipe (ou + Novo → Convidar equipe), convide a equipe e envie o link de cada pessoa.", "Em Resultados, acompanhe o que cada cidade e cada pessoa produziu."],
     tab: "hoje", start: "Ver os Primeiros passos",
   },
   Coordenação: {

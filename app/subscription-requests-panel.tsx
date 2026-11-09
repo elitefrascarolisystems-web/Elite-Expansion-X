@@ -68,7 +68,7 @@ export function SubscriptionRequestsPanel({ onChanged }: { onChanged?: () => voi
       onClose={() => setCreating(null)}
       onSaved={(_data, _created, organizationId) => {
         const row = creating; setCreating(null);
-        toast.success("Empresa criada. Entre nela para gerar o link do responsável em Time e acessos.");
+        toast.success("Empresa criada. Entre nela para gerar o link do responsável em Gestão → Equipe.");
         if (row) void save(row, { status: "Virou assinante", organizationId: organizationId ?? null });
       }} />
   </div>;

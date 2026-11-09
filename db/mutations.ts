@@ -242,7 +242,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     ensureCityPermission(access, cityId);
     const city = await db.prepare("SELECT tracking_mode FROM cities WHERE id = ?").bind(cityId).all();
     if (String(city.results[0]?.tracking_mode) === "Detalhado") {
-      throw new ActionError("Esta cidade usa acompanhamento detalhado: registre os atendimentos e pagamentos em Vendas e os custos em Resultados → Custos e canais.");
+      throw new ActionError("Esta cidade usa acompanhamento detalhado: registre os atendimentos e pagamentos em Vendas e os custos em Resultados → Visão geral (Custo por canal).");
     }
     const insert = db.prepare(`
       INSERT INTO city_updates

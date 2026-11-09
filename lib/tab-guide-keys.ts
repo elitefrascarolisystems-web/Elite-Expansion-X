@@ -11,8 +11,8 @@ export const GUIDE_KEYS = [
   "territorio/mapa", "territorio/cidades", "territorio/locais",
   "vendas/agenda", "vendas/atendimentos",
   "rede/embaixadores", "rede/indicacoes", "rede/mentorados", "rede/parceiros", "rede/materiais",
-  "resultados/visao", "resultados/calculadora", "resultados/metas", "resultados/mapeamento", "resultados/custos",
-  "gestao/time", "gestao/regras", "gestao/identidade", "gestao/plano", "gestao/historico", "gestao/privacidade", "gestao/avisos", "gestao/assessoria",
+  "resultados/visao", "resultados/calculadora", "resultados/metas", "resultados/mapeamento",
+  "gestao/equipe", "gestao/empresa", "gestao/privacidade", "gestao/historico",
   "plataforma/assinaturas", "plataforma/pedidos", "plataforma/assessores",
   "portal:embaixador", "portal:mentorado",
   // Página da pessoa: abre por cima de qualquer tela (&ficha=pessoa:<id>), sem aba própria.

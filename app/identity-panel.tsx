@@ -11,7 +11,7 @@ import { tenantFetch } from "@/lib/tenant-request";
 export const logoUrl = (organizationId: number, version: string | null | undefined) =>
   version ? `/api/organization-logo?org=${organizationId}&v=${encodeURIComponent(version)}` : null;
 
-/** Nome e logo da empresa (Gestão → Identidade). A logo aparece na barra lateral e no mapa impresso. */
+/** Nome e logo da empresa (Gestão → Empresa → Identidade). A logo aparece na barra lateral e no mapa impresso. */
 export function IdentityPanel({ data, onSaved }: { data: DashboardData; onSaved: () => Promise<void> }) {
   const current = logoUrl(data.access.organizationId, data.logoVersion);
   const [name, setName] = useState(data.access.organizationName);

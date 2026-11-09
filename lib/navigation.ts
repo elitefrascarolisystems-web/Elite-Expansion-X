@@ -14,7 +14,9 @@ const MANAGEMENT = ["Administrador", "Coordenação", "Líder"];
 
 export const AREA_IDS: readonly AreaId[] = ["hoje", "territorio", "vendas", "rede", "resultados", "gestao", "plataforma"];
 
-export function navigationFor(access: AccessView, { hasAdvisors }: NavOptions): NavArea[] {
+// `hasAdvisors` ficou para compatibilidade: a Assessoria Elite agora é um bloco de Gestão → Equipe.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function navigationFor(access: AccessView, _options: NavOptions): NavArea[] {
   const manage = MANAGEMENT.includes(access.role);
   const admin = access.role === "Administrador";
   const only = (condition: boolean, view: NavView) => (condition ? [view] : []);
@@ -42,16 +44,16 @@ export function navigationFor(access: AccessView, { hasAdvisors }: NavOptions): 
       id: "resultados", label: "Resultados", description: "Como estamos indo: indicadores, metas, mapeamento e custos.",
       views: [
         ...only(manage, { id: "visao", label: "Visão geral" }), ...only(manage, { id: "calculadora", label: "Calculadora" }), { id: "metas", label: "Metas e rotina" },
-        ...only(manage, { id: "mapeamento", label: "Mapeamento" }), ...only(manage, { id: "custos", label: "Custos e canais" }),
+        ...only(manage, { id: "mapeamento", label: "Mapeamento" }),
       ],
     },
     {
-      id: "gestao", label: "Gestão", description: "Equipe, regras, plano, histórico, pedidos de privacidade (LGPD) e avisos por e-mail da empresa.",
+      id: "gestao", label: "Gestão", description: "Equipe, dados e regras da empresa, privacidade (LGPD) e histórico.",
+      // Simplificação, parte 4: 4 abas. Equipe = Time e acessos (+ Assessoria Elite); Empresa = Identidade, Plano,
+      // Regras e cálculos e Avisos por e-mail, em blocos na mesma página.
       views: admin ? [
-        { id: "time", label: "Time e acessos" }, { id: "regras", label: "Regras e cálculos" },
-        ...only(access.organizationId !== 1, { id: "identidade", label: "Identidade" }), ...only(access.organizationId !== 1, { id: "plano", label: "Plano" }), { id: "historico", label: "Histórico" },
-        { id: "privacidade", label: "Privacidade (LGPD)" }, { id: "avisos", label: "Avisos por e-mail" },
-        ...only(hasAdvisors, { id: "assessoria", label: "Assessoria Elite" }),
+        { id: "equipe", label: "Equipe" }, { id: "empresa", label: "Empresa" },
+        { id: "privacidade", label: "Privacidade (LGPD)" }, { id: "historico", label: "Histórico" },
       ] : [],
     },
     {
@@ -80,13 +82,19 @@ export function defaultLocation(access: AccessView): NavLocation {
 
 /** Vendas → Pagamentos virou o filtro "Com pagamento" de Atendimentos; F.E.C.H.A. e Pós-venda, filtros da Agenda. */
 export const OLD_VIEWS: Record<string, string> = { pagamentos: "atendimentos", fecha: "agenda", posvenda: "agenda" };
+/** Abas que viraram blocos de outra aba (parte 4): os endereços antigos continuam abrindo o lugar certo. */
+export const OLD_AREA_VIEWS: Record<string, Record<string, string>> = {
+  vendas: OLD_VIEWS,
+  resultados: { custos: "visao" },
+  gestao: { time: "equipe", assessoria: "equipe", regras: "empresa", identidade: "empresa", plano: "empresa", avisos: "empresa" },
+};
 /** Filtro rápido que o endereço antigo abre já marcado. */
 export const OLD_VIEW_QUICK: Record<string, string> = { pagamentos: "paid", fecha: "fecha", posvenda: "aftercare" };
 
 /** Corrige um endereço (?area=&ver=) para algo que esta função pode ver. */
 export function resolveLocation(areas: NavArea[], access: AccessView, area?: string | null, view?: string | null): NavLocation {
   // Abas que viraram filtros (simplificação, parte 2): os endereços antigos continuam abrindo o lugar certo.
-  if (area === "vendas" && view && OLD_VIEWS[view]) view = OLD_VIEWS[view];
+  if (area && view && OLD_AREA_VIEWS[area]?.[view]) view = OLD_AREA_VIEWS[area][view];
   // Ganchos foi para Rede → Materiais e ganchos (parte 3); quem não vê Rede → Materiais volta para a Agenda.
   if (area === "vendas" && view === "ganchos") {
     const library = areas.find((item) => item.id === "rede")?.views.some((item) => item.id === "materiais");

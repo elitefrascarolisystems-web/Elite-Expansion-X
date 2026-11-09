@@ -274,7 +274,7 @@ export function GoalCalculator({ access, cities, organizationName, onPersonPage,
   </div>;
 }
 
-/** O mesmo texto aparece em Gestão → Regras e cálculos ("Como a Calculadora calcula"). */
+/** O mesmo texto aparece em Gestão → Empresa → Regras e cálculos ("Como a Calculadora calcula"). */
 export function HowWeCalculate({ excluded }: { excluded?: CalculatorBaseResponse["excluded"] }) {
   return <div className="mt-3 grid gap-2">
     <p><Calculator className="mr-1 inline size-4 text-gold" aria-hidden />Realizado e ritmo contam vendas com pagamento confirmado, pela data do pagamento (como o e-mail semanal). “Ganho” sem pagamento e “Venda confirmada” não contam. Cada atendimento tem no máximo uma venda: receita recorrente não entra.</p>

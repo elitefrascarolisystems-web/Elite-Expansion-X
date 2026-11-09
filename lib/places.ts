@@ -29,8 +29,8 @@ export const PERSON_ROLES = ["Mentor", "Mentorado", "Equipe", "Parceiro", "Vende
  */
 export const ACTIVE_PERSON_ROLES = ["Mentor", "Mentorado", "Cliente assinante"] as const;
 export const LEGACY_ROLE_HINT: Record<string, string> = {
-  Equipe: "quem é da equipe entra por Gestão → Time e acessos",
-  Vendedor: "quem vende entra por Gestão → Time e acessos, com a função Comercial",
+  Equipe: "quem é da equipe entra por Gestão → Equipe",
+  Vendedor: "quem vende entra por Gestão → Equipe, com a função Comercial",
   Network: "use o vínculo \"Membro do network\" com o local",
   Parceiro: "o parceiro agora é um local marcado como parceiro (Território → Locais)",
 };

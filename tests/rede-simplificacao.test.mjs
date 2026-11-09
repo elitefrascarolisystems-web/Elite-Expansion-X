@@ -91,3 +91,11 @@ test('embaixador: código gerado sozinho, 4 situações na tela e números autod
  assert.deepEqual(['Convidado','Em análise','Aprovado','Em treinamento','Ativo','Pausado','Inativo','Desligado'].map(s.ambassadorStep),['Em preparação','Em preparação','Em preparação','Em preparação','Ativo','Pausado','Desligado','Desligado']);
  assert.equal(s.ambassadorStatusFromStep('Em preparação','Convidado'),'Convidado');assert.equal(s.ambassadorStatusFromStep('Em preparação','Pausado'),'Em treinamento');
 });
+
+test('regras em frases (parte 4): mínimos definidos viram uma frase; sem mínimos, pede para editar', async()=>{
+ const r=await vite.ssrLoadModule('/lib/rules-sentences.ts');
+ const base={minActiveAmbassadors:5,minConfirmedPayments:3,minActivePartners:0,minDataPeriods:2,inactivityDays:30,organicGoalPercent:60};
+ assert.deepEqual(r.rulesSentences(base),['Uma cidade avança quando tem 5 embaixadores ativos e 3 pagamentos confirmados, com pelo menos 2 meses de dados.','A meta é que 60% dos atendimentos venham sem mídia paga.','Um embaixador fica inativo depois de 30 dias sem atividade.']);
+ assert.match(r.rulesSentences({...base,minActiveAmbassadors:0,minConfirmedPayments:0})[0],/Ainda falta definir/);
+ assert.match(r.rulesSentences({...base,minActivePartners:1,minConfirmedPayments:1})[0],/5 embaixadores ativos, 1 pagamento confirmado e 1 parceiro ativo, com pelo menos 2 meses/);
+});

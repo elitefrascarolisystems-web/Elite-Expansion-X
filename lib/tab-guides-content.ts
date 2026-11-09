@@ -311,7 +311,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "passos": [
       "Leia a linha \"Meta\" de cada pessoa.",
       "Toque em \"Definir rotina do dia\" e compare \"Frios / rotina\" e \"Contatos / rotina\".",
-      "Leia \"Relatos diários · autodeclarados\" e mande o seu em \"Meu relatório diário\"."
+      "No cartão de cada pessoa, leia o relato do dia; mande o seu em \"Meu dia: relato\"."
     ],
     "exemplo": "O cartão de Bruno mostra \"Meta: 3 de 8 vendas · Semana: 4 de 10 atendimentos\". Para segunda, Ana deu a ele a rotina de 10 frios, 5 quentes e 20 contatos, e o cartão mostrou 20 / 20 contatos. A meta vem da Calculadora; a rotina do dia não é meta.",
     "cuidado": "O Comercial vê só os próprios números. No relato, não escreva contato de cliente.",
@@ -321,7 +321,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
         "passos": [
           "Leia sua linha \"Meta\" e veja \"Contatos / rotina\" do \"Dia\".",
           "Use \"Registrar atividade\" na ficha do atendimento, na Agenda, para somar contatos.",
-          "Toque em \"Meu relatório diário\" no fim do dia e conte impedimentos e o plano de amanhã."
+          "Toque em \"Meu dia: relato\" no fim do dia e conte impedimentos e o plano de amanhã."
         ],
         "exemplo": "Sua linha mostra \"Meta: 3 de 8 vendas · Semana: 4 de 10 atendimentos\". Na rotina de segunda, o cartão mostrou 20 / 20 contatos. No relato, você contou que a Padaria Pão Dourado quer conversar na quarta.",
         "cuidado": "Você vê só os seus números. No relato, não escreva contato de cliente.",
@@ -346,25 +346,8 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "cuidado": "Nunca cadastre endereço de casa de ninguém.",
     "acao": "mapear"
   },
-  "resultados/custos": {
-    "titulo": "Como usar: Custos e canais",
-    "funcoes": [
-      "Administrador",
-      "Coordenação",
-      "Líder"
-    ],
-    "paraQueServe": "Registrar custos e ver quanto custa cada cliente pago.",
-    "passos": [
-      "Toque em \"Registrar custo\" e informe \"Período\", \"Categoria\" e valor.",
-      "Em \"Eficiência por canal\", compare o CAC (custo por cliente pago) de cada canal.",
-      "Em \"Custos registrados\", confira se cada custo entrou uma vez só e no mês certo."
-    ],
-    "exemplo": "Em outubro, Ana registrou R$ 1.000 de anúncios na Cidade Exemplo, com categoria e canal \"Mídia paga\". Vieram 10 atendimentos com autorização registrada e 2 clientes pagos: CAC de R$ 500. O custo de um evento já entra pelo cadastro do evento: não registre de novo.",
-    "cuidado": "Na \"Observação\", não escreva nome nem contato de cliente.",
-    "acao": "novo:custo"
-  },
-  "gestao/time": {
-    "titulo": "Como usar: Time e acessos",
+  "gestao/equipe": {
+    "titulo": "Como usar: Equipe",
     "funcoes": [
       "Administrador"
     ],
@@ -378,46 +361,19 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "cuidado": "A função define o que cada pessoa vê. Envie o link só para ela: vale 72 horas e uma vez só.",
     "acao": "novo:convidar"
   },
-  "gestao/regras": {
-    "titulo": "Como usar: Regras e cálculos",
+  "gestao/empresa": {
+    "titulo": "Como usar: Empresa",
     "funcoes": [
       "Administrador"
     ],
-    "paraQueServe": "Definir quando cada cidade avança e entender cada cálculo.",
+    "paraQueServe": "Regras, avisos, logo e plano da empresa.",
     "passos": [
-      "Em \"Critérios de decisão\", toque em \"Editar\" e defina os mínimos.",
-      "Na mesma janela, preencha o \"Link-base de indicação\": dele sai o link de cada embaixador.",
-      "Em \"Como os indicadores são calculados\" e \"O que cada nome quer dizer\", tire dúvidas."
+      "Em \"Regras e cálculos\", toque em \"Editar\" e defina quando cada cidade avança.",
+      "Em \"Avisos por e-mail\", toque em \"Enviar teste para mim\" e escolha quem recebe.",
+      "Empresa assinante: em \"Identidade\", ponha a logo; em \"Plano\", veja os limites."
     ],
-    "exemplo": "Com os mínimos em 0, as cidades ficavam em \"Preparar\". Ana pôs 5 embaixadores ativos, 10 pagamentos e 2 períodos. A Cidade Exemplo tem 10 pagamentos, mas só 3 embaixadores ativos: em \"Cidades\", ela aparece como \"Ajustar\", com \"Falta atingir: embaixadores ativos\"."
-  },
-  "gestao/identidade": {
-    "titulo": "Como usar: Identidade",
-    "funcoes": [
-      "Administrador"
-    ],
-    "paraQueServe": "Mostrar o nome e a logo da empresa para a equipe.",
-    "passos": [
-      "Em \"Nome da empresa\", escreva o nome que a equipe deve ver.",
-      "Toque em \"Escolher imagem\" e escolha a logo, com até 150 KB e, se der, fundo transparente.",
-      "Marque a caixa de logo oficial e toque em \"Salvar identidade\"."
-    ],
-    "exemplo": "Maria escolheu a logo da empresa, com 100 KB e fundo transparente, marcou que é a logo oficial e tocou em \"Salvar identidade\". A logo passou a aparecer na barra lateral de toda a equipe e no mapa impresso da Cidade Exemplo.",
-    "cuidado": "Use só a logo oficial da {empresa}, com autorização para usá-la."
-  },
-  "gestao/plano": {
-    "titulo": "Como usar: Plano",
-    "funcoes": [
-      "Administrador"
-    ],
-    "paraQueServe": "Ver o que o seu plano inclui e quanto já usou.",
-    "passos": [
-      "Na lista do plano, veja o que está incluído (✓) e o que ficou fora (riscado).",
-      "Em \"Usuários da equipe\" e \"Cidades ativas\", veja quanto já usou de cada limite.",
-      "Deixe uma cidade como \"Planejada\" em \"Cidades\" para ativar outra; para mais vagas, peça a ampliação."
-    ],
-    "exemplo": "O plano permite 5 usuários e 2 cidades ativas. Com a equipe completa, Ana ainda cadastrou Carla como Mentorado, porque mentorado não ocupa vaga. Para ativar a Cidade Exemplo, ela deixou outra cidade como \"Planejada\".",
-    "cuidado": "Quem já está cadastrado continua com acesso: o limite só barra pessoas e cidades novas."
+    "exemplo": "Com os mínimos em 0, as cidades ficavam em \"Preparar\". Ana pôs 5 embaixadores ativos, 10 pagamentos e 2 períodos. A Cidade Exemplo tem 10 pagamentos, mas só 3 embaixadores ativos: em \"Cidades\", ela aparece como \"Ajustar\".",
+    "cuidado": "Use só a logo oficial da {empresa}. O lembrete das 7h30 só sai quando há retorno atrasado ou do dia."
   },
   "gestao/historico": {
     "titulo": "Como usar: Histórico",
@@ -446,34 +402,6 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "exemplo": "Carla pediu por WhatsApp para não ser mais contatada. Ana buscou Carla, tocou em \"Revogar autorização\", escolheu WhatsApp em \"Por onde chegou\" e confirmou. O atendimento saiu da agenda, o cadastro no mapa ficou e o pedido entrou em \"Pedidos atendidos\".",
     "cuidado": "Responda em até 15 dias. A exclusão não pode ser desfeita; na observação, não escreva dados da pessoa."
   },
-  "gestao/avisos": {
-    "titulo": "Como usar: Avisos por e-mail",
-    "funcoes": [
-      "Administrador"
-    ],
-    "paraQueServe": "Ver se os e-mails automáticos saem e quem recebe cada um.",
-    "passos": [
-      "Veja se está \"Envio ligado\" e toque em \"Enviar teste para mim\".",
-      "Em \"Como chega o e-mail\", troque entre \"Lembrete diário\" e \"Resumo semanal\" para ver a prévia.",
-      "Em \"Quem recebe\", ligue ou desligue o \"Diário\" e o \"Semanal\" (só de administradores)."
-    ],
-    "exemplo": "Bruno pediu para não receber o lembrete das 7h30. Ana desligou o \"Diário\" dele em \"Quem recebe\". Bruno também poderia fazer isso sozinho, em Hoje ou pelo link no fim do e-mail. O lembrete só sai quando há retorno atrasado ou marcado para o dia."
-  },
-  "gestao/assessoria": {
-    "titulo": "Como usar: Assessoria Elite",
-    "funcoes": [
-      "Administrador"
-    ],
-    "paraQueServe": "Ver quem da Assessoria Elite acessa seus dados para dar suporte.",
-    "passos": [
-      "Veja na lista o nome e o e-mail de cada pessoa com acesso.",
-      "Em \"Histórico\", procure o selo \"Assessoria Elite\": ele marca o que a assessoria mudou.",
-      "Tire dúvidas sobre uma mudança com quem a fez: o e-mail aparece no item do \"Histórico\"."
-    ],
-    "exemplo": "Na mentoria, Bruno, da Assessoria Elite, atualizou a Cidade Exemplo. Depois, Ana abriu o \"Histórico\" e viu a mudança com o selo \"Assessoria Elite\" e o e-mail de Bruno.",
-    "cuidado": "Esse acesso faz parte do serviço contratado: a Assessoria Elite vê e edita como Administrador.",
-    "acao": "aba:gestao/historico"
-  },
   "plataforma/assinaturas": {
     "titulo": "Como usar: Assinaturas",
     "funcoes": [
@@ -482,7 +410,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     "paraQueServe": "Criar e cuidar das empresas assinantes.",
     "passos": [
       "Toque em \"Nova empresa assinante\", preencha dados e plano e toque em \"Criar empresa\".",
-      "Na empresa nova, toque em \"Entrar\" e gere o link do responsável em \"Time e acessos\".",
+      "Na empresa nova, toque em \"Entrar\" e gere o link do responsável em \"Equipe\".",
       "Veja \"Pagamento vencido\"; na empresa atrasada, mude \"Pago até\" em \"Plano\" ou use \"Suspender\"."
     ],
     "exemplo": "O Escritório Contábil Modelo assinou por R$ 500 por mês. Ana criou a empresa com Daniel como responsável e gerou o link dele. Com o pagamento atrasado, o cartão mostrou \"Vencida há 10 dias\" e Ana tocou em \"Suspender\", com o motivo.",
@@ -509,7 +437,7 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     ],
     "paraQueServe": "Escolher quem é Assessoria Elite nas empresas clientes.",
     "passos": [
-      "Cadastre a pessoa antes em \"Time e acessos\", como ativa.",
+      "Cadastre a pessoa antes em \"Equipe\", como ativa.",
       "Em \"Adicionar assessor\", digite o e-mail da pessoa e toque em \"Conceder assessoria\".",
       "Toque em \"Retirar\" ao lado do nome para tirar o acesso; \"Reativar\" devolve."
     ],

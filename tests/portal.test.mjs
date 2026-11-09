@@ -123,12 +123,12 @@ test('guias "Como usar": o "já vi" grava só a própria linha, sem repetir, e "
  const org=await createOrganization(await access(ADMIN),{name:'Cliente com guia',ownerEmail:'dona@cliente.invalid',ownerName:'Dona',requestId:crypto.randomUUID()});
  addUser('dona@cliente.invalid','Comercial',{name:'Dona também na Elite'});
  globalThis.__eliteTestUser={email:'dona@cliente.invalid',displayName:'Dona'};
- assert.equal((await post({action:'guide_seen',key:'gestao/time'},String(org))).status,200);
- assert.equal(seen('dona@cliente.invalid',org),'gestao/time');assert.equal(seen('dona@cliente.invalid',1),'','na outra empresa nada muda');
+ assert.equal((await post({action:'guide_seen',key:'gestao/equipe'},String(org))).status,200);
+ assert.equal(seen('dona@cliente.invalid',org),'gestao/equipe');assert.equal(seen('dona@cliente.invalid',1),'','na outra empresa nada muda');
  // Assessoria Elite: responde ok e não grava nada na empresa cliente (o "já vi" fica no aparelho).
  globalThis.__eliteTestUser={email:ADMIN,displayName:'Dono'};
  const before=sqlite.prepare('SELECT organization_id o,email,guides_seen g FROM app_users ORDER BY id').all();
- assert.equal((await post({action:'guide_seen',key:'gestao/time'},String(org))).status,200);
+ assert.equal((await post({action:'guide_seen',key:'gestao/equipe'},String(org))).status,200);
  assert.equal((await post({action:'guides_reset'},String(org))).status,200);
  assert.deepEqual(sqlite.prepare('SELECT organization_id o,email,guides_seen g FROM app_users ORDER BY id').all(),before);
  assert.equal((await vite.ssrLoadModule('/db/access.ts').then(m=>m.getUserAccess(ADMIN,'Dono',org))).guidesSeen,undefined,'a assessoria não recebe lista do servidor');

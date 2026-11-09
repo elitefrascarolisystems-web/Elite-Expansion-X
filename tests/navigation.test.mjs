@@ -12,11 +12,13 @@ const shape=(a,opts={hasAdvisors:false})=>Object.fromEntries(nav.navigationFor(a
 test('navegação: cada função vê só as áreas dela',()=>{
  assert.deepEqual(shape(access('Administrador',{isPlatformOwner:true})),{
   hoje:[],territorio:['mapa','cidades','locais'],vendas:['agenda','atendimentos'],
-  rede:['embaixadores','indicacoes','mentorados','parceiros','materiais'],resultados:['visao','calculadora','metas','mapeamento','custos'],
-  gestao:['time','regras','historico','privacidade','avisos'],plataforma:['assinaturas','pedidos','assessores'],
+  rede:['embaixadores','indicacoes','mentorados','parceiros','materiais'],resultados:['visao','calculadora','metas','mapeamento'],
+  gestao:['equipe','empresa','privacidade','historico'],plataforma:['assinaturas','pedidos','assessores'],
  });
  const client=shape(access('Administrador',{organizationId:7}),{hasAdvisors:true});
- assert.deepEqual(client.gestao,['time','regras','identidade','plano','historico','privacidade','avisos','assessoria'],'empresa assinante vê o plano e a assessoria');
+ assert.deepEqual(client.gestao,['equipe','empresa','privacidade','historico'],'Gestão em 4 abas (plano e identidade ficam em Empresa; assessoria em Equipe)');
+ // Endereços antigos de Gestão e de Custos abrem a aba nova.
+ const adm=nav.navigationFor(access('Administrador'),{hasAdvisors:false});assert.deepEqual(nav.resolveLocation(adm,access('Administrador'),'gestao','regras'),{area:'gestao',view:'empresa'});assert.deepEqual(nav.resolveLocation(adm,access('Administrador'),'gestao','time'),{area:'gestao',view:'equipe'});assert.deepEqual(nav.resolveLocation(adm,access('Administrador'),'resultados','custos'),{area:'resultados',view:'visao'});
  assert.equal(client.plataforma,undefined,'só os donos veem a plataforma');
  for(const role of ['Coordenação','Líder']){
   const s=shape(access(role));

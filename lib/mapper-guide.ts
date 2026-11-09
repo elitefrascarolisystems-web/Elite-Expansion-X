@@ -10,7 +10,7 @@ export const MAPPER_GUIDE: GuideSection[] = [
     items: [
       "Seu link de acesso é pessoal: vale por 72 horas e só funciona uma vez. Nele você cria a sua senha.",
       "Depois, entre sempre por /entrar com seu e-mail e sua senha. Não compartilhe o seu login.",
-      "Na primeira entrada aparece o resumo do que a sua função faz. O administrador acompanha tudo em Gestão → Time e acessos.",
+      "Na primeira entrada aparece o resumo do que a sua função faz. O administrador acompanha tudo em Gestão → Equipe.",
       "Cada aba tem um guia “Como usar”: na primeira visita aparece um cartão curto com para que ela serve e o 1º passo. “Ver como usar” mostra os 3 passos e um exemplo; “Entendi” fecha. Depois, o botão “Como usar” no topo da aba (no celular, o ícone ?) reabre o guia. No Ctrl+K, digite o que quer fazer (ex.: retorno) e escolha uma linha “Ajuda”.",
     ],
   },

@@ -5,7 +5,7 @@
  * coordenada: o envio continua pela ficha do atendimento. Não pode ser impressa nem exportada.
  */
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
-import { ArrowLeft, CircleHelp, Copy, Link2, MapPin, Pencil, Sparkles, WifiOff, X } from "lucide-react";
+import { ArrowLeft, CircleHelp, Copy, Link2, MapPin, MessageSquare, Pencil, Sparkles, WifiOff, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { HookPicker } from "@/app/hooks-bank";
@@ -91,6 +91,8 @@ function Body({ personId, access, organizationName, guide, guideSeen, onGuideSee
       <div className="mt-3 flex flex-wrap gap-2">
         <Button size="sm" variant="outline" onClick={() => onAction({ type: "map", personId: p.id })}><MapPin /> Ver no mapa</Button>
         {p.can.edit && <Button size="sm" variant="outline" onClick={() => onAction({ type: "edit", personId: p.id })}><Pencil /> Editar</Button>}
+        {/* Uma regra só (simplificação, parte 4): com atendimento, a conversa é registrada no acompanhamento; sem, vira interação no mapa. */}
+        {p.can.edit && <Button size="sm" variant="outline" onClick={() => { const live = p.attendance && !p.attendance.hidden ? p.attendance : null; if (live) onAction({ type: "followup", leadId: live.leadId }); else onAction({ type: "interaction", personId: p.id }); }}><MessageSquare /> Registrar interação</Button>}
         <Button size="sm" variant="outline" onClick={async () => { if (await copyText(window.location.href)) toast.success("Link copiado."); else toast.error("Não foi possível copiar."); }}><Link2 /> Copiar link</Button>
         {guide && <Button size="sm" variant="ghost" aria-label="Como usar" onClick={() => setShowGuide(true)}><CircleHelp /><span className="hidden sm:inline">Como usar</span></Button>}
       </div>

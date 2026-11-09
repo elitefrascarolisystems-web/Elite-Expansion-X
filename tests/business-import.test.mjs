@@ -22,8 +22,12 @@ function templateLines(file,pattern){
  return {text,header,rows};
 }
 
-test('modelos de pessoas e de empresas: só linhas EXEMPLO, sem contato e sem "Elite"',()=>{
- const people=templateLines('app/people-import.tsx',/const TEMPLATE = "([^"]+)";/);
+test('modelos de pessoas e de empresas: só linhas EXEMPLO, sem contato e sem "Elite"',async()=>{
+ // Pessoas: o modelo único é o da rede (simplificação, parte 4: uma importação só para pessoas).
+ const {NETWORK_TEMPLATE}=await vite.ssrLoadModule('/lib/network-import.ts');
+ const peopleText=NETWORK_TEMPLATE.replace(/\uFEFF/g,'').replaceAll('\r\n','\n');
+ const [peopleHeader,...peopleRows]=peopleText.split('\n').filter(Boolean).map((line)=>line.split(';'));
+ const people={text:peopleText,header:peopleHeader,rows:peopleRows};
  const business=templateLines('app/business-import.tsx',/encodeURIComponent\('(\\uFEFFNome;Tipo de local[^']+)'\)/);
  for(const [name,template] of [['pessoas',people],['empresas',business]]){
   assert.equal(template.header[0],'Nome',name);assert.ok(template.rows.length>=1,name);

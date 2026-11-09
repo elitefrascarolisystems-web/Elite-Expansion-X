@@ -49,6 +49,7 @@ import {
   UserCog,
   UserPlus,
   Users,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -71,6 +72,7 @@ import { availablePeriods, buildDashboardView, EMPTY_FILTERS } from "@/lib/expan
 import { canPerform, type ActionName } from "@/lib/expansion-permissions";
 import { defaultOwnerEmail } from "@/lib/owners";
 import { ambassadorStep } from "@/lib/ambassador-steps";
+import { rulesSentences } from "@/lib/rules-sentences";
 import { OLD_VIEW_QUICK, navigationFor, parseTarget, resolveLocation, type NavLocation } from "@/lib/navigation";
 import type {
   AlertMetric,
@@ -126,7 +128,7 @@ const RevenueCostChart = lazy(() => import("@/app/charts/revenue-cost-chart"));
 // Telas e janelas que só aparecem numa aba ou ao abrir: cada uma vem quando é usada, e Hoje abre mais leve.
 const TerritorialMap = lazy(() => import("@/app/territorial-map").then((m) => ({ default: m.TerritorialMap })));
 const TerritoryDecisions = lazy(() => import("@/app/territory-decisions").then((m) => ({ default: m.TerritoryDecisions })));
-const PeopleImport = lazy(() => import("@/app/people-import").then((m) => ({ default: m.PeopleImport })));
+const ImportChooser = lazy(() => import("@/app/import-chooser").then((m) => ({ default: m.ImportChooser })));
 const NetworkImport = lazy(() => import("@/app/network-import").then((m) => ({ default: m.NetworkImport })));
 const RegionPanel = lazy(() => import("@/app/region-panel").then((m) => ({ default: m.RegionPanel })));
 const CommercialWorkspace = lazy(() => import("@/app/commercial-workspace").then((m) => ({ default: m.CommercialWorkspace })));
@@ -148,6 +150,7 @@ function subscribeFicha(listener: () => void) {
   return () => { window.removeEventListener("popstate", listener); window.removeEventListener(FICHA_EVENT, listener); };
 }
 const PlantingToday = lazy(() => import("@/app/plant-dialogs").then((m) => ({ default: m.PlantingToday })));
+const VisitShortcut = lazy(() => import("@/app/visit-shortcut").then((m) => ({ default: m.VisitShortcut })));
 const GoalCard = lazy(() => import("@/app/goal-card").then((m) => ({ default: m.GoalCard })));
 const HowWeCalculate = lazy(() => import("@/app/goal-calculator").then((m) => ({ default: m.HowWeCalculate })));
 const PortalAdmin = lazy(() => import("@/app/portal-admin").then((m) => ({ default: m.PortalAdmin })));
@@ -241,20 +244,22 @@ function TodayPanel({ data, view, onGo, onFollowup, shortcuts }: { data: Dashboa
   const manage = ["Administrador", "Coordenação", "Líder"].includes(data.access.role);
   return <div className="space-y-5">
     {shortcuts.length > 0 && <nav aria-label="Atalhos do dia" className="flex flex-wrap gap-2">{shortcuts.map(({ id, label, icon: Icon, disabled, run }, index) => <Button key={id} disabled={Boolean(disabled)} title={disabled ? `Indisponível: ${disabled}` : undefined} onClick={run} variant={index === 0 ? "default" : "outline"} className={index === 0 ? "bg-gold text-black" : "border-white/10 bg-white/5 text-white"}><Icon /> {label}</Button>)}</nav>}
-    {/* Indicadores primeiro: o "painel do dia" abre pelos números. */}
+    {["Administrador", "Coordenação", "Líder", "Comercial"].includes(data.access.role) && <Suspense fallback={<article className="elite-card h-[84px]" aria-hidden />}><GoalCard access={data.access} onGo={onGo} /></Suspense>}
+    {agenda && (agenda.late || agenda.today) ? <AgendaBanner agenda={agenda} onAll={() => onGo("vendas/agenda")} onOpen={onFollowup} />
+      : <article className="elite-card flex flex-wrap items-center gap-4 p-5"><span className="rounded-xl bg-emerald-400/10 p-3 text-emerald-300"><Check /></span><div className="mr-auto"><p className="font-semibold text-white">Nenhum retorno atrasado ou para hoje</p><p className="mt-1 text-sm text-subtle">Quando houver, eles aparecem aqui primeiro.</p></div><Button variant="outline" onClick={() => onGo("vendas/agenda")} className="border-white/10 bg-white/5 text-white">Abrir a agenda</Button></article>}
+    {["Administrador", "Coordenação", "Líder", "Comercial"].includes(data.access.role) && <Suspense fallback={null}><PlantingToday /></Suspense>}
+    {manage && <GettingStarted data={data} onGo={onGo} />}
+    {manage && <Alerts items={view.alerts} />}
+    {["Administrador", "Coordenação", "Líder", "Comercial"].includes(data.access.role) && !data.access.isAdvisory && <NoticesCard />}
+    {/* Simplificação, parte 4: os números ficam recolhidos no fim; o dia abre pelo que fazer. */}
+    <details className="elite-card p-4"><summary className="cursor-pointer text-sm font-medium text-zinc-200">Números do período (atendimentos, clientes, conversão e receita)</summary><div className="mt-4">
     <section className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Indicadores">
       <Kpi label="Atendimentos" value={number(summary.validLeads)} helper={summary.organicShare === null ? "Origem dos atendimentos ainda sem base" : `${ratio(summary.organicShare)} sem mídia paga`} icon={Megaphone} trend={trendOf(view.timeline, "leads")} series={seriesOf(view.timeline, "leads", "Atendimentos")} />
       <Kpi label="Clientes pagos" value={number(summary.confirmedPayments)} helper="Pagamentos confirmados" icon={BadgeCheck} trend={trendOf(view.timeline, "payments")} series={seriesOf(view.timeline, "payments", "Clientes pagos")} />
       <Kpi label="Conversão" value={ratio(summary.conversion)} helper="Pagamentos ÷ atendimentos" icon={Target} />
       <Kpi label="Receita confirmada" value={money(summary.revenueCents, true)} helper="Somente pagamentos confirmados" icon={Banknote} emphasis trend={trendOf(view.timeline, "revenue")} series={seriesOf(view.timeline, "revenue", "Receita confirmada", (value) => money(value * 100, true))} />
     </section>
-    {["Administrador", "Coordenação", "Líder", "Comercial"].includes(data.access.role) && <Suspense fallback={<article className="elite-card h-[84px]" aria-hidden />}><GoalCard access={data.access} onGo={onGo} /></Suspense>}
-    {["Administrador", "Coordenação", "Líder", "Comercial"].includes(data.access.role) && <Suspense fallback={null}><PlantingToday /></Suspense>}
-    {agenda && (agenda.late || agenda.today) ? <AgendaBanner agenda={agenda} onAll={() => onGo("vendas/agenda")} onOpen={onFollowup} />
-      : <article className="elite-card flex flex-wrap items-center gap-4 p-5"><span className="rounded-xl bg-emerald-400/10 p-3 text-emerald-300"><Check /></span><div className="mr-auto"><p className="font-semibold text-white">Nenhum retorno atrasado ou para hoje</p><p className="mt-1 text-sm text-subtle">Quando houver, eles aparecem aqui primeiro.</p></div><Button variant="outline" onClick={() => onGo("vendas/agenda")} className="border-white/10 bg-white/5 text-white">Abrir a agenda</Button></article>}
-    {manage && <GettingStarted data={data} onGo={onGo} />}
-    {manage && <Alerts items={view.alerts} />}
-    {["Administrador", "Coordenação", "Líder", "Comercial"].includes(data.access.role) && !data.access.isAdvisory && <NoticesCard />}
+    </div></details>
   </div>;
 }
 
@@ -347,7 +352,7 @@ function CostsPanel({ data, view, onCreate }: { data: DashboardData; view: Dashb
 
 function RulesPanel({ data, view, open }: { data: DashboardData; view: DashboardView; open: (dialog: DialogState) => void }) {
   return <div className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
-    <article className="elite-card p-6"><div className="flex items-start justify-between gap-4"><div><p className="section-kicker">Regras visíveis</p><h3 className="text-xl font-semibold text-white">Critérios de decisão</h3></div><Button size="sm" onClick={() => open({ name: "settings" })} className="bg-gold text-black"><Settings /> Editar</Button></div><dl className="mt-6 grid gap-4 text-sm"><div className="flex justify-between gap-4"><dt className="text-subtle">Embaixadores ativos</dt><dd className="text-white">{data.settings.minActiveAmbassadors || "Não definido"}</dd></div><div className="flex justify-between gap-4"><dt className="text-subtle">Pagamentos mínimos</dt><dd className="text-white">{data.settings.minConfirmedPayments || "Não definido"}</dd></div><div className="flex justify-between gap-4"><dt className="text-subtle">Períodos mínimos</dt><dd className="text-white">{data.settings.minDataPeriods || "Não definido"}</dd></div><div className="flex justify-between gap-4"><dt className="text-subtle">Meta orgânica</dt><dd className="text-white">{data.settings.organicGoalPercent ? `${data.settings.organicGoalPercent}%` : "Sem exigência"}</dd></div><div className="flex justify-between gap-4"><dt className="text-subtle">Inatividade</dt><dd className="text-white">{data.settings.inactivityDays ? `${data.settings.inactivityDays} dias` : "Qualquer atividade registrada"}</dd></div><div className="flex justify-between gap-4"><dt className="text-subtle">Atribuição</dt><dd className="text-right text-white">{data.settings.attributionModel}</dd></div></dl><div className="mt-6 rounded-xl border border-white/8 bg-white/[0.025] p-4 text-sm leading-6 text-zinc-400">Custo por embaixador ativo: <strong className="text-white">{money(view.summary.costPerActiveAmbassadorCents)}</strong><p className="mt-1 text-xs text-subtle">Custos ligados ao canal, ao embaixador ou a recompensa autorizada ÷ embaixadores ativos.</p></div></article>
+    <article className="elite-card p-6"><div className="flex items-start justify-between gap-4"><div><p className="section-kicker">Regras visíveis</p><h3 className="text-xl font-semibold text-white">Quando cada cidade avança</h3></div><Button size="sm" onClick={() => open({ name: "settings" })} className="bg-gold text-black"><Settings /> Editar</Button></div><ul className="mt-6 grid gap-3 text-sm leading-6 text-zinc-200">{rulesSentences(data.settings).map((line) => <li key={line} className="rounded-lg border border-white/8 bg-white/[0.02] px-3 py-2">{line}</li>)}</ul><div className="mt-6 rounded-xl border border-white/8 bg-white/[0.025] p-4 text-sm leading-6 text-zinc-400">Custo por embaixador ativo: <strong className="text-white">{money(view.summary.costPerActiveAmbassadorCents)}</strong><p className="mt-1 text-xs text-subtle">Custos ligados ao canal, ao embaixador ou a recompensa autorizada ÷ embaixadores ativos.</p></div></article>
     <article className="elite-card p-6"><p className="section-kicker">Transparência</p><h3 className="text-xl font-semibold text-white">Como os indicadores são calculados</h3><dl className="mt-5 grid gap-3 text-sm leading-5 text-zinc-400 sm:grid-cols-2"><div><dt className="text-white">Conversão</dt><dd>Pagamentos confirmados ÷ atendimentos válidos.</dd></div><div><dt className="text-white">Custo por atendimento</dt><dd>Custos atribuíveis ÷ atendimentos válidos.</dd></div><div><dt className="text-white">CAC</dt><dd>Custos atribuíveis ÷ clientes com pagamento confirmado.</dd></div><div><dt className="text-white">Participação orgânica</dt><dd>Atendimentos sem mídia paga ÷ total de atendimentos válidos.</dd></div><div><dt className="text-white">ROAS</dt><dd>Receita atribuída à mídia ÷ investimento em mídia.</dd></div><div><dt className="text-white">ROI</dt><dd>(Receita atribuída − custo atribuível) ÷ custo atribuível.</dd></div><div><dt className="text-white">Ativação</dt><dd>Embaixadores ativos ÷ aprovados elegíveis.</dd></div><div><dt className="text-white">Sem base confiável</dt><dd>O painel mostra “Sem dados suficientes” e não divide por zero.</dd></div></dl></article>
     <article className="elite-card p-6 xl:col-span-2 text-sm leading-6 text-zinc-300"><p className="section-kicker">Resultados → Calculadora</p><h3 className="text-xl font-semibold text-white">Como a Calculadora calcula</h3><Suspense fallback={null}><HowWeCalculate /></Suspense></article>
     <article className="elite-card p-6 xl:col-span-2"><p className="section-kicker">Palavras da plataforma</p><h3 className="text-xl font-semibold text-white">O que cada nome quer dizer</h3><dl className="mt-5 grid gap-4 text-sm leading-5 text-zinc-400 sm:grid-cols-2 xl:grid-cols-3">
@@ -417,7 +422,7 @@ const MANAGEMENT_ROLES = ["Administrador", "Coordenação", "Líder"];
 /** Sub-abas de Vendas que são visões do acompanhamento (a de Pagamentos é outra tela). */
 const FOLLOWUP_VIEWS = { agenda: "agenda", atendimentos: "table" } as const;
 /** Onde a barra de filtros (cidade, período, canal, líder, embaixador) vale. */
-const FILTERED = ["territorio/cidades", "rede/embaixadores", "resultados/visao", "resultados/custos"];
+const FILTERED = ["territorio/cidades", "rede/embaixadores", "resultados/visao"];
 
 export function ExpansionDashboard({ initialData, userName, signOutPath, initialArea, initialView }: { initialData: DashboardData; userName: string; signOutPath: string; initialArea?: string | null; initialView?: string | null }) {
   const [data, setData] = useState(initialData);
@@ -440,8 +445,11 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const [opportunityEdit, setOpportunityEdit] = useState<OpportunityEdit | null>(null);
   // "Usar gancho" na ficha: dados do atendimento para preencher a mensagem.
   const [hookContext, setHookContext] = useState<HookContext | null>(null);
-  // Muda a cada "+ Novo → Convidar equipe": reabre Time e acessos com o convite aberto.
+  // Muda a cada "+ Novo → Convidar equipe": reabre Gestão → Equipe com o convite aberto.
   const [inviteRequest, setInviteRequest] = useState(0);
+  // "+ Novo → Registrar visita": escolhe o local e abre a janela de visita.
+  const [visitOpen, setVisitOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const areas = useMemo(() => navigationFor(data.access, { hasAdvisors: data.advisors.length > 0 }), [data.access, data.advisors.length]);
   const [location, setLocation] = useState<NavLocation>(() => resolveLocation(areas, initialData.access, initialArea, initialView));
   // Endereço antigo (Pagamentos, F.E.C.H.A., Pós-venda): abre a aba nova com o filtro rápido certo.
@@ -573,13 +581,15 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const actions: NewAction[] = [
     ...when(canMap, { id: "mapear", label: "Mapear local e pessoas", icon: MapPin, group: "dia", disabled: noCity, run: () => setMappingOpen(true) }),
     ...when(canPipeline, { id: "atendimento-novo", label: "Novo atendimento", icon: UserPlus, group: "dia", disabled: noCity, run: () => setDialog({ name: "lead" }) }),
+    ...when(canMap, { id: "visita", label: "Registrar visita", icon: MapPin, group: "dia", disabled: noCity, run: () => setVisitOpen(true) }),
     ...when(canSale, { id: "venda", label: "Registrar venda e pagamento", icon: Banknote, group: "dia", disabled: !eligibleLeads.length ? "sem atendimento" : undefined, run: () => setDialog({ name: "sale" }) }),
     ...when(canCity, { id: "cidade", label: "Cadastrar cidade", icon: MapPin, group: "cadastro", run: () => setDialog({ name: "city" }) }),
     ...when(canAmbassador, { id: "embaixador", label: "Cadastrar embaixador", icon: Users, group: "cadastro", disabled: noCity, run: () => setDialog({ name: "ambassador" }) }),
     ...when(canOperation, { id: "parceiro", label: "Cadastrar parceiro", icon: Handshake, group: "cadastro", disabled: noCity, run: () => setDialog({ name: "partner" }) }, { id: "evento", label: "Cadastrar evento", icon: CalendarDays, group: "cadastro", disabled: noCity, run: () => setDialog({ name: "event" }) }),
     ...when(canContent, { id: "material", label: "Adicionar material", icon: Library, group: "cadastro", run: () => setDialog({ name: "content" }) }),
+    ...when(canImport, { id: "importar", label: "Importar planilha", icon: Upload, group: "cadastro", run: () => setImportOpen(true) }),
     ...when(canCost, { id: "custo", label: "Registrar custo", icon: CircleDollarSign, group: "cadastro", disabled: noCity, run: () => setDialog({ name: "cost" }) }),
-    ...when(data.access.role === "Administrador", { id: "convidar", label: "Convidar equipe", icon: UserPlus, group: "cadastro", run: () => navigate({ area: "gestao", view: "time" }, { invite: true }) }),
+    ...when(data.access.role === "Administrador", { id: "convidar", label: "Convidar equipe", icon: UserPlus, group: "cadastro", run: () => navigate({ area: "gestao", view: "equipe" }, { invite: true }) }),
   ];
 
   // "Fazer agora" do guia: a mesma ação do + Novo (com o mesmo motivo de indisponível), uma tela ou o mapeamento guiado.
@@ -613,8 +623,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
 
         {location.area === "hoje" && <TodayPanel data={data} view={fullView} onGo={go} onFollowup={openFollowup} shortcuts={actions.filter((action) => action.group === "dia")} />}
 
-        {here === "territorio/mapa" && <>{/* Mapa em primeiro lugar: as ações principais ficam na barra do próprio mapa. */}<TerritorialMap guideChip={firstVisit && guide ? <TabGuideChip label="Como usar o mapa" onOpen={openGuide} onDone={() => guides.markSeen("territorio/mapa")} /> : undefined} actions={canMap ? <><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-gold text-black"><MapPin /><span>Mapear<span className="territory-bar-label"> local e pessoas</span></span></Button><Button asChild variant="outline" title="Imprimir mapa (A3/PDF)"><a href={`/imprimir/mapa?org=${data.access.organizationId}`} target="_blank" rel="noopener"><Printer /><span className="territory-bar-label">Imprimir</span><span className="sr-only"> mapa (A3/PDF)</span></a></Button></> : undefined} key={`${mapFocusKey || mapPersonId || mapLeadId || "map"}${mapIntent ?? ""}`} focusKey={mapFocusKey} focusPersonId={mapPersonId} focusLeadId={mapLeadId} focusIntent={mapIntent} onPersonPage={openPersonPage} onMapPlace={(id) => { setMappingPlace(id); setMappingOpen(true); }} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canImport && <PeopleImport data={data} onSaved={refreshDashboard} />}</>}
-        {here === "territorio/cidades" && <><ActionBar hint="Saúde de cada cidade, decisão registrada e fechamentos consolidados.">{canPerform(data.access, "record_city") && <Button onClick={() => setDialog({ name: "city-result" })} variant="outline" className={outline}><Activity /> Fechamento consolidado</Button>}{canCity && <Button onClick={() => setDialog({ name: "city" })} className="bg-gold text-black">Cadastrar cidade</Button>}</ActionBar><CityTable cities={view.cities} onCreate={canCity ? () => setDialog({ name: "city" }) : undefined} onEdit={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canMap && data.cities.length > 0 && <RegionPanel data={data} onChanged={refreshDashboard} />}<TerritoryDecisions data={data} /></>}
+        {here === "territorio/mapa" && <>{/* Mapa em primeiro lugar: as ações principais ficam na barra do próprio mapa. */}<TerritorialMap guideChip={firstVisit && guide ? <TabGuideChip label="Como usar o mapa" onOpen={openGuide} onDone={() => guides.markSeen("territorio/mapa")} /> : undefined} actions={canMap ? <><Button disabled={!data.cities.length} title={!data.cities.length ? "Cadastre uma cidade primeiro." : undefined} onClick={() => setMappingOpen(true)} className="bg-gold text-black"><MapPin /><span>Mapear<span className="territory-bar-label"> local e pessoas</span></span></Button><Button asChild variant="outline" title="Imprimir mapa (A3/PDF)"><a href={`/imprimir/mapa?org=${data.access.organizationId}`} target="_blank" rel="noopener"><Printer /><span className="territory-bar-label">Imprimir</span><span className="sr-only"> mapa (A3/PDF)</span></a></Button></> : undefined} key={`${mapFocusKey || mapPersonId || mapLeadId || "map"}${mapIntent ?? ""}`} focusKey={mapFocusKey} focusPersonId={mapPersonId} focusLeadId={mapLeadId} focusIntent={mapIntent} onPersonPage={openPersonPage} onMapPlace={(id) => { setMappingPlace(id); setMappingOpen(true); }} onFollowup={openFollowup} view={fullView} data={data} onOpen={manage ? setDialog : undefined} onRefresh={refreshDashboard} onConfigureCity={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} /></>}
+        {here === "territorio/cidades" && <><ActionBar hint="Saúde de cada cidade, decisão registrada e fechamentos consolidados.">{canPerform(data.access, "record_city") && data.cities.some((city) => city.trackingMode === "Consolidado") && <Button onClick={() => setDialog({ name: "city-result" })} variant="outline" className={outline}><Activity /> Fechamento consolidado</Button>}{canCity && <Button onClick={() => setDialog({ name: "city" })} className="bg-gold text-black">Cadastrar cidade</Button>}</ActionBar><CityTable cities={view.cities} onCreate={canCity ? () => setDialog({ name: "city" }) : undefined} onEdit={canPerform(data.access, "update_city") ? (id) => setDialog({ name: "city-edit", entityId: id }) : undefined} />{canMap && data.cities.length > 0 && <RegionPanel data={data} onChanged={refreshDashboard} />}<TerritoryDecisions data={data} /></>}
         {here === "territorio/locais" && <CommercialWorkspace data={data} mode="businesses" onRefresh={refreshDashboard} />}
 
         {here === "vendas/atendimentos" && <>{canSale && <ActionBar hint="Todos os atendimentos, com a etapa e o pagamento. Use o filtro “Com pagamento” para ver as vendas; a receita só conta depois do pagamento confirmado."><Button disabled={!eligibleLeads.length} title={!eligibleLeads.length ? "Comece um atendimento antes de registrar uma venda." : undefined} onClick={() => setDialog({ name: "sale" })} className="bg-gold text-black"><Banknote /> Registrar venda e pagamento</Button></ActionBar>}<PendingAttendances data={data} onDone={refreshDashboard} /></>}
@@ -627,20 +637,20 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
         {here === "rede/parceiros" && <><ActionBar hint="Quem abre portas na cidade e as ações locais planejadas.">{canOperation && <><Button onClick={() => setDialog({ name: "partner" })} variant="outline" className={outline}><Handshake /> Cadastrar parceiro</Button><Button onClick={() => setDialog({ name: "event" })} className="bg-gold text-black"><CalendarDays /> Cadastrar evento</Button></>}</ActionBar><PartnersEvents data={data} onPartner={canOperation ? () => setDialog({ name: "partner" }) : undefined} onEvent={canOperation ? () => setDialog({ name: "event" }) : undefined} /></>}
         {here === "rede/materiais" && <><ActionBar hint="Tudo o que a equipe pode usar com as pessoas: materiais (mensagens, vídeos, roteiros) e ganchos de conversa. No atendimento, a equipe acha os ganchos em “Usar gancho”, na ficha.">{canContent && <Button onClick={() => setDialog({ name: "content" })} className="bg-gold text-black"><Library /> Adicionar material</Button>}</ActionBar><Materials data={data} onCreate={canContent ? () => setDialog({ name: "content" }) : undefined} /><section aria-label="Ganchos" className="mt-8 space-y-3"><h2 className="text-xl font-semibold text-white">Ganchos de conversa</h2><HooksBank /></section></>}
 
-        {here === "resultados/visao" && <ResultsOverview view={view} canExport={data.plan?.exports !== false} />}
+        {here === "resultados/visao" && <><ResultsOverview view={view} canExport={data.plan?.exports !== false} /><section aria-label="Custo por canal" className="mt-8 space-y-4"><ActionBar hint="Custo por canal: quanto custa cada resultado, por origem, com os mesmos filtros.">{canCost && <Button onClick={() => setDialog({ name: "cost" })} className="bg-gold text-black"><CircleDollarSign /> Registrar custo</Button>}</ActionBar><CostsPanel data={data} view={view} onCreate={canCost ? () => setDialog({ name: "cost" }) : undefined} /></section></>}
         {here === "resultados/calculadora" && <GoalCalculator access={data.access} cities={data.cities.map((c) => ({ id: c.id, name: c.name }))} organizationName={data.access.organizationName} onPersonPage={openPersonPage} onMapKey={openMapKey} />}
         {here === "resultados/metas" && <CommercialWorkspace data={data} mode="team" onRefresh={refreshDashboard} />}
         {here === "resultados/mapeamento" && (data.mappingStats ? <MappingStatsPanel stats={data.mappingStats} /> : <article className="elite-card"><EmptyState title="Sem dados de mapeamento" description="Os indicadores aparecem quando houver locais e pessoas no mapa." /></article>)}
-        {here === "resultados/custos" && <><ActionBar hint="Quanto custa cada resultado, por origem.">{canCost && <Button onClick={() => setDialog({ name: "cost" })} className="bg-gold text-black"><CircleDollarSign /> Registrar custo</Button>}</ActionBar><CostsPanel data={data} view={view} onCreate={canCost ? () => setDialog({ name: "cost" }) : undefined} /></>}
 
-        {here === "gestao/time" && <TeamPanel key={inviteRequest} startInvite={inviteRequest > 0} data={data} onData={setData} onRefresh={refreshDashboard} open={setDialog} />}
-        {here === "gestao/regras" && <RulesPanel data={data} view={view} open={setDialog} />}
-        {here === "gestao/identidade" && <IdentityPanel data={data} onSaved={refreshDashboard} />}
-        {here === "gestao/plano" && data.plan && <PlanCard plan={data.plan} organization={data.access.organizationName} />}
+        {here === "gestao/equipe" && <><TeamPanel key={inviteRequest} startInvite={inviteRequest > 0} data={data} onData={setData} onRefresh={refreshDashboard} open={setDialog} />{data.advisors.length > 0 && <section aria-label="Assessoria Elite" className="mt-8 space-y-3"><h2 className="text-xl font-semibold text-white">Assessoria Elite</h2><AdvisoryPanel data={data} /></section>}</>}
+        {here === "gestao/empresa" && <div className="space-y-10">
+          {data.access.organizationId !== 1 && <section aria-label="Identidade" className="space-y-3"><h2 className="text-xl font-semibold text-white">Identidade</h2><IdentityPanel data={data} onSaved={refreshDashboard} /></section>}
+          {data.access.organizationId !== 1 && data.plan && <section aria-label="Plano" className="space-y-3"><h2 className="text-xl font-semibold text-white">Plano</h2><PlanCard plan={data.plan} organization={data.access.organizationName} /></section>}
+          <section aria-label="Regras e cálculos" className="space-y-3"><h2 className="text-xl font-semibold text-white">Regras e cálculos</h2><RulesPanel data={data} view={view} open={setDialog} /></section>
+          <section aria-label="Avisos por e-mail" className="space-y-3"><h2 className="text-xl font-semibold text-white">Avisos por e-mail</h2><NotificationsPanel /></section>
+        </div>}
         {here === "gestao/historico" && <HistoryPanel data={data} />}
         {here === "gestao/privacidade" && <PrivacyPanel />}
-        {here === "gestao/avisos" && <NotificationsPanel />}
-        {here === "gestao/assessoria" && <AdvisoryPanel data={data} />}
 
         {here === "plataforma/assinaturas" && <SubscriptionsPanel />}
         {here === "plataforma/pedidos" && <SubscriptionRequestsPanel onChanged={() => { refreshDashboard().catch(() => undefined); }} />}
@@ -648,6 +658,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
       </div></Suspense>
     </AppShell>
     {/* Janelas: o código de cada uma vem quando ela abre (ou antes, em segundo plano — warmUp). */}
+    {importOpen && <Suspense fallback={null}><ImportChooser canPeople={canImport} onClose={() => setImportOpen(false)} onGo={go} /></Suspense>}
+    {visitOpen && <Suspense fallback={null}><VisitShortcut data={data} onClose={() => setVisitOpen(false)} onSaved={() => { void refreshDashboard(); }} onMapPeople={(id) => { setVisitOpen(false); setMappingPlace(id); setMappingOpen(true); }} /></Suspense>}
     {dialog && <Suspense fallback={null}><ExpansionDialog dialog={dialog} data={data} saving={saving} onClose={() => setDialog(null)} onSave={save} /></Suspense>}
     {opportunityEdit && <Suspense fallback={null}><OpportunityDialog edit={opportunityEdit} data={data} onClose={() => setOpportunityEdit(null)} onSaved={() => { refreshDashboard().catch(() => toast.error("Salvo. Atualize a página para ver a lista atualizada.")); }} /></Suspense>}
     {hookContext && <Suspense fallback={null}><HookPicker context={hookContext} onClose={() => setHookContext(null)} /></Suspense>}

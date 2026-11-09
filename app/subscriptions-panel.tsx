@@ -141,7 +141,7 @@ export function SubscriptionsPanel() {
     {data.audit.length > 0 && <section className="elite-card p-5"><h3 className="text-sm font-semibold text-white">Histórico das assinaturas</h3><ul className="mt-3 grid gap-2 text-xs text-zinc-400">{data.audit.slice(0, 12).map((item, index) => <li key={index} className="flex flex-wrap gap-x-2"><span className="text-subtle">{when(item.at)}</span><span className="text-white">{names.get(item.organizationId) ?? `Empresa ${item.organizationId}`}</span><span className="text-gold-soft">{ACTIONS[item.action] ?? item.action}</span><span className="min-w-0 break-words">{item.reason}</span><span className="text-subtle">por {item.actor}</span></li>)}</ul></section>}
 
     {/* A chave recria o formulário a cada abertura: erro limpo e nova solicitação. */}
-    <PlanDialog key={editing === "new" ? "new" : `plan-${editing?.id ?? "closed"}`} target={editing} onClose={() => setEditing(null)} onSaved={(next, created) => { setData(next); setEditing(null); if (created) toast.success("Empresa criada. Use Entrar para gerar o link do responsável em Time e acessos."); else toast.success("Plano salvo."); }} />
+    <PlanDialog key={editing === "new" ? "new" : `plan-${editing?.id ?? "closed"}`} target={editing} onClose={() => setEditing(null)} onSaved={(next, created) => { setData(next); setEditing(null); if (created) toast.success("Empresa criada. Use Entrar para gerar o link do responsável em Gestão → Equipe."); else toast.success("Plano salvo."); }} />
     <StatusDialog key={`status-${status?.id ?? "closed"}`} target={status} onClose={() => setStatus(null)} onSaved={(next) => { setData(next); setStatus(null); }} />
   </div>;
 }
