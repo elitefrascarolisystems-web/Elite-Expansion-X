@@ -11,7 +11,7 @@ import { TerritoryPersonPicker } from "@/app/territory-person-picker";
 import { RegionSelect } from "@/app/region-select";
 import type { DashboardData } from "@/lib/expansion-types";
 import { defaultOwnerEmail } from "@/lib/owners";
-import { nameKey, PERSON_ROLES, PLACE_LINKS, PLACE_TYPES, SECTORS } from "@/lib/places";
+import { ACTIVE_PERSON_ROLES, nameKey, PLACE_LINKS, PLACE_TYPES, SECTORS } from "@/lib/places";
 import { offlineError, type SendError } from "@/lib/offline-queue";
 import { tenantFetch } from "@/lib/tenant-request";
 
@@ -223,7 +223,7 @@ export function MappingWizard({ open, data, onClose, onSaved, initialPlaceId }: 
       <div className="grid gap-3 sm:grid-cols-[1.4fr_1fr_1fr]">
         <label className="grid gap-1 text-sm">Nome<input className="commercial-input" value={personForm.name} maxLength={200} onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter" && personReady && !busy) { e.preventDefault(); savePerson(); } }} /></label>
         <label className="grid gap-1 text-sm">Vínculo{!place && " (sem local)"}<select className="commercial-input" disabled={!place} value={personForm.link} onChange={(e) => setPersonForm({ ...personForm, link: e.target.value })}><option value="">Selecione</option>{linkOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
-        <label className="grid gap-1 text-sm">Papel (opcional)<select className="commercial-input" value={personForm.role} onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}><option value="">Nenhum</option>{PERSON_ROLES.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="grid gap-1 text-sm">Papel (opcional)<select className="commercial-input" value={personForm.role} onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}><option value="">Nenhum</option>{ACTIVE_PERSON_ROLES.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
       {placeSector === "Religioso" && <p role="alert" className="rounded-lg border border-amber-300/30 bg-amber-300/5 p-3 text-sm text-amber-100">Igreja revela religião (dado sensível). Mapeie o lugar, mas não ligue pessoas a ele.</p>}
       {placeSector === "Saúde" && <p className="text-xs text-subtle">Em local de saúde, só vínculo de trabalho: ser paciente revela dado de saúde.</p>}

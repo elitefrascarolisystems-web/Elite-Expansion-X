@@ -1,4 +1,4 @@
-import {isTemplateExample,nameKey,PERSON_ROLES,PLACE_LINKS,PLACE_TYPES,personRoleFromText,placeLinkFromText,SECTORS,TEMPLATE_EXAMPLE_ERROR} from '@/lib/places';
+import {ACTIVE_PERSON_ROLES,isTemplateExample,LEGACY_ROLE_HINT,nameKey,PERSON_ROLES,PLACE_LINKS,PLACE_TYPES,personRoleFromText,placeLinkFromText,SECTORS,TEMPLATE_EXAMPLE_ERROR} from '@/lib/places';
 import { z, ZodError } from 'zod';
 import {rowDue,type Followup} from '@/lib/followup';
 import { database, brazilTimestamp } from '@/db/runtime';
@@ -44,7 +44,7 @@ const recordsSql = `WITH records_base AS (
  'Pessoa'||CASE WHEN p.leader=1 THEN ',Líder' ELSE '' END||CASE WHEN EXISTS(SELECT 1 FROM ambassadors WHERE person_id=p.id) THEN ',Embaixador' ELSE '' END||CASE WHEN EXISTS(SELECT 1 FROM leads WHERE person_id=p.id AND consent_revoked_at IS NULL) THEN ',Lead' ELSE '' END||CASE WHEN EXISTS(SELECT 1 FROM leads l JOIN sales s ON s.lead_id=l.id WHERE l.person_id=p.id AND l.consent_revoked_at IS NULL AND s.status='Pagamento confirmado' AND s.paid_at IS NOT NULL) THEN ',Cliente' ELSE '' END||CASE WHEN EXISTS(SELECT 1 FROM territory_people ch WHERE ch.referrer_id=p.id AND NOT EXISTS(SELECT 1 FROM leads lx WHERE lx.person_id=ch.id AND lx.consent_revoked_at IS NOT NULL)) THEN ',Indicador' ELSE '' END||CASE WHEN EXISTS(SELECT 1 FROM territory_people ch JOIN leads lc ON lc.person_id=ch.id JOIN sales sc ON sc.lead_id=lc.id WHERE ch.referrer_id=p.id AND lc.consent_revoked_at IS NULL AND sc.status='Pagamento confirmado' AND sc.paid_at IS NOT NULL) THEN ',Multiplicador' ELSE '' END||COALESCE((SELECT ','||group_concat(role,',') FROM territory_roles WHERE person_id=p.id),'')||CASE WHEN p.place_link='Mentorado' AND NOT EXISTS(SELECT 1 FROM territory_roles WHERE person_id=p.id AND role='Mentorado') THEN ',Mentorado' WHEN p.place_link='Membro do network' AND NOT EXISTS(SELECT 1 FROM territory_roles WHERE person_id=p.id AND role='Network') THEN ',Network' ELSE '' END
  FROM territory_people p
  WHERE (NOT EXISTS(SELECT 1 FROM leads WHERE person_id=p.id AND consent_revoked_at IS NOT NULL)
- OR p.leader=1 OR EXISTS(SELECT 1 FROM ambassadors WHERE person_id=p.id) OR EXISTS(SELECT 1 FROM territory_roles WHERE person_id=p.id AND status NOT IN ('Desligado','Inativo')))
+ OR p.leader=1 OR EXISTS(SELECT 1 FROM ambassadors WHERE person_id=p.id) OR EXISTS(SELECT 1 FROM territory_roles WHERE person_id=p.id AND status NOT IN ('Desligado','Inativo','Encerrado')))
  AND p.name NOT LIKE '${ANONYMOUS_LABEL}%'
  UNION ALL
  SELECT 'partner:'||id, CAST(id AS TEXT), 'partner',city_id,name,status,contact_name,created_at,next_action,'',NULL,NULL,NULL,'Parceiro' FROM partners WHERE NOT EXISTS(SELECT 1 FROM businesses b WHERE b.partner_id=partners.id)
@@ -123,7 +123,7 @@ if(p.place_id&&p.place_name&&(!Number(p.sensitive)||management(a)))record.place=
   return {roleCounts:{Lead:Number(count[0]?.leads??0),Cliente:Number(count[0]?.clients??0),Indicador:Number(count[0]?.referrers??0),Multiplicador:Number(count[0]?.multipliers??0),Mentorado:Number(count[0]?.members??0),Mentor:Number(count[0]?.mentors??0),Embaixador:Number(count[0]?.ambassadors??0),Líder:Number(count[0]?.leaders??0)},points:points.slice(0,POINT_LIMIT).map(p=>({latitude:Number(p.latitude),longitude:Number(p.longitude),count:Number(p.count),people:Number(p.people),key:str(p.entity_key),kind:str(p.kind) as TerritoryRecord['kind'],roles:str(p.roles).split(','),status:str(p.status),name:str(p.name)})),pointsCapped:points.length>POINT_LIMIT,inView:Number(inView[0]?.total??0),people:Number(count[0]?.people??0),pending:Number(count[0]?.pending??0),records,total:Number(count[0]?.total??0),hasMore:result.length>200,nextOffset:result.length>200?offset+200:null,updatedAt:brazilTimestamp(),canEdit:mapper(a)};
 }
 /** Pessoas que aparecem no mapa (a mesma regra da lista): sem consentimento revogado, ou com papel ativo na rede. */
-const visiblePersonSql=(alias:string)=>`${alias}.name NOT LIKE '${ANONYMOUS_LABEL}%' AND (NOT EXISTS(SELECT 1 FROM leads lr WHERE lr.person_id=${alias}.id AND lr.consent_revoked_at IS NOT NULL) OR ${alias}.leader=1 OR EXISTS(SELECT 1 FROM ambassadors ab WHERE ab.person_id=${alias}.id) OR EXISTS(SELECT 1 FROM territory_roles tr WHERE tr.person_id=${alias}.id AND tr.status NOT IN ('Desligado','Inativo')))`;
+const visiblePersonSql=(alias:string)=>`${alias}.name NOT LIKE '${ANONYMOUS_LABEL}%' AND (NOT EXISTS(SELECT 1 FROM leads lr WHERE lr.person_id=${alias}.id AND lr.consent_revoked_at IS NOT NULL) OR ${alias}.leader=1 OR EXISTS(SELECT 1 FROM ambassadors ab WHERE ab.person_id=${alias}.id) OR EXISTS(SELECT 1 FROM territory_roles tr WHERE tr.person_id=${alias}.id AND tr.status NOT IN ('Desligado','Inativo','Encerrado')))`;
 /** Locais e ações que cada função vê nos modos: os mesmos do Explorar. */
 function placeScope(a:AccessView,alias:string,ownerColumn:'owner_email'|'created_by') {
   if (a.role === 'Administrador') return {sql:'1=1',values:[] as (string|number)[]};
@@ -239,7 +239,7 @@ async function importPeople(a:AccessView,input:unknown){
         const refusal=linkRefusal({type:found[0].type,sector:found[0].sector},link,{},true);if(refusal)throw new TerritoryError(refusal);
         placeId=found[0].id;placeLink=link;
       }
-      const role=r.role?personRoleFromText(r.role):null;if(r.role&&!role)throw new TerritoryError(`Papel "${r.role}" não reconhecido. Use: ${PERSON_ROLES.join(', ')}.`);
+      const role=r.role?personRoleFromText(r.role):null;if(r.role&&!role)throw new TerritoryError(`Papel "${r.role}" não reconhecido. Use: ${ACTIVE_PERSON_ROLES.join(', ')}.`);
       if(body.commit===true){
         const saved=await mutateTerritory(a,'person',{requestId:crypto.randomUUID(),cityId:r.cityId,name:r.name,placeId,placeLink,authorized:true,confirmDuplicate:true},'Importação') as {id:string};
         if(role)await mutateTerritory(a,'role',{personId:saved.id,role,status:'Ativo',responsible:a.name||a.email,source:'Importação de planilha',authorized:true});
@@ -294,6 +294,8 @@ export async function mutateTerritory(a:AccessView,action:string,input:unknown,o
   }
   if(action==='role') {
     const v=roleSchema.parse(input),p=await entity(a,`person:${v.personId}`);await allowedCity(a,Number(p.city_id));
+    // Papéis antigos (Equipe, Vendedor, Network, Parceiro): só se edita o que já existe; não se cria de novo.
+    if(!(ACTIVE_PERSON_ROLES as readonly string[]).includes(v.role)&&!(await dbRows('SELECT 1 FROM territory_roles WHERE person_id=? AND city_id=? AND role=?',[v.personId,Number(p.city_id),v.role]))[0])throw new TerritoryError(`O papel "${v.role}" não é mais usado: ${LEGACY_ROLE_HINT[v.role]}.`);
     await db.batch([db.prepare(`INSERT INTO territory_roles(id,person_id,city_id,role,status,responsible,source,authorized_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(person_id,city_id,role) DO UPDATE SET status=excluded.status,responsible=excluded.responsible,source=excluded.source,authorized_by=excluded.authorized_by,updated_at=excluded.updated_at`).bind(crypto.randomUUID(),v.personId,p.city_id,v.role,v.status,v.responsible,v.source,a.email,now,now),auditStatement(a,'save_role',v.personId)]);return;
   }
   if(action==='person') {

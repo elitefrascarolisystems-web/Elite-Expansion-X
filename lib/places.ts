@@ -22,6 +22,23 @@ export const PLACE_LINKS = ["Sócio / dono", "Colaborador", "Mentorado", "Membro
 
 /** Papéis de pessoa no mapa (além de Líder, Embaixador, Lead e Cliente, que vêm de outros cadastros). */
 export const PERSON_ROLES = ["Mentor", "Mentorado", "Equipe", "Parceiro", "Vendedor", "Cliente assinante", "Network"] as const;
+/**
+ * Papéis oferecidos hoje (simplificação, parte 3). Equipe e Vendedor: quem é da equipe tem login (Time e acessos).
+ * Network: é o vínculo "Membro do network" com o local. Parceiro: o parceiro é um local marcado como parceiro.
+ * Os papéis antigos já gravados continuam valendo e aparecem como "(antigo)" até a gestão revisar.
+ */
+export const ACTIVE_PERSON_ROLES = ["Mentor", "Mentorado", "Cliente assinante"] as const;
+export const LEGACY_ROLE_HINT: Record<string, string> = {
+  Equipe: "quem é da equipe entra por Gestão → Time e acessos",
+  Vendedor: "quem vende entra por Gestão → Time e acessos, com a função Comercial",
+  Network: "use o vínculo \"Membro do network\" com o local",
+  Parceiro: "o parceiro agora é um local marcado como parceiro (Território → Locais)",
+};
+/** Situação do papel na tela: Ativo, Pausado ou Encerrado (as antigas continuam gravadas). */
+export const ROLE_STEPS = ["Ativo", "Pausado", "Encerrado"] as const;
+export const ENDED_ROLE_STATUSES = ["Desligado", "Inativo", "Encerrado"] as const;
+export const roleStatusStep = (status: string | null | undefined) => status === "Pausado" ? "Pausado" : (ENDED_ROLE_STATUSES as readonly string[]).includes(status ?? "") ? "Encerrado" : "Ativo";
+export const roleStatusFromStep = (step: string, current?: string | null) => current && roleStatusStep(current) === step ? current : step;
 
 /** Rótulo usado para o ícone de um local a partir dos papéis gravados ("Tipo,Setor"). */
 export function placeIconLabel(roles: string[]): string {
@@ -62,4 +79,4 @@ export const sectorFromText = (value: string) => fromList(SECTORS, value, {
 export const placeLinkFromText = (value: string) => fromList(PLACE_LINKS, value, {
   socio: "Sócio / dono", dono: "Sócio / dono", proprietario: "Sócio / dono", funcionario: "Colaborador", membro: "Membro do network",
 });
-export const personRoleFromText = (value: string) => fromList(PERSON_ROLES, value, { mentorada: "Mentorado", assinante: "Cliente assinante" });
+export const personRoleFromText = (value: string) => fromList(ACTIVE_PERSON_ROLES, value, { mentorada: "Mentorado", assinante: "Cliente assinante" });

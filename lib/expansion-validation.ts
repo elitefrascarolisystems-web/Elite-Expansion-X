@@ -2,6 +2,7 @@ import "./zod-pt";
 import { z } from "zod";
 import { ACTIONS, type ActionName } from "@/lib/expansion-permissions";
 import { USER_ROLES } from "@/lib/expansion-types";
+import { PLACE_TYPES, SECTORS } from "@/lib/places";
 
 const shortText = z.string().trim().min(1).max(160);
 /**
@@ -54,7 +55,8 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     personId: z.string().uuid().optional(),
     cityId: id,
     name: shortText,
-    code: z.string().trim().min(3).max(30).regex(/^[A-Za-z0-9_-]+$/, "Use letras, números, hífen ou sublinhado."),
+    // Vazio: o servidor gera (EMB-XXXXXX).
+    code: z.string().trim().max(30).regex(/^[A-Za-z0-9_-]*$/, "Use letras, números, hífen ou sublinhado.").refine((v) => v === "" || v.length >= 3, "Use pelo menos 3 caracteres.").default(""),
     email: blank(emailOrEmpty.default("")),
     whatsapp: z.string().trim().max(30).default(""),
     whatsappAuthorized: z.boolean().default(false),
@@ -175,8 +177,13 @@ export const actionSchemas: Record<ActionName, z.ZodTypeAny> = {
     type: shortText,
     contactName: optionalText,
     whatsapp: z.string().trim().max(30).default(""),
-    status: z.enum(["Em conversa", "Ativo", "Pausado", "Encerrado"]),
+    status: z.enum(["Em conversa", "Ativo", "Pausado", "Encerrado"]).default("Ativo"),
     nextAction: optionalText,
+    // O parceiro é um local: tipo e setor do local no mapa (o setor pode ficar para a revisão da gestão).
+    placeType: z.enum(PLACE_TYPES).default("Empresa"),
+    sector: z.union([z.enum(SECTORS), z.literal("")]).default(""),
+    /** Local já cadastrado que passa a ser parceiro (Território → Locais → Marcar como parceiro). */
+    businessId: z.string().uuid().optional(),
   }),
   create_event: z.object({
     cityId: id,

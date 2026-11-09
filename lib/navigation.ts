@@ -27,7 +27,7 @@ export function navigationFor(access: AccessView, { hasAdvisors }: NavOptions): 
     {
       id: "vendas", label: "Vendas", description: "Do primeiro contato ao pagamento, e o cuidado depois da venda.",
       views: [
-        { id: "agenda", label: "Agenda" }, { id: "atendimentos", label: "Atendimentos" }, { id: "ganchos", label: "Ganchos" },
+        { id: "agenda", label: "Agenda" }, { id: "atendimentos", label: "Atendimentos" },
       ],
     },
     {
@@ -35,7 +35,7 @@ export function navigationFor(access: AccessView, { hasAdvisors }: NavOptions): 
       views: [
         ...only(manage, { id: "embaixadores", label: "Embaixadores" }), { id: "indicacoes", label: "Indicações" },
         ...only(admin, { id: "mentorados", label: "Mentorados" }), ...only(manage, { id: "parceiros", label: "Parceiros e eventos" }),
-        ...only(manage, { id: "materiais", label: "Materiais" }),
+        ...only(manage, { id: "materiais", label: "Materiais e ganchos" }),
       ],
     },
     {
@@ -87,6 +87,11 @@ export const OLD_VIEW_QUICK: Record<string, string> = { pagamentos: "paid", fech
 export function resolveLocation(areas: NavArea[], access: AccessView, area?: string | null, view?: string | null): NavLocation {
   // Abas que viraram filtros (simplificação, parte 2): os endereços antigos continuam abrindo o lugar certo.
   if (area === "vendas" && view && OLD_VIEWS[view]) view = OLD_VIEWS[view];
+  // Ganchos foi para Rede → Materiais e ganchos (parte 3); quem não vê Rede → Materiais volta para a Agenda.
+  if (area === "vendas" && view === "ganchos") {
+    const library = areas.find((item) => item.id === "rede")?.views.some((item) => item.id === "materiais");
+    return library ? { area: "rede", view: "materiais" } : { area: "vendas", view: "agenda" };
+  }
   const target = areas.find((item) => item.id === area);
   if (!target) return defaultLocation(access);
   if (!target.views.length) return { area: target.id, view: "" };

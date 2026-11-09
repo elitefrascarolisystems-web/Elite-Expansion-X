@@ -116,7 +116,7 @@ export async function getPersonPage(a: AccessView, id: string, opts: { all?: boo
   const isClient = leads.some((l) => !l.consent_revoked_at && l.sale_status === "Pagamento confirmado" && l.paid_at);
   const bought = childRows.filter((c) => num(c.client)).length;
   const level: Level = bought > 0 ? "Multiplicador" : childRows.length > 0 ? "Indicador" : isClient ? "Cliente" : null;
-  const roleNames = roles.filter((r) => !["Desligado", "Inativo"].includes(str(r.status))).map((r) => str(r.role));
+  const roleNames = roles.filter((r) => !["Desligado", "Inativo", "Encerrado"].includes(str(r.status))).map((r) => str(r.role));
   const badges = [...new Set([...(roleNames.includes("Mentorado") || person.place_link === "Mentorado" ? ["Mentorado"] : []), ...(ambassadorRows[0] ? ["Embaixador"] : []), ...(num(person.leader) ? ["Líder"] : [])])];
 
   // Local principal: o vínculo sensível nunca aponta a pessoa no local; só a gestão vê o nome, "a revisar".

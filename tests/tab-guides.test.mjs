@@ -36,8 +36,8 @@ function visible(){
  return seen;
 }
 
-test('guias: 31 chaves, uma por tela e uma por portal, cada uma com o seu guia',()=>{
- assert.equal(keys.GUIDE_KEYS.length,31);
+test('guias: 30 chaves, uma por tela e uma por portal, cada uma com o seu guia',()=>{
+ assert.equal(keys.GUIDE_KEYS.length,30);
  assert.deepEqual(Object.keys(guides.TAB_GUIDES).sort(),[...keys.GUIDE_KEYS].sort());
  const seen=visible();
  assert.deepEqual([...seen.keys()].sort(),[...keys.GUIDE_KEYS].sort(),'toda chave é uma tela que alguém vê');
@@ -89,7 +89,7 @@ test('guias: "Fazer agora" só com ação que a função pode fazer (mesma regra
  // Mesmas condições do + Novo em app/expansion-dashboard.tsx.
  const NOVO={mapear:map,'atendimento-novo':can('create_lead'),venda:can('record_sale'),cidade:can('create_city'),embaixador:can('create_ambassador'),parceiro:can('create_partner'),evento:can('create_partner'),material:can('create_content'),custo:can('create_cost'),convidar:(a)=>a.role==='Administrador'};
  assert.deepEqual([...block.matchAll(/id: "([a-z-]+)"/g)].map((m)=>m[1]).sort(),Object.keys(NOVO).sort(),'a lista do + Novo mudou: atualize este teste');
- const PORTAL={'portal:embaixador':['portal:atendimento','portal:atividade'],'portal:mentorado':['portal:indicar']};
+ const PORTAL={'portal:embaixador':['portal:atendimento'],'portal:mentorado':['portal:indicar']};
  for(const key of keys.GUIDE_KEYS){
   for(const role of guides.TAB_GUIDES[key].funcoes){
    const action=guides.resolveGuide(key,role,'Empresa Teste').acao;

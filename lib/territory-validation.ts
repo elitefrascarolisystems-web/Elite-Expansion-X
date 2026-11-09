@@ -41,7 +41,7 @@ export function displayedCoordinates(kind: string, latitude: number | null, long
   // Personal coordinates are never accepted; reads resolve the city reference server-side.
   return kind === 'person' ? {latitude:null,longitude:null} : {latitude,longitude};
 }
-export const roleSchema=z.object({personId:z.string().uuid(),role:z.enum(PERSON_ROLES),status:z.enum(['Convidado','Em análise','Aprovado','Em treinamento','Ativo','Pausado','Inativo','Desligado']),responsible:text,source:text.min(3),authorized:z.literal(true)});
+export const roleSchema=z.object({personId:z.string().uuid(),role:z.enum(PERSON_ROLES),status:z.enum(['Convidado','Em análise','Aprovado','Em treinamento','Ativo','Pausado','Inativo','Desligado','Encerrado']),responsible:text,source:text.min(3),authorized:z.literal(true)});
 
 /** Linha da planilha de pessoas: o local é procurado pelo nome dentro da cidade. */
 export const importPersonSchema = z.object({

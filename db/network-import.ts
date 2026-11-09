@@ -1,6 +1,6 @@
 import { ZodError } from "zod";
 import { linkRefusal } from "@/lib/person-places";
-import { isTemplateExample, nameKey, PERSON_ROLES, PLACE_LINKS, personRoleFromText, placeLinkFromText, TEMPLATE_EXAMPLE_ERROR } from "@/lib/places";
+import { ACTIVE_PERSON_ROLES, isTemplateExample, nameKey, PLACE_LINKS, personRoleFromText, placeLinkFromText, TEMPLATE_EXAMPLE_ERROR } from "@/lib/places";
 import { canPerform } from "@/lib/expansion-permissions";
 import { importNetworkRowSchema } from "@/lib/territory-validation";
 import type { NetworkOutcome } from "@/lib/network-import";
@@ -88,7 +88,7 @@ export async function importNetwork(a: AccessView, input: unknown) {
         else if (commit) { regionId = crypto.randomUUID(); await db.prepare("INSERT INTO territory_regions(id,city_id,name,name_key,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?)").bind(regionId, r.cityId, r.region, nameKey(r.region), a.email, brazilTimestamp(), brazilTimestamp()).run(); }
       }
       const role = r.role ? personRoleFromText(r.role) : null;
-      if (r.role && !role) throw new TerritoryError(`Papel "${r.role}" não reconhecido. Use: ${PERSON_ROLES.join(", ")}.`);
+      if (r.role && !role) throw new TerritoryError(`Papel "${r.role}" não reconhecido. Use: ${ACTIVE_PERSON_ROLES.join(", ")}.`);
 
       // Quem indicou: pessoa do mapa na mesma cidade, ou outra linha da planilha (gravada antes desta).
       let referrerId: string | null = null;

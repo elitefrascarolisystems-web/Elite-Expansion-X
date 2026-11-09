@@ -58,6 +58,7 @@ jobs:
             tests/person-page.test.mjs \
             tests/person-places.test.mjs \
             tests/places.test.mjs \
+            tests/rede-simplificacao.test.mjs \
             tests/portal.test.mjs \
             tests/privacy.test.mjs \
             tests/regions.test.mjs \

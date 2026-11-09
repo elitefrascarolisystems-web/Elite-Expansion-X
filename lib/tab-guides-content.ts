@@ -160,36 +160,6 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       }
     }
   },
-  "vendas/ganchos": {
-    "titulo": "Como usar: Ganchos",
-    "funcoes": [
-      "Administrador",
-      "Coordenação",
-      "Líder",
-      "Comercial"
-    ],
-    "paraQueServe": "Guardar as frases de abordagem e aprovar as que a equipe usa.",
-    "passos": [
-      "Toque em \"Cadastrar gancho\" ou em \"Importar ganchos\".",
-      "Confira o texto e toque em \"Aprovar\": só os aprovados aparecem para a equipe.",
-      "Na ficha do atendimento, \"Usar gancho\" já troca o nome, a cidade e o responsável."
-    ],
-    "exemplo": "Ana cadastrou o gancho \"Retomada depois do evento\" e tocou em \"Aprovar\". Na Agenda, Bruno abriu a ficha de Carla e usou o gancho: a mensagem já veio com o nome dela. Ele conferiu, copiou e enviou.",
-    "cuidado": "O gancho aprovado aparece para toda a equipe: nunca escreva nele nome, telefone ou outro dado de cliente.",
-    "porFuncao": {
-      "Comercial": {
-        "paraQueServe": "Achar a frase certa para cada conversa, já aprovada pela gestão.",
-        "passos": [
-          "Escolha a situação, como \"Primeiro contato\" ou \"Retomada\".",
-          "Toque em \"Copiar\" e troque as variáveis, como o nome, antes de enviar.",
-          "Na Agenda, em \"Abrir ficha\", toque em \"Usar gancho\": a mensagem já sai com o nome."
-        ],
-        "exemplo": "Maria vai retomar a conversa com Daniel, que pediu um tempo para pensar. Na Agenda, ela abriu a ficha dele, tocou em \"Usar gancho\" e escolheu \"Retomada\": a mensagem já veio com o nome de Daniel. Ela conferiu, copiou e enviou.",
-        "cuidado": "Só a gestão cadastra e aprova ganchos: se faltar um, peça a ela. A plataforma não envia nada sozinha.",
-        "acao": "aba:vendas/agenda"
-      }
-    }
-  },
   "rede/embaixadores": {
     "titulo": "Como usar: Embaixadores",
     "funcoes": [
@@ -199,11 +169,11 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
     ],
     "paraQueServe": "Cadastrar embaixadores e acompanhar cada um até ficar ativo.",
     "passos": [
-      "Toque em \"Cadastrar embaixador\" e crie o \"Código único\" dele.",
-      "Na lista, toque em \"Acompanhar\" para atualizar o treinamento e a \"Situação\".",
-      "Use \"Criar tarefa\" para a missão da semana e \"Registrar atividade\" quando ele agir."
+      "Toque em \"Cadastrar embaixador\": o código do link sai sozinho.",
+      "Na lista, toque em \"Acompanhar\" para mudar o nível ou a \"Situação\".",
+      "Use \"Criar tarefa\" para a missão da semana; os atendimentos dele contam sozinhos."
     ],
-    "exemplo": "Daniel vai indicar a {empresa}. Você o cadastrou e deu a missão de levar a aula aberta à Academia Corpo Ativo. Ele só fica ativo com treinamento em 100%, regras aceitas por ele e atividade registrada. Quem ele indicar só vira atendimento com autorização.",
+    "exemplo": "Daniel vai indicar a {empresa}. Você o cadastrou e deu a missão de levar a aula aberta à Academia Corpo Ativo. Ele fica ativo ao concluir o treinamento e aceitar as regras no portal e indicar o 1º atendimento. Quem ele indicar só vira atendimento com autorização.",
     "cuidado": "Salve o WhatsApp só de quem autorizou o contato. As regras do programa, só o próprio embaixador aceita.",
     "acao": "novo:embaixador"
   },
@@ -253,28 +223,28 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Coordenação",
       "Líder"
     ],
-    "paraQueServe": "Registrar quem abre portas na cidade e as ações locais.",
+    "paraQueServe": "Locais parceiros e as ações locais.",
     "passos": [
-      "Toque em \"Cadastrar parceiro\" e escreva a \"Próxima ação\".",
+      "Toque em \"Cadastrar parceiro\" (ou, em Locais, \"Marcar como parceiro\").",
       "Toque em \"Cadastrar evento\", escolha o \"Parceiro\" e informe data, \"Responsável\" e custo.",
       "Em \"Parceiros\", confira a próxima ação; em \"Eventos\", a data, o responsável e o custo."
     ],
     "exemplo": "A Academia Corpo Ativo topou receber uma aula aberta. Ana cadastrou a academia como parceira e o evento de sábado com custo de R$ 200, que entra sozinho nos custos. Das 30 pessoas da aula, 5 autorizaram o contato e viraram atendimento. As outras não foram registradas.",
-    "cuidado": "Em \"WhatsApp\", registre só o contato que o parceiro passou. Pessoas do evento só viram atendimento com autorização.",
+    "cuidado": "Em \"WhatsApp do contato\", registre só o contato que o parceiro passou. Pessoas do evento só viram atendimento com autorização.",
     "acao": "novo:parceiro"
   },
   "rede/materiais": {
-    "titulo": "Como usar: Materiais",
+    "titulo": "Como usar: Materiais e ganchos",
     "funcoes": [
       "Administrador",
       "Coordenação",
       "Líder"
     ],
-    "paraQueServe": "Guardar materiais e escolher quem pode usar cada um.",
+    "paraQueServe": "Aprovar materiais e ganchos da equipe.",
     "passos": [
-      "Toque em \"Adicionar material\", cole o link e escreva as \"Instruções\".",
-      "Em \"Para quem\", escolha embaixadores, mentorados ou todos.",
-      "Em \"Situação\", marque \"Aprovado\" só depois de revisar: só o aprovado aparece nos portais."
+      "Toque em \"Adicionar material\", cole o link e escolha \"Para quem\".",
+      "Em \"Ganchos de conversa\", cadastre ou importe e toque em \"Aprovar\".",
+      "Só o aprovado aparece: materiais nos portais, ganchos em \"Usar gancho\" na ficha."
     ],
     "exemplo": "Ana gravou um vídeo curto da aula aberta da {empresa} na Academia Corpo Ativo. Colou o link, marcou para todos e \"Aprovado\": o vídeo apareceu no portal dos embaixadores e no dos mentorados. Daniel, embaixador, envia o vídeo só para contatos que autorizaram.",
     "cuidado": "Não ponha no material nome, telefone ou foto de cliente sem a autorização dele. Embaixadores só usam material aprovado.",

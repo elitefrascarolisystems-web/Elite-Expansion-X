@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { parseBusinessFile } from "@/lib/commercial-import";
 import type { DashboardData } from "@/lib/expansion-types";
-import { isTemplateExample, nameKey, PERSON_ROLES, PLACE_LINKS, TEMPLATE_EXAMPLE_ERROR } from "@/lib/places";
+import { ACTIVE_PERSON_ROLES, isTemplateExample, nameKey, PLACE_LINKS, TEMPLATE_EXAMPLE_ERROR } from "@/lib/places";
 import { tenantFetch } from "@/lib/tenant-request";
 
 type Outcome = { line: number; ok: boolean; status: string };
@@ -74,7 +74,7 @@ export function PeopleImport({ data, onSaved }: { data: DashboardData; onSaved: 
 
   const okCount = outcomes.filter((o) => o.ok).length;
   return <details className="elite-card mt-4 p-4"><summary className="cursor-pointer font-semibold">Importar pessoas por planilha (CSV ou XLSX)</summary><div className="mt-4 space-y-3 text-sm">
-    <p className="text-zinc-400">Até 50 pessoas por lote. Colunas: {COLUMNS.map(([, label]) => label).join(", ")}. Só o nome é obrigatório. O <strong className="text-zinc-200">Local</strong> precisa estar cadastrado na mesma cidade (escreva o nome igual). Vínculo: {PLACE_LINKS.join(", ")}. Papel: {PERSON_ROLES.join(", ")}. Nunca inclua endereço de residência.</p>
+    <p className="text-zinc-400">Até 50 pessoas por lote. Colunas: {COLUMNS.map(([, label]) => label).join(", ")}. Só o nome é obrigatório. O <strong className="text-zinc-200">Local</strong> precisa estar cadastrado na mesma cidade (escreva o nome igual). Vínculo: {PLACE_LINKS.join(", ")}. Papel: {ACTIVE_PERSON_ROLES.join(", ")}. Nunca inclua endereço de residência.</p>
     <a className="text-amber-200 underline" download="modelo-pessoas.csv" href={"data:text/csv;charset=utf-8," + encodeURIComponent(TEMPLATE)}>Baixar modelo CSV</a>
     <p className="text-xs text-zinc-400">A linha que começa por EXEMPLO só mostra o formato e não é importada: troque pelos dados reais.</p>
     {stage === "file" && <>

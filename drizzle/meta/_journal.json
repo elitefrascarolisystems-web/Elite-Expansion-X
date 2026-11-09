@@ -232,6 +232,13 @@
       "when": 1794165700206,
       "tag": "0032_portal_person_confirmed",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1794184213028,
+      "tag": "0033_parceiro_vira_local",
+      "breakpoints": true
     }
   ]
 }

@@ -21,6 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionName } from "@/lib/expansion-permissions";
 import { defaultOwnerEmail, eligibleOwners } from "@/lib/owners";
+import { PLACE_TYPES, SECTORS } from "@/lib/places";
+import { AMBASSADOR_STEPS, ambassadorStatusFromStep, ambassadorStep } from "@/lib/ambassador-steps";
 import { OLD_SALE_STATUSES, SALE_STEPS, saleStatusLabel } from "@/lib/commercial";
 import type { AmbassadorRecord, CityRecord, DashboardData } from "@/lib/expansion-types";
 
@@ -30,7 +32,6 @@ export type DialogName =
   | "city-result"
   | "ambassador"
   | "ambassador-edit"
-  | "ambassador-activity"
   | "lead"
   | "lead-status"
   | "sale"
@@ -138,39 +139,37 @@ function CityFields({ city, saving, onSave, mode }: { city?: CityRecord; saving:
 function AmbassadorFields({ data, ambassador, saving, onSave, mode }: { data: DashboardData; ambassador?: AmbassadorRecord; saving: boolean; onSave: Save; mode: "create" | "edit" }) {
   const [cityId, setCityId] = useState(String(ambassador?.cityId ?? data.cities[0]?.id ?? ""));
   const [level, setLevel] = useState(ambassador?.level ?? "Indicador");
-  const [status, setStatus] = useState(ambassador?.status ?? "Convidado");
-  const [onboarding, setOnboarding] = useState(ambassador?.onboardingStatus ?? "Pendente");
+  const [step, setStep] = useState<string>(ambassadorStep(ambassador?.status ?? "Em treinamento"));
+  const status = ambassadorStatusFromStep(step, ambassador?.status);
   const [whatsappAuthorized, setWhatsappAuthorized] = useState(Boolean(ambassador?.whatsappAuthorizedAt));
   return (
     <FormShell
       title={mode === "create" ? "Cadastrar embaixador" : `Acompanhar ${ambassador?.name}`}
-      description={mode === "create" ? "O cadastro não torna a pessoa ativa. Ativação exige treinamento, regras aceitas e atividade real." : "Atualize a etapa sem registrar aceite das regras em nome da pessoa."}
+      description={mode === "create" ? "O código do link é gerado sozinho. A pessoa fica ativa quando conclui o treinamento e aceita as regras no portal e indica o primeiro atendimento." : "O treinamento e o aceite das regras a pessoa faz no portal dela."}
       saving={saving}
       onSubmit={(event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         if (mode === "create") {
-          onSave("create_ambassador", { cityId: Number(cityId), personId: form.get("personId") || undefined, name: form.get("name"), code: form.get("code"), email: form.get("email"), whatsapp: form.get("whatsapp"), whatsappAuthorized, level, status });
+          onSave("create_ambassador", { cityId: Number(cityId), personId: form.get("personId") || undefined, name: form.get("name"), code: "", email: form.get("email"), whatsapp: form.get("whatsapp"), whatsappAuthorized, level, status });
         } else {
-          onSave("update_ambassador", { ambassadorId: ambassador?.id, level, status, onboardingStatus: onboarding, trainingProgress: Number(form.get("trainingProgress") || 0), whatsappAuthorized, pauseReason: form.get("pauseReason") });
+          onSave("update_ambassador", { ambassadorId: ambassador?.id, level, status, onboardingStatus: ambassador?.onboardingStatus ?? "Pendente", trainingProgress: ambassador?.trainingProgress ?? 0, whatsappAuthorized, pauseReason: step === "Pausado" ? form.get("pauseReason") ?? "" : ambassador?.pauseReason ?? "" });
         }
       }}
     >
       {mode === "create" ? <>
         <Field label="Cidade"><Select value={cityId} onValueChange={setCityId}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{data.cities.map((city) => <SelectItem key={city.id} value={String(city.id)}>{city.name}</SelectItem>)}</SelectContent></Select></Field>
         <PersonPicker data={data} cityId={Number(cityId)} taken="ambassador" /><Field label="Nome"><Input name="name" required className={inputClass} /></Field>
-        <Field label="Código único" hint="Sem espaços: letras, números, hífen ou sublinhado (ex.: EMB001)."><Input name="code" required minLength={3} maxLength={30} pattern="[A-Za-z0-9_\-]+" title="Sem espaços: letras, números, hífen ou sublinhado." placeholder="EMB001" className={`${inputClass} uppercase`} /></Field>
         <Field label="E-mail do perfil"><Input name="email" type="email" placeholder="Opcional" className={inputClass} /></Field>
         <Field label="WhatsApp"><Input name="whatsapp" inputMode="tel" maxLength={30} placeholder="(31) 99999-9999" className={inputClass} /></Field>
         <div className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-4"><Checkbox id="ambassador-whatsapp" checked={whatsappAuthorized} onCheckedChange={(value) => setWhatsappAuthorized(value === true)} /><label htmlFor="ambassador-whatsapp" className="text-sm leading-6 text-zinc-300">Confirmo que esta pessoa autorizou o contato por WhatsApp. Sem esta confirmação, o número não será salvo.</label></div>
       </> : <>
-        <Field label="Treinamento concluído (%)"><Input name="trainingProgress" type="number" min="0" max="100" defaultValue={ambassador?.trainingProgress ?? 0} className={inputClass} /></Field>
-        <Field label="Onboarding"><Select value={onboarding} onValueChange={setOnboarding}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Pendente", "Em andamento", "Concluído"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
         <div className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-4"><Checkbox id="ambassador-whatsapp-edit" checked={whatsappAuthorized} onCheckedChange={(value) => setWhatsappAuthorized(value === true)} /><label htmlFor="ambassador-whatsapp-edit" className="text-sm leading-6 text-zinc-300">WhatsApp autorizado {ambassador?.whatsappAuthorizedAt ? `desde ${ambassador.whatsappAuthorizedAt.slice(0, 10).split("-").reverse().join("/")}` : "— autorização pendente"}. Desmarque para registrar a revogação.</label></div>
-        <Field label="Motivo de pausa" wide><Input name="pauseReason" defaultValue={ambassador?.pauseReason} placeholder="Preencha somente quando necessário" className={inputClass} /></Field>
+        {ambassador && <p className="sm:col-span-2 text-xs text-subtle">Código do link: {ambassador.code} · Treinamento {ambassador.trainingProgress}% · Regras {ambassador.termsAcceptedAt ? "aceitas" : "ainda não aceitas"} (pelo portal da pessoa).</p>}
       </>}
       <Field label="Nível"><Select value={level} onValueChange={setLevel}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Indicador", "Embaixador ativo", "Referência", "Líder local"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
-      <Field label="Situação"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Convidado", "Em análise", "Aprovado", "Em treinamento", "Ativo", "Inativo", "Pausado", "Desligado"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
+      {mode === "edit" && <Field label="Situação"><Select value={step} onValueChange={setStep}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{AMBASSADOR_STEPS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>}
+      {step === "Pausado" && <Field label="Motivo da pausa" wide><Input name="pauseReason" required defaultValue={ambassador?.pauseReason} className={inputClass} /></Field>}
     </FormShell>
   );
 }
@@ -193,19 +192,6 @@ function CityResultForm({ data, saving, onSave }: { data: DashboardData; saving:
     
     <Field label="Situação"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Planejada", "Ativa", "Pausada"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
     <Field label="Observação" wide><Textarea name="note" className={inputClass} /></Field>
-  </FormShell>;
-}
-
-function ActivityForm({ data, saving, onSave }: { data: DashboardData; saving: boolean; onSave: Save }) {
-  const fixedId = data.access.role === "Embaixador" ? data.access.ambassadorId : null;
-  const [ambassadorId, setAmbassadorId] = useState(String(fixedId ?? data.ambassadors[0]?.id ?? ""));
-  return <FormShell title="Registrar atividade" description="Atividade real, conteúdo publicado e evento realizado ajudam a medir quem está ativo." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("record_ambassador", { ambassadorId: Number(ambassadorId), period: f.get("period"), leads: Number(f.get("leads") || 0), sales: Number(f.get("sales") || 0), actions: Number(f.get("actions") || 0), contents: Number(f.get("contents") || 0), events: Number(f.get("events") || 0), costCents: cents(f.get("cost")), note: f.get("note") }); }}>
-    {data.access.role !== "Embaixador" && <Field label="Embaixador"><Select value={ambassadorId} onValueChange={setAmbassadorId}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{data.ambassadors.map((item) => <SelectItem key={item.id} value={String(item.id)}>{item.name} · {item.cityName}</SelectItem>)}</SelectContent></Select></Field>}
-    <Field label="Período"><Input name="period" type="month" defaultValue={monthNow} required className={inputClass} /></Field>
-    <Field label="Ações realizadas"><Input name="actions" type="number" min="0" defaultValue="0" className={inputClass} /></Field><Field label="Conteúdos publicados"><Input name="contents" type="number" min="0" defaultValue="0" className={inputClass} /></Field>
-    <Field label="Eventos"><Input name="events" type="number" min="0" defaultValue="0" className={inputClass} /></Field><Field label="Leads indicados"><Input name="leads" type="number" min="0" defaultValue="0" className={inputClass} /></Field>
-    <Field label="Pagamentos atribuídos"><Input name="sales" type="number" min="0" defaultValue="0" className={inputClass} /></Field><Field label="Custo de apoio (R$)"><Input name="cost" type="number" min="0" step="0.01" defaultValue="0" className={inputClass} /></Field>
-    <Field label="Resumo da atividade" wide><Textarea name="note" required className={inputClass} /></Field>
   </FormShell>;
 }
 
@@ -294,14 +280,18 @@ function CostForm({ data, saving, onSave }: { data: DashboardData; saving: boole
 }
 
 function PartnerForm({ data, saving, onSave }: { data: DashboardData; saving: boolean; onSave: Save }) {
-  const [cityId, setCityId] = useState(String(data.cities[0]?.id ?? "")); const [status, setStatus] = useState("Em conversa");
-  return <FormShell title="Cadastrar parceiro" description="Registre o responsável e a próxima ação para a parceria não parar." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("create_partner", { cityId: Number(cityId), name: f.get("name"), type: f.get("type"), contactName: f.get("contactName"), whatsapp: f.get("whatsapp"), status, nextAction: f.get("nextAction") }); }}>
-    <Field label="Cidade"><Select value={cityId} onValueChange={setCityId}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{data.cities.map((city) => <SelectItem key={city.id} value={String(city.id)}>{city.name}</SelectItem>)}</SelectContent></Select></Field><Field label="Parceiro"><Input name="name" required className={inputClass} /></Field>
-    <Field label="Tipo"><Input name="type" required defaultValue="Parceiro local" className={inputClass} /></Field><Field label="Contato"><Input name="contactName" className={inputClass} /></Field><Field label="WhatsApp"><Input name="whatsapp" inputMode="tel" maxLength={30} placeholder="(31) 99999-9999" className={inputClass} /></Field>
-    <Field label="Situação"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Em conversa", "Ativo", "Pausado", "Encerrado"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field><Field label="Próxima ação" wide><Input name="nextAction" required placeholder="Ação, responsável e prazo" className={inputClass} /></Field>
+  const [cityId, setCityId] = useState(String(data.cities[0]?.id ?? "")); const [placeType, setPlaceType] = useState<string>("Empresa"); const [sector, setSector] = useState<string>("");
+  return <FormShell title="Cadastrar parceiro" description="O parceiro é um local no mapa, marcado como parceiro. Se o local já existe em Território → Locais, use lá “Marcar como parceiro”." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("create_partner", { cityId: Number(cityId), name: f.get("name"), type: f.get("type") || "Parceiro local", placeType, sector, contactName: f.get("contactName"), whatsapp: f.get("whatsapp"), nextAction: f.get("nextAction") }); }}>
+    <Field label="Cidade"><Select value={cityId} onValueChange={setCityId}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{data.cities.map((city) => <SelectItem key={city.id} value={String(city.id)}>{city.name}</SelectItem>)}</SelectContent></Select></Field><Field label="Nome do local"><Input name="name" required className={inputClass} /></Field>
+    <Field label="Tipo de local"><Select value={placeType} onValueChange={setPlaceType}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{PLACE_TYPES.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
+    <Field label="Setor" hint="Define o ícone no mapa. Pode deixar para a revisão."><Select value={sector || "none"} onValueChange={(value) => setSector(value === "none" ? "" : value)}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Escolher depois</SelectItem>{SECTORS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
+    <Field label="Próxima ação" wide><Input name="nextAction" required placeholder="Ação, responsável e prazo" className={inputClass} /></Field>
+    <details className="sm:col-span-2 rounded-xl border border-white/8 p-3"><summary className="cursor-pointer text-sm text-zinc-300">Contato da parceria (opcional)</summary><div className="mt-3 grid gap-4 sm:grid-cols-2">
+      <Field label="Quem é o contato"><Input name="contactName" className={inputClass} /></Field><Field label="WhatsApp do contato"><Input name="whatsapp" inputMode="tel" maxLength={30} placeholder="(31) 99999-9999" className={inputClass} /></Field>
+      <Field label="Tipo de parceria"><Input name="type" defaultValue="Parceiro local" className={inputClass} /></Field>
+    </div></details>
   </FormShell>;
 }
-
 function EventForm({ data, saving, onSave }: { data: DashboardData; saving: boolean; onSave: Save }) {
   const [cityId, setCityId] = useState(String(data.cities[0]?.id ?? "")); const [partnerId, setPartnerId] = useState("none"); const [status, setStatus] = useState("Planejado");
   return <FormShell title="Cadastrar evento" description="O custo informado será lançado automaticamente na categoria Evento. Para entrar nos indicadores detalhados, cada pessoa do evento precisa virar um atendimento em Vendas." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("create_event", { cityId: Number(cityId), partnerId: partnerId === "none" ? null : Number(partnerId), name: f.get("name"), eventDate: f.get("date"), status, ownerName: f.get("ownerName"), costCents: cents(f.get("cost")), reach: Number(f.get("reach") || 0), leads: Number(f.get("leads") || 0), sales: Number(f.get("sales") || 0) }); }}>
@@ -384,7 +374,6 @@ export function ExpansionDialog({ dialog, data, saving, onClose, onSave }: { dia
     {dialog?.name === "city-result" && <CityResultForm data={data} saving={saving} onSave={onSave} />}
     {dialog?.name === "ambassador" && <AmbassadorFields mode="create" data={data} saving={saving} onSave={onSave} />}
     {dialog?.name === "ambassador-edit" && ambassador && <AmbassadorFields mode="edit" data={data} ambassador={ambassador} saving={saving} onSave={onSave} />}
-    {dialog?.name === "ambassador-activity" && <ActivityForm data={data} saving={saving} onSave={onSave} />}
     {dialog?.name === "lead" && <LeadForm data={data} saving={saving} onSave={onSave} />}
     {dialog?.name === "lead-status" && <LeadStatusForm data={data} leadId={dialog.entityId} saving={saving} onSave={onSave} />}
     {dialog?.name === "sale" && <SaleForm data={data} leadId={dialog.entityId} saving={saving} onSave={onSave} />}

@@ -58,7 +58,9 @@ test('event dates, partner and event pins, status refresh, pending coordinates a
  const parsed=m.parseActionPayload('create_event',{cityId:1,name:'Evento teste',eventDate:'2026-10-10',status:'Planejado',ownerName:'Equipe teste',costCents:0,reach:0,leads:0,sales:0});await m.executeAction('create_event',parsed,m.access);
  assert.ok((await m.getTerritory(m.access,new URLSearchParams('category=event'))).records.length===1);
  await m.mutateTerritory(m.access,'event_status',{id:1,status:'Realizado'});assert.equal((await m.getTerritory(m.access,new URLSearchParams('category=event'))).records[0].status,'Realizado');
- await m.mutateTerritory(m.access,'location',{key:'partner:1',latitude:null,longitude:null,region:'',precision:'Local comercial',source:'Pendente de conferência',validated:false,authorized:true,visibility:'Equipe'});assert.equal((await m.getTerritory(m.access,new URLSearchParams('category=partner'))).records[0].location.latitude,null);
+ // O parceiro agora é um local marcado como parceiro (simplificação, parte 3).
+ const partnerKey='business:'+sqlite.prepare('SELECT id FROM businesses WHERE partner_id=1').get().id;
+ await m.mutateTerritory(m.access,'location',{key:partnerKey,latitude:null,longitude:null,region:'',precision:'Local comercial',source:'Pendente de conferência',validated:false,authorized:true,visibility:'Equipe'});assert.equal((await m.getTerritory(m.access,new URLSearchParams('layers=business|Parceiro'))).records.find(r=>r.key===partnerKey).location.latitude,null);
  await assert.rejects(m.mutateTerritory(m.access,'location',{key:'event:1',latitude:100,longitude:0,region:'',precision:'Local comercial',source:'Teste',validated:true,authorized:true,visibility:'Equipe'}));
 });
 test('duplicate CRM linkage and referral cycles are rejected without extra people',async()=>{
@@ -108,9 +110,10 @@ test('operational flow: approval, own consent, training, unpaid/paid sale, costs
  await run('update_ambassador',{ambassadorId,status:'Aprovado',level:'Indicador',onboardingStatus:'Pendente',trainingProgress:0,whatsappAuthorized:false});
  await run('accept_terms',{ambassadorId,accepted:true},amb);await run('complete_training',{ambassadorId},amb);
  const period=new Date().toISOString().slice(0,7);
- await run('record_ambassador',{ambassadorId,period,leads:0,sales:0,actions:1,contents:0,events:0,costCents:0},amb);
- assert.equal(sqlite.prepare('SELECT status FROM ambassadors WHERE id=?').get(ambassadorId).status,'Ativo');
+ // Números autodeclarados saíram (simplificação, parte 3): a atividade real é o atendimento indicado.
+ await assert.rejects(run('record_ambassador',{ambassadorId,period,leads:0,sales:0,actions:1,contents:0,events:0,costCents:0},amb),/não é mais usado/);
  await run('create_lead',{...leadData(undefined,cityId),ambassadorId});const leadId=Number(sqlite.prepare('SELECT max(id) AS id FROM leads').get().id);
+ assert.equal(sqlite.prepare('SELECT status FROM ambassadors WHERE id=?').get(ambassadorId).status,'Ativo');
  await run('update_lead',{leadId,status:'Oportunidade'});
  const sale={leadId,product:'Produto de teste',amountCents:20000,status:'Venda confirmada'};await run('record_sale',sale);
  const {getDashboardData}=await vite.ssrLoadModule('/db/queries.ts');const {buildDashboardView,EMPTY_FILTERS}=await vite.ssrLoadModule('/lib/expansion-domain.ts');
@@ -253,8 +256,8 @@ test('business import previews duplicates, commits per row and retries without d
  const preview=await saveCommercial(m.access,'import_preview',{rows:[b,{...b,id:crypto.randomUUID()}]});assert.deepEqual(preview.rows.map(r=>r.ok),[true,false]);assert.equal(sqlite.prepare('SELECT count(*) n FROM businesses').get().n,0);
  await assert.rejects(saveCommercial(m.access,'import_commit',{rows:[b]}),/Confirme/);
  const imported=await saveCommercial(m.access,'import_commit',{rows:[b],confirmed:true});assert.equal(imported.rows[0].ok,true);await saveCommercial(m.access,'import_commit',{rows:[b],confirmed:true});assert.equal(sqlite.prepare('SELECT count(*) n FROM businesses').get().n,1);
- await m.executeAction('create_partner',m.parseActionPayload('create_partner',{cityId:1,name:'Parceiro cadastrado',type:'Comércio',status:'Ativo'}),m.access);
- await saveCommercial(m.access,'link_partner',{id:b.id,partnerId:1});const map=await m.getTerritory(m.access,new URLSearchParams('layers=business|Parceiro'));assert.equal(map.total,1);assert.deepEqual(map.records[0].roles,['Empresa','Parceiro']);
+ // Marcar o local importado como parceiro: o parceiro é o próprio local.
+ await saveCommercial(m.access,'link_partner',{id:b.id});const map=await m.getTerritory(m.access,new URLSearchParams('layers=business|Parceiro'));assert.equal(map.total,1);assert.deepEqual(map.records[0].roles,['Empresa','Parceiro']);
  const {parseCsv}=await vite.ssrLoadModule('/lib/commercial-import.ts');assert.deepEqual(parseCsv('Nome;Fonte\n"Loja; Centro";Manual'),[['Nome','Fonte'],['Loja; Centro','Manual']]);assert.throws(()=>parseCsv('Nome;Fonte\n"Sem fim;Manual'),/Aspas/);const {csvCell}=await vite.ssrLoadModule('/lib/commercial.ts');assert.equal(csvCell('=HYPERLINK("https://example.invalid")'),'"\'=HYPERLINK(""https://example.invalid"")"');
 });
 

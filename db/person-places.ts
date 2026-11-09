@@ -52,7 +52,7 @@ async function placeOf(a: AccessView, businessId: string, cityId?: number) {
 /** Pode ter lugares além do principal: autorização de contato vigente ou papel de Mentorado ou Embaixador ativo. */
 export async function canHaveExtraPlaces(personId: string) {
   return !!(await all(`SELECT 1 FROM leads l WHERE l.person_id=? AND l.consent_revoked_at IS NULL AND l.status<>'Cancelado'
-    UNION ALL SELECT 1 FROM territory_roles r WHERE r.person_id=? AND r.role IN ('Mentorado') AND r.status NOT IN ('Desligado','Inativo','Pausado')
+    UNION ALL SELECT 1 FROM territory_roles r WHERE r.person_id=? AND r.role IN ('Mentorado') AND r.status NOT IN ('Desligado','Inativo','Encerrado','Pausado')
     UNION ALL SELECT 1 FROM ambassadors m WHERE m.person_id=? AND m.status NOT IN ('Desligado','Pausado')
     UNION ALL SELECT 1 FROM app_users u WHERE u.person_id=? AND u.role='Mentorado' AND u.active=1 LIMIT 1`, [personId, personId, personId, personId]))[0];
 }

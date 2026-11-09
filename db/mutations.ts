@@ -1,4 +1,6 @@
 import { clearPlacesStatements } from "@/db/person-places";
+import { ambassadorCode } from "@/lib/ambassador-steps";
+import { businessIdentity } from "@/lib/commercial";
 import type { AccessView } from "@/lib/expansion-types";
 import type { ActionName } from "@/lib/expansion-permissions";
 import { canAccessAmbassador, canAccessCity, canAccessLead, canPerform } from "@/lib/expansion-permissions";
@@ -189,13 +191,20 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     ensureCityPermission(access, cityId);
     if (text(input, "status") === "Ativo") throw new ActionError("Cadastre o embaixador e conclua treinamento, aceite e atividade antes de ativar.");
     const person = await resolvePerson(input, access, cityId, "ambassadors");
+    // Código do link: o digitado ou um gerado, sem repetir.
+    let code = text(input, "code").toUpperCase();
+    for (let attempt = 0; !code && attempt < 5; attempt++) {
+      const candidate = ambassadorCode((n) => crypto.getRandomValues(new Uint32Array(1))[0] % n);
+      if (!(await db.prepare("SELECT 1 FROM ambassadors WHERE code=?").bind(candidate).all()).results.length) code = candidate;
+    }
+    if (!code) throw new ActionError("Não foi possível gerar o código do embaixador. Tente de novo.");
     const insert = db.prepare(`
       INSERT INTO ambassadors
         (person_id, city_id, name, code, email, whatsapp, whatsapp_authorized_at, level, status, onboarding_status,
          training_progress, updated_at, created_by, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pendente', 0, ?, ?, ?)
     `).bind(
-      person.id, cityId, text(input, "name"), text(input, "code").toUpperCase(), normalizeEmail(text(input, "email")) ?? "",
+      person.id, cityId, text(input, "name"), code, normalizeEmail(text(input, "email")) ?? "",
       normalizeWhatsapp(text(input, "whatsapp")) ?? "", input.whatsappAuthorized ? timestamp : null,
       text(input, "level"), text(input, "status"), timestamp, access.email, timestamp,
     );
@@ -211,7 +220,7 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     if (!canAccessAmbassador(access, ambassadorId, ambassador.cityId)) throw new ActionError("Embaixador fora do seu acesso.");
     if (text(input, "status") === "Ativo") {
       const prior = (await db.prepare("SELECT terms_accepted_at FROM ambassadors WHERE id=?").bind(ambassadorId).all()).results[0];
-      const activity = (await db.prepare("SELECT EXISTS(SELECT 1 FROM ambassador_updates WHERE ambassador_id=? UNION ALL SELECT 1 FROM tasks WHERE ambassador_id=? AND status='Concluída') AS present").bind(ambassadorId,ambassadorId).all()).results[0];
+      const activity = (await db.prepare("SELECT EXISTS(SELECT 1 FROM ambassador_updates WHERE ambassador_id=? UNION ALL SELECT 1 FROM leads WHERE ambassador_id=? UNION ALL SELECT 1 FROM tasks WHERE ambassador_id=? AND status='Concluída') AS present").bind(ambassadorId,ambassadorId,ambassadorId).all()).results[0];
       if (!prior?.terms_accepted_at || text(input,"onboardingStatus") !== "Concluído" || number(input,"trainingProgress") < 100 || !activity?.present) throw new ActionError("Ativação exige treinamento concluído, aceite pessoal e atividade registrada.");
     }
     await db.prepare(`
@@ -255,24 +264,9 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
   }
 
   if (action === "record_ambassador") {
-    const ambassadorId = access.role === "Embaixador" && access.ambassadorId !== null
-      ? access.ambassadorId
-      : number(input, "ambassadorId");
-    const ambassador = await ambassadorIdentity(ambassadorId);
-    if (!canAccessAmbassador(access, ambassadorId, ambassador.cityId)) throw new ActionError("Embaixador fora do seu acesso.");
-    const result = await db.prepare(`
-      INSERT INTO ambassador_updates
-        (ambassador_id, period, leads, sales, actions, contents, events, cost_cents, note, created_by, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      ambassadorId, text(input, "period"), number(input, "leads"), number(input, "sales"),
-      number(input, "actions"), number(input, "contents"), number(input, "events"),
-      number(input, "costCents"), text(input, "note"), access.email, timestamp,
-    ).run();
-    await db.prepare("UPDATE ambassadors SET updated_at = ? WHERE id = ?").bind(timestamp, ambassadorId).run();
-    await refreshAmbassadorActivation(ambassadorId, timestamp);
-    await audit(db, access.organizationId, access.email, action, "ambassador_update", asNumber(result.meta.last_row_id), "Atividade do embaixador registrada.");
-    return;
+    // Simplificação (parte 3): os números autodeclarados duplicavam o que os atendimentos e as vendas do
+    // embaixador já mostram. O histórico antigo continua só para leitura (ficha, LGPD).
+    throw new ActionError("O registro de números do embaixador não é mais usado: os atendimentos e as vendas dele já contam sozinhos.");
   }
 
   if (action === "create_lead") {
@@ -440,15 +434,36 @@ export async function executeAction(action: ActionName, input: Input, access: Ac
     const cityId = number(input, "cityId");
     await cityExists(cityId);
     ensureCityPermission(access, cityId);
+    // O parceiro é um local marcado como parceiro (simplificação, parte 3): o cadastro cria ou reaproveita o local
+    // da cidade e liga os dois. A tabela partners guarda o contato e segue ligada aos eventos.
+    const existingId = typeof input.businessId === "string" ? input.businessId : "";
+    const identity = businessIdentity(text(input, "name"), "");
+    const place = (await db.prepare(existingId
+      ? "SELECT id, city_id, partner_id, name FROM businesses WHERE id=? AND organization_id=?"
+      : "SELECT id, city_id, partner_id, name FROM businesses WHERE organization_id=? AND city_id=? AND identity_key=?")
+      .bind(...(existingId ? [existingId, access.organizationId] : [access.organizationId, cityId, identity])).all()).results[0];
+    if (existingId && !place) throw new ActionError("Local não encontrado.");
+    if (place && Number(place.city_id) !== cityId) throw new ActionError("O local é de outra cidade.");
+    if (place?.partner_id) throw new ActionError("Este local já está marcado como parceiro.");
     const result = await db.prepare(`
       INSERT INTO partners
         (city_id, name, type, contact_name, whatsapp, status, next_action, created_by, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      cityId, text(input, "name"), text(input, "type"), text(input, "contactName"), text(input, "whatsapp"),
-      text(input, "status"), text(input, "nextAction"), access.email, timestamp,
+      cityId, place ? String(place.name) : text(input, "name"), text(input, "type"), text(input, "contactName"), text(input, "whatsapp"),
+      "Ativo", text(input, "nextAction"), access.email, timestamp,
     ).run();
-    await audit(db, access.organizationId, access.email, action, "partner", asNumber(result.meta.last_row_id), `Parceiro ${text(input, "name")} cadastrado.`);
+    const partnerId = asNumber(result.meta.last_row_id);
+    if (place) {
+      await db.prepare("UPDATE businesses SET partner_id=?, status='Parceira', updated_at=?, version=version+1 WHERE id=?").bind(partnerId, timestamp, String(place.id)).run();
+    } else {
+      await db.prepare(`INSERT INTO businesses(id,organization_id,city_id,name,segment,district,address,source,external_id,identity_key,verified_at,owner_email,status,next_action,partner_id,version,created_by,created_at,updated_at,place_type,sector)
+        VALUES(?,?,?,?,?,'','','Cadastro de parceiro',NULL,?,NULL,?,'Parceira',?,?,1,?,?,?,?,?)`).bind(
+        crypto.randomUUID(), access.organizationId, cityId, text(input, "name"), text(input, "type"), identity, access.email.toLowerCase(),
+        text(input, "nextAction"), partnerId, access.email, timestamp, timestamp, text(input, "placeType") || "Empresa", text(input, "sector"),
+      ).run();
+    }
+    await audit(db, access.organizationId, access.email, action, "partner", partnerId, `Parceiro ${place ? String(place.name) : text(input, "name")} cadastrado como local.`);
     return;
   }
 
