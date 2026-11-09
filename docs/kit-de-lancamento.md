@@ -117,7 +117,7 @@ A plataforma da equipe é organizada em áreas, na barra lateral (computador) ou
 |---|---|---|
 | **Hoje** | Agenda do dia, Primeiros passos, indicadores-chave e alertas | Toda a equipe |
 | **Território** | Mapa · Cidades · Locais | Toda a equipe (Comercial: Mapa e Locais) |
-| **Vendas** | Agenda · Atendimentos · Método F.E.C.H.A. · Pagamentos · Pós-venda | Toda a equipe |
+| **Vendas** | Agenda · Atendimentos | Toda a equipe |
 | **Rede** | Embaixadores · Indicações · Mentorados · Parceiros e eventos · Materiais e ganchos | Gestão (Comercial: Indicações) |
 | **Resultados** | Visão geral · Calculadora · Metas e rotina · Mapeamento · Custos e canais | Gestão (Comercial: Metas e rotina) |
 | **Gestão** | Time e acessos · Regras e cálculos · Identidade · Plano · Histórico · Privacidade (LGPD) · Avisos por e-mail · Assessoria Elite | Administrador |
