@@ -134,7 +134,7 @@ function layerSpecs(dark: boolean): { below: LayerSpecification[]; above: LayerS
  * imagens do mapa (fluido com milhares de pontos). Cada modo liga as próprias camadas; a busca
  * por área visível continua no servidor e a lista ao lado é a alternativa acessível a todos os modos.
  */
-export function TerritoryCanvas({ records, onSelect, onPick, focus, fitToken = 0, theme = "dark", roleFilter = "", onViewport, layer = { mode: "explorar" }, describe, onSpot, onZoom, selectedSpot = null }: {
+export function TerritoryCanvas({ records, onSelect, onPick, focus, fitToken = 0, theme = "dark", roleFilter = "", onViewport, layer = { mode: "explorar" }, describe, onSpot, onZoom, selectedSpot = null, draftPin = null, onDraftMove, userPoint = null }: {
   records: TerritoryRecord[]; onSelect: (items: TerritoryRecord[]) => void; onPick?: (lat: number, lng: number) => void;
   focus?: TerritoryRecord | null; fitToken?: number; theme?: TerritoryTheme; roleFilter?: string; onViewport?: (bounds: string) => void;
   /** Modo e dados já calculados (Explorar quando omitido). */
@@ -147,10 +147,19 @@ export function TerritoryCanvas({ records, onSelect, onPick, focus, fitToken = 0
   onZoom?: (zoom: number) => void;
   /** Local destacado nos modos (o da ficha aberta). */
   selectedSpot?: number | null;
+  /** "Novo local aqui": pino provisório, arrastável para ajustar a posição. */
+  draftPin?: { latitude: number; longitude: number } | null;
+  onDraftMove?: (lat: number, lng: number) => void;
+  /** "Estou aqui" (Em campo): ponto azul só neste aparelho; a posição não é enviada nem guardada. */
+  userPoint?: { latitude: number; longitude: number; accuracy?: number } | null;
 }) {
   const host = useRef<HTMLDivElement>(null), map = useRef<MapInstance | null>(null);
-  const props = useRef({ records, onSelect, onPick, theme, roleFilter, focus, onViewport, layer, describe, onSpot, onZoom, selectedSpot });
-  useEffect(() => { props.current = { records, onSelect, onPick, theme, roleFilter, focus, onViewport, layer, describe, onSpot, onZoom, selectedSpot }; });
+  const props = useRef({ records, onSelect, onPick, theme, roleFilter, focus, onViewport, layer, describe, onSpot, onZoom, selectedSpot, onDraftMove });
+  useEffect(() => { props.current = { records, onSelect, onPick, theme, roleFilter, focus, onViewport, layer, describe, onSpot, onZoom, selectedSpot, onDraftMove }; });
+  const lib = useRef<typeof import("maplibre-gl") | null>(null);
+  // Marcadores (pino provisório, "Estou aqui") não dependem do estilo do mapa: com sinal fraco, aparecem mesmo assim.
+  const [created, setCreated] = useState(0);
+  const draftMarker = useRef<import("maplibre-gl").Marker | null>(null), userMarker = useRef<import("maplibre-gl").Marker | null>(null);
   const [mapConfig, setMapConfig] = useState<{ satellite: string | null; hybrid: string | null } | null>(null);
   const [base, setBase] = useState<"streets" | "satellite" | "hybrid">("streets");
   useEffect(() => { const c = new AbortController(); tenantFetch("/api/map-config", { signal: c.signal }).then((r) => (r.ok ? r.json() : null)).then((v) => { if (v) setMapConfig(v); }).catch(() => {}); return () => c.abort(); }, []);
@@ -167,9 +176,11 @@ export function TerritoryCanvas({ records, onSelect, onPick, focus, fitToken = 0
     let cancelled = false; let observer: ResizeObserver | undefined;
     import("maplibre-gl").then((m) => {
       if (cancelled || !host.current) return;
+      lib.current = m;
       styleReady.current = false; styleKey.current = mapStyle(props.current.theme);
       const instance = new m.Map({ container: host.current, center: [-44.18, -19.86], zoom: 10, renderWorldCopies: false, attributionControl: false, style: styleKey.current, maxPitch: 65, locale: LOCALE });
       map.current = instance;
+      setCreated((v) => v + 1);
       instance.addControl(new m.NavigationControl({ visualizePitch: true }), "top-right");
       instance.addControl(new m.AttributionControl({ compact: false }), "bottom-right");
       instance.addControl(new m.ScaleControl({ unit: "metric" }), "bottom-left");
@@ -338,8 +349,33 @@ export function TerritoryCanvas({ records, onSelect, onPick, focus, fitToken = 0
       instance.on("error", () => setError("O mapa não carregou completamente. Os cadastros continuam disponíveis na lista."));
       observer = new ResizeObserver(() => instance.resize()); observer.observe(host.current);
     }).catch(() => setError("Não foi possível abrir o mapa neste dispositivo. Use a lista de registros."));
-    return () => { cancelled = true; observer?.disconnect(); map.current?.remove(); map.current = null; sync.current = () => {}; };
+    return () => { cancelled = true; observer?.disconnect(); draftMarker.current = null; userMarker.current = null; map.current?.remove(); map.current = null; sync.current = () => {}; };
   }, [retry]);
+  // Pino provisório do "Novo local aqui": arrastável; ao soltar, a tela recebe a posição nova.
+  const draftLat = draftPin?.latitude, draftLng = draftPin?.longitude;
+  useEffect(() => {
+    const m = lib.current, instance = map.current;
+    if (!m || !instance) return;
+    if (draftLat == null || draftLng == null) { draftMarker.current?.remove(); draftMarker.current = null; return; }
+    if (!draftMarker.current) {
+      const el = document.createElement("div"); el.className = "territory-draft-pin"; el.setAttribute("aria-label", "Pino do novo local (arraste para ajustar)");
+      draftMarker.current = new m.Marker({ element: el, draggable: true, anchor: "bottom" }).setLngLat([draftLng, draftLat]).addTo(instance);
+      draftMarker.current.on("dragend", () => { const p = draftMarker.current?.getLngLat(); if (p) props.current.onDraftMove?.(p.lat, p.lng); });
+      instance.easeTo({ center: [draftLng, draftLat], zoom: Math.max(instance.getZoom(), 17), duration: reduceMotion() ? 0 : 500 });
+    } else draftMarker.current.setLngLat([draftLng, draftLat]);
+  }, [draftLat, draftLng, created]);
+  // "Estou aqui": ponto do aparelho, centralizado na primeira vez.
+  const userLat = userPoint?.latitude, userLng = userPoint?.longitude;
+  useEffect(() => {
+    const m = lib.current, instance = map.current;
+    if (!m || !instance) return;
+    if (userLat == null || userLng == null) { userMarker.current?.remove(); userMarker.current = null; return; }
+    if (!userMarker.current) {
+      const el = document.createElement("div"); el.className = "territory-user-dot"; el.setAttribute("aria-label", "Você está aqui");
+      userMarker.current = new m.Marker({ element: el }).setLngLat([userLng, userLat]).addTo(instance);
+      instance.easeTo({ center: [userLng, userLat], zoom: Math.max(instance.getZoom(), 16), duration: reduceMotion() ? 0 : 600 });
+    } else userMarker.current.setLngLat([userLng, userLat]);
+  }, [userLat, userLng, created]);
 
   useEffect(() => { if (loaded) sync.current(); }, [records, loaded, roleFilter, focus, layer, selectedSpot, perspective]);
   useEffect(() => {

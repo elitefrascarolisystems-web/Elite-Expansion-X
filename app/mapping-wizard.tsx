@@ -35,22 +35,24 @@ const STEPS = ["Cidade", "Local", "Pessoas"];
  * → pessoas ligadas ao local. Cada passo usa o que foi escolhido no anterior.
  */
 /** `initialPlaceId`: abre já com o local escolhido (ex.: "Mapear pessoas deste local" depois de uma visita). */
-export function MappingWizard({ open, data, onClose, onSaved, initialPlaceId }: { open: boolean; data: DashboardData; onClose: () => void; onSaved: () => Promise<void>; initialPlaceId?: string }) {
+/** Ponto já escolhido no mapa ("Novo local aqui") ou pelo GPS ("Em campo"): cadastra o local novo direto nesse ponto. */
+export type InitialPoint = { latitude: number; longitude: number; cityId: number | null; address?: string; district?: string; source: "mapa" | "gps" };
+export function MappingWizard({ open, data, onClose, onSaved, initialPlaceId, initialPoint }: { open: boolean; data: DashboardData; onClose: () => void; onSaved: () => Promise<void>; initialPlaceId?: string; initialPoint?: InitialPoint | null }) {
   const initial = initialPlaceId ? data.places?.find((p) => p.id === initialPlaceId) ?? null : null;
-  const [step, setStep] = useState(initial ? 2 : 0);
-  const [cityId, setCityId] = useState<number | null>(initial ? initial.cityId : data.cities.length === 1 ? data.cities[0].id : null);
+  const [step, setStep] = useState(initial ? 2 : initialPoint?.cityId ? 1 : 0);
+  const [cityId, setCityId] = useState<number | null>(initial ? initial.cityId : initialPoint?.cityId ?? (data.cities.length === 1 ? data.cities[0].id : null));
   const [created, setCreated] = useState<(Place & { cityId: number })[]>([]);
   const [place, setPlace] = useState<Place | null>(initial);
   const [sectorPick, setSectorPick] = useState("");
   const [confirm, setConfirm] = useState({ association: false, school: false });
-  const [mode, setMode] = useState<"existing" | "new" | "none">("existing");
+  const [mode, setMode] = useState<"existing" | "new" | "none">(initialPoint ? "new" : "existing");
   const [filter, setFilter] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [locate, setLocate] = useState<{ place: Place; query: string; results: Found[] } | null>(null);
   const [added, setAdded] = useState<Added[]>([]);
   const [duplicate, setDuplicate] = useState<{ message: string; payload: Record<string, unknown>; role: string } | null>(null);
-  const [form, setForm] = useState({ placeType: "Empresa", name: "", sector: "", segment: "", district: "", address: "", confirm: false });
+  const [form, setForm] = useState({ placeType: "Empresa", name: "", sector: "", segment: "", district: initialPoint?.district ?? "", address: initialPoint?.address ?? "", confirm: false });
   const [personForm, setPersonForm] = useState({ name: "", link: "", role: "", referrerId: "", regionId: "" });
   const [authorized, setAuthorized] = useState(false);
   const [attend, setAttend] = useState<AttendancePerson | null>(null);
@@ -92,6 +94,13 @@ export function MappingWizard({ open, data, onClose, onSaved, initialPlaceId }: 
     try {
       await post("/api/commercial", { action: "business", data: body });
       setCreated((list) => [...list, saved]); setPlace(saved);
+      if (initialPoint) {
+        // O ponto já foi escolhido no mapa ou pelo GPS: marca direto, sem nova busca de endereço.
+        await post("/api/territory", { action: "location", data: { key: `business:${id}`, latitude: initialPoint.latitude, longitude: initialPoint.longitude, region: form.district.trim(), precision: "Local comercial", source: initialPoint.source === "gps" ? "Posição em campo conferida no local" : "Ponto escolhido no mapa", validated: true, authorized: true, visibility: "Equipe" } })
+          .then(() => { toast.success("Local cadastrado e marcado no mapa. Agora as pessoas dele."); setStep(2); })
+          .catch(() => { toast.info("Local cadastrado. Marque o ponto no mapa."); setLocate({ place: saved, query: [form.address, form.district].filter(Boolean).join(", ") || form.name, results: [] }); });
+        return;
+      }
       toast.success("Local cadastrado. Agora marque o ponto no mapa.");
       setLocate({ place: saved, query: [form.address, form.district].filter(Boolean).join(", ") || form.name, results: [] });
     } catch (e) {

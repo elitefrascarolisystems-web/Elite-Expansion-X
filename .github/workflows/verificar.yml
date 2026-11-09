@@ -43,6 +43,7 @@ jobs:
             tests/elite-components.test.mjs \
             tests/expansion-domain.test.mjs \
             tests/fecha-guide.test.mjs \
+            tests/field.test.mjs \
             tests/followup-integration.test.mjs \
             tests/form-payloads.test.mjs \
             tests/goal-calculator.test.mjs \

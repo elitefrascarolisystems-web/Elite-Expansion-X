@@ -99,3 +99,16 @@ test('regras em frases (parte 4): mínimos definidos viram uma frase; sem mínim
  assert.match(r.rulesSentences({...base,minActiveAmbassadors:0,minConfirmedPayments:0})[0],/Ainda falta definir/);
  assert.match(r.rulesSentences({...base,minActivePartners:1,minConfirmedPayments:1})[0],/5 embaixadores ativos, 1 pagamento confirmado e 1 parceiro ativo, com pelo menos 2 meses/);
 });
+
+test('Em campo: situação dos locais por id, só os que a função vê (o Comercial, os dele)', async()=>{
+ const m=await modules();const pp=await vite.ssrLoadModule('/db/person-places.ts');
+ const mine=crypto.randomUUID(),other=crypto.randomUUID();
+ const seller={...m.access,role:'Comercial',cityId:1,email:'vendedor@example.invalid'};
+ sqlite.prepare("INSERT INTO app_users(organization_id,email,name,role,city_id,active,created_at) VALUES(1,'vendedor@example.invalid','Vendedor teste','Comercial',1,1,'2026-01-01')").run();
+ for(const [id,owner] of [[mine,'vendedor@example.invalid'],[other,m.access.email]])await m.saveCommercial(m.access,'business',{id,cityId:1,name:'Local '+id.slice(0,6),segment:'Loja',source:'Cadastro manual',ownerEmail:owner,status:'Identificada',placeType:'Empresa',sector:'Comércio e varejo',publicBusiness:true});
+ const all=await pp.nearbySituations(m.access,[mine,other,'nao-e-id']);
+ assert.deepEqual(all.map(x=>x.businessId).sort(),[mine,other].sort());assert.ok(all.every(x=>x.situation));
+ const own=await pp.nearbySituations(seller,[mine,other]);
+ assert.deepEqual(own.map(x=>x.businessId),[mine],'o Comercial vê só os locais dele');
+ assert.deepEqual(await pp.nearbySituations(m.access,[]),[]);
+});

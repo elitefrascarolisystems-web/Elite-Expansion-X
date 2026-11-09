@@ -5,7 +5,7 @@ import {ACTIVE_PERSON_ROLES,LEGACY_ROLE_HINT,PLACE_LINKS,PLACE_TYPES,SECTORS,PER
 import {tenantFetch} from '@/lib/tenant-request';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { FeatureCollection, Point, Polygon } from 'geojson';
-import { ArrowLeft, ChevronDown, Layers, List, LocateFixed, Map as MapIcon, Maximize2, Minimize2, Plus, RefreshCcw, Search, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Layers, List, LocateFixed, Map as MapIcon, MapPinPlus, Maximize2, Minimize2, Plus, RefreshCcw, Search, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -38,7 +38,7 @@ const NO_POINTS:FeatureCollection<Point>={type:'FeatureCollection',features:[]},
 function subscribeCompact(listener:()=>void){const media=matchMedia('(max-width: 760px)');media.addEventListener('change',listener);return()=>media.removeEventListener('change',listener);}
 const useCompact=()=>useSyncExternalStore(subscribeCompact,()=>matchMedia('(max-width: 760px)').matches,()=>false);
 
-export function TerritorialMap({view,data,focusLeadId,focusPersonId,focusKey,focusIntent,onPersonPage,onMapPlace,onFollowup,onConfigureCity,onOpen,onRefresh,actions,guideChip}:{view:DashboardView;data?:DashboardData;focusLeadId?:number;focusPersonId?:string;focusKey?:string;
+export function TerritorialMap({view,data,focusLeadId,focusPersonId,focusKey,focusIntent,onPersonPage,onMapPlace,onFollowup,onConfigureCity,onOpen,onRefresh,actions,guideChip,onNewPlaceAt}:{view:DashboardView;data?:DashboardData;focusLeadId?:number;focusPersonId?:string;focusKey?:string;
  /** Vindo da página da pessoa: abre direto "Editar pessoa e indicação" ou "Registrar interação". */
  focusIntent?:'edit'|'activity';
  /** Abre a página da pessoa (&ficha=pessoa:<id>). */
@@ -48,8 +48,21 @@ export function TerritorialMap({view,data,focusLeadId,focusPersonId,focusKey,foc
  /** Ações principais da tela (mapear, imprimir), na barra do mapa. */
  actions?:ReactNode;
  /** Aviso do guia "Como usar" na 1ª visita: um chip pequeno, para não tirar altura do mapa. */
- guideChip?:ReactNode}){
+ guideChip?:ReactNode;
+ /** "Novo local aqui": o ponto tocado (e ajustado) no mapa vai para o mapeamento guiado. */
+ onNewPlaceAt?:(p:{latitude:number;longitude:number;cityId:number|null;address:string;district:string})=>void}){
  const preferenceKey=`elite-territory-theme:${data?.access.id??'local'}`;
+ // "Novo local aqui": tocar no mapa põe um pino provisório (arrastável) e sugere o endereço.
+ const [picking,setPicking]=useState(false),[draft,setDraft]=useState<{latitude:number;longitude:number;address:string;district:string;loading:boolean}|null>(null);
+ async function suggestAddress(latitude:number,longitude:number){
+  setDraft({latitude,longitude,address:'',district:'',loading:true});
+  const cityId=Number(city)||data?.cities[0]?.id;
+  try{
+   const r=await tenantFetch('/api/territory/geocode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cityId,kind:'business',reverse:{latitude,longitude}})});
+   const b=r.ok?await r.json():{};
+   setDraft(d=>d&&d.latitude===latitude&&d.longitude===longitude?{...d,address:b.address??'',district:b.district??'',loading:false}:d);
+  }catch{setDraft(d=>d&&d.latitude===latitude?{...d,loading:false}:d);}
+ }
  const storedTheme=useSyncExternalStore(subscribeTheme,()=>readTheme(preferenceKey),()=> 'dark' as TerritoryTheme);
  const [themeOverride,setThemeOverride]=useState<TerritoryTheme|null>(null),theme=themeOverride??storedTheme;
  function changeTheme(value:TerritoryTheme){setThemeOverride(value);try{localStorage.setItem(preferenceKey,value);window.dispatchEvent(new Event('elite-theme'));}catch{}}
@@ -195,11 +208,14 @@ export function TerritorialMap({view,data,focusLeadId,focusPersonId,focusKey,foc
       {!legendHidden&&legend}
      </div>
     </div>
-    <TerritoryCanvas theme={theme} roleFilter={category} onViewport={mode==='explorar'?changeViewport:undefined} records={mapRecords} onSelect={selectGroup} focus={chosen} fitToken={fit} layer={layer} describe={describe} onSpot={selectSpot} onZoom={mode==='cobertura'||mode==='cidade-acesa'?changeZoom:undefined} selectedSpot={selectedSpot}/>
+    <TerritoryCanvas draftPin={draft} onDraftMove={(lat,lng)=>void suggestAddress(lat,lng)} onPick={picking?((lat,lng)=>{setPicking(false);void suggestAddress(lat,lng);}):undefined} theme={theme} roleFilter={category} onViewport={mode==='explorar'?changeViewport:undefined} records={mapRecords} onSelect={selectGroup} focus={chosen} fitToken={fit} layer={layer} describe={describe} onSpot={selectSpot} onZoom={mode==='cobertura'||mode==='cidade-acesa'?changeZoom:undefined} selectedSpot={selectedSpot}/>
     <div className="territory-map-tools territory-float">
+     {onNewPlaceAt&&<Button variant={picking?'default':'outline'} size="icon" className={picking?'bg-gold text-black':''} aria-pressed={picking} onClick={()=>{setDraft(null);setPicking(v=>!v);}} aria-label="Novo local aqui: toque no mapa" title="Novo local aqui: toque no mapa"><MapPinPlus/></Button>}
      <Button variant="outline" size="icon" onClick={()=>setFit(v=>v+1)} aria-label="Enquadrar o que está no mapa" title="Enquadrar o que está no mapa"><LocateFixed/></Button>
      <Button variant="outline" size="icon" aria-label={expanded?'Fechar modo ampliado':'Ampliar mapa'} title={expanded?'Fechar modo ampliado':'Ampliar mapa'} onClick={()=>setExpanded(v=>!v)}>{expanded?<Minimize2/>:<Maximize2/>}</Button>
     </div>
+    {picking&&<p role="status" className="territory-pick-hint territory-float">Toque no ponto do novo local no mapa.</p>}
+    {draft&&onNewPlaceAt&&<div className="territory-draft-card territory-float" role="dialog" aria-label="Novo local aqui"><p className="font-semibold">Novo local aqui</p><p className="text-sm text-zinc-300">{draft.loading?'Buscando o endereço…':draft.address||'Endereço não encontrado: você digita no cadastro.'}</p><p className="text-xs text-zinc-400">Arraste o pino para ajustar a posição.</p><div className="mt-2 flex flex-wrap gap-2"><Button size="sm" className="bg-gold text-black" disabled={draft.loading} onClick={()=>{onNewPlaceAt({latitude:draft.latitude,longitude:draft.longitude,cityId:city?Number(city):data?.cities.length===1?data.cities[0].id:null,address:draft.address,district:draft.district});setDraft(null);}}>Cadastrar local aqui</Button><Button size="sm" variant="ghost" onClick={()=>setDraft(null)}>Cancelar</Button></div></div>}
     <Button variant="outline" size="sm" className="territory-legend-open territory-float" aria-haspopup="dialog" onClick={()=>setLegendOpen(true)}><Layers/>Legenda</Button>
    </div>}
    <aside className="territory-side" aria-label={chosen?'Ficha do registro':'Registros do mapa'}>

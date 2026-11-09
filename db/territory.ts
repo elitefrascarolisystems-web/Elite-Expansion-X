@@ -125,7 +125,7 @@ if(p.place_id&&p.place_name&&(!Number(p.sensitive)||management(a)))record.place=
 /** Pessoas que aparecem no mapa (a mesma regra da lista): sem consentimento revogado, ou com papel ativo na rede. */
 const visiblePersonSql=(alias:string)=>`${alias}.name NOT LIKE '${ANONYMOUS_LABEL}%' AND (NOT EXISTS(SELECT 1 FROM leads lr WHERE lr.person_id=${alias}.id AND lr.consent_revoked_at IS NOT NULL) OR ${alias}.leader=1 OR EXISTS(SELECT 1 FROM ambassadors ab WHERE ab.person_id=${alias}.id) OR EXISTS(SELECT 1 FROM territory_roles tr WHERE tr.person_id=${alias}.id AND tr.status NOT IN ('Desligado','Inativo','Encerrado')))`;
 /** Locais e ações que cada função vê nos modos: os mesmos do Explorar. */
-function placeScope(a:AccessView,alias:string,ownerColumn:'owner_email'|'created_by') {
+export function placeScope(a:AccessView,alias:string,ownerColumn:'owner_email'|'created_by') {
   if (a.role === 'Administrador') return {sql:'1=1',values:[] as (string|number)[]};
   if (['Coordenação','Líder'].includes(a.role) && a.cityId !== null) return {sql:`${alias}.city_id=?`,values:[a.cityId] as (string|number)[]};
   if (a.role === 'Comercial') return {sql:`lower(${alias}.${ownerColumn})=lower(?)`,values:[a.email] as (string|number)[]};

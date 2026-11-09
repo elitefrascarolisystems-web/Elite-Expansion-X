@@ -267,3 +267,17 @@ export async function personPlacesOf(a: AccessView, person: Row) {
 }
 
 export { PersonPageError };
+
+/**
+ * Em campo (mapa): a situação dos locais próximos. A posição do aparelho nunca chega aqui; o aparelho escolhe
+ * os locais pelo raio e manda só os ids. Só volta o que a função pode ver (o Comercial, os locais dele).
+ */
+export async function nearbySituations(a: AccessView, ids: string[]): Promise<Array<{ businessId: string; situation: PlaceSituation; situationText: string; people: number; lastVisit: string; planned: boolean }>> {
+  const clean = [...new Set(ids.filter((id) => /^[0-9a-f-]{36}$/i.test(id)))].slice(0, 40);
+  if (!clean.length) return [];
+  const { placeScope } = await import("@/db/territory");
+  const scope = placeScope(a, "b", "owner_email");
+  const visible = await all(`SELECT b.id FROM businesses b JOIN cities c ON c.id=b.city_id WHERE b.organization_id=? AND c.organization_id=? AND b.id IN (${clean.map(() => "?").join(",")}) AND ${scope.sql}`, [a.organizationId, a.organizationId, ...clean, ...scope.values]);
+  const summaries = await placeSummaries(a, visible.map((r) => str(r.id)));
+  return [...summaries.values()].map((x) => ({ businessId: x.businessId, situation: x.situation, situationText: x.situationText, people: x.people, lastVisit: x.lastVisit, planned: x.planned.length > 0 }));
+}

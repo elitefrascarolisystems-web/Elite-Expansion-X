@@ -6,6 +6,7 @@ import { canAccessCity } from '@/lib/expansion-permissions';
 import { database } from '@/db/runtime';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'no-store'};
+const REVERSE_CACHE=new Map<string,{address:string;district:string;attribution:string}>();
 export async function POST(request:Request){
  try{
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Por segurança, esta ação só pode ser feita dentro da plataforma. Atualize a página e tente de novo.'},{status:403,headers});
@@ -13,6 +14,29 @@ export async function POST(request:Request){
   const a=await getTeamAccess(u.email,u.displayName,organizationFromRequest(request));if(!a||!['Administrador','Coordenação','Líder','Comercial'].includes(a.role))return Response.json({error:'Você não tem acesso a esta parte da plataforma. Fale com o administrador se precisar.'},{status:403,headers});
   const body=await request.json();if(!Number.isInteger(body.cityId)||!canAccessCity(a,body.cityId))return Response.json({error:'Cidade fora do seu acesso.'},{status:403,headers});
   if(body.kind==='person')return Response.json({error:'Pessoas usam somente o centro da cidade. Não envie dados pessoais para geocodificação.'},{status:400,headers});
+  // Busca reversa (tocar no mapa para cadastrar um local): só pontos de estabelecimentos, nunca de pessoas.
+  // Cache curto por ponto arredondado (~11 m), para não repetir a consulta ao provedor.
+  if(body.reverse){
+   const lat=Number(body.reverse.latitude),lng=Number(body.reverse.longitude);
+   if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)return Response.json({error:'Ponto inválido.'},{status:400,headers});
+   const cacheKey=`${lat.toFixed(4)},${lng.toFixed(4)}`;const cached=REVERSE_CACHE.get(cacheKey);if(cached)return Response.json(cached,{headers});
+   const rkey=(env as unknown as {MAPTILER_GEOCODING_KEY?:string}).MAPTILER_GEOCODING_KEY;
+   let out:{address:string;district:string;attribution:string};
+   if(rkey){
+    const r=await fetch(`https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${encodeURIComponent(rkey)}&language=pt&limit=1`,{signal:AbortSignal.timeout(7000)});
+    if(!r.ok)throw new Error('provider');
+    const j=await r.json() as {features?:Array<{place_name?:string;context?:Array<{id?:string;text?:string}>}>};
+    const f=j.features?.[0];out={address:f?.place_name??'',district:f?.context?.find(c=>String(c.id).startsWith('neighbourhood'))?.text??'',attribution:'MapTiler / OpenStreetMap'};
+   }else{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&accept-language=pt-BR&lat=${lat}&lon=${lng}`,{headers:{'User-Agent':'EliteExpansionX/1.0 (mapa territorial)','Referer':new URL(request.url).origin},signal:AbortSignal.timeout(7000)});
+    if(!r.ok)throw new Error('provider');
+    const j=await r.json() as {address?:Record<string,string>;display_name?:string};
+    const ad=j.address??{};const street=[ad.road,ad.house_number].filter(Boolean).join(', ');
+    out={address:street||j.display_name||'',district:ad.suburb??ad.neighbourhood??ad.quarter??'',attribution:'© OpenStreetMap'};
+   }
+   if(REVERSE_CACHE.size>500)REVERSE_CACHE.clear();REVERSE_CACHE.set(cacheKey,out);
+   return Response.json(out,{headers});
+  }
   const query=String(body.query??'').trim();if(query.length<3||query.length>160)return Response.json({error:'Informe um bairro ou local comercial de 3 a 160 caracteres.'},{status:400,headers});
   const key=(env as unknown as {MAPTILER_GEOCODING_KEY?:string}).MAPTILER_GEOCODING_KEY;
   const c=(await database().prepare('SELECT name,state FROM cities WHERE id=? AND organization_id=?').bind(body.cityId,a.organizationId).all()).results[0];if(!c)return Response.json({error:'Cidade não encontrada.'},{status:404,headers});
