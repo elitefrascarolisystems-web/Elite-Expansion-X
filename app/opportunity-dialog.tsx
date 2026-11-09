@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ACTIVITY_KINDS, STAGES, TEMPERATURES } from "@/lib/commercial";
+import { ACTIVITY_KINDS, STAGE_STEPS, TEMPERATURES, stageFromStep, stageStep } from "@/lib/commercial";
 import type { DashboardData } from "@/lib/expansion-types";
 import type { FollowupRow } from "@/lib/followup";
 import { tenantFetch } from "@/lib/tenant-request";
@@ -33,7 +33,7 @@ export function OpportunityDialog({ edit, data, onClose, onSaved }: { edit: Oppo
 
 function EditForm({ edit, data, onClose, onSaved }: { edit: OpportunityEdit; data: DashboardData; onClose: () => void; onSaved: () => void }) {
   const { row, mode } = edit;
-  const [stage, setStage] = useState(row.stage);
+  const [stage, setStage] = useState(stageStep(row.stage));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const places = (data.places ?? []).filter((place) => place.cityId === row.city_id);
@@ -46,10 +46,10 @@ function EditForm({ edit, data, onClose, onSaved }: { edit: OpportunityEdit; dat
       if (mode === "dados") {
         await post("opportunity", {
           id: row.id, version: row.version, leadId: row.lead_id, ownerEmail: row.owner_email,
-          businessId: String(f.get("businessId") || "") || null, temperature: f.get("temperature"), stage,
+          businessId: String(f.get("businessId") || "") || null, temperature: f.get("temperature"), stage: stageFromStep(stage, row.stage),
           nextAction: String(f.get("nextAction") ?? ""), dueDate: f.get("dueDate"), lostReason: String(f.get("lostReason") ?? ""),
         });
-        toast.success("Dados da oportunidade salvos.");
+        toast.success("Etapa e próximo passo salvos.");
       } else {
         await post("activity", { id: crypto.randomUUID(), opportunityId: row.id, kind: f.get("kind"), note: f.get("note"), day: f.get("day") });
         toast.success("Atividade registrada no atendimento.");
@@ -61,14 +61,14 @@ function EditForm({ edit, data, onClose, onSaved }: { edit: OpportunityEdit; dat
 
   return <>
     <DialogHeader>
-      <DialogTitle>{mode === "dados" ? `Dados da oportunidade · ${row.lead_name}` : `Registrar atividade · ${row.lead_name}`}</DialogTitle>
-      <DialogDescription className="text-zinc-400">{mode === "dados" ? "Etapa, temperatura e local vinculado. “Ganho” não confirma pagamento: a receita só entra com o pagamento confirmado." : "Contato, reunião ou proposta feita com esta pessoa. Fica no histórico do atendimento."}</DialogDescription>
+      <DialogTitle>{mode === "dados" ? `Etapa e próximo passo · ${row.lead_name}` : `Registrar atividade · ${row.lead_name}`}</DialogTitle>
+      <DialogDescription className="text-zinc-400">{mode === "dados" ? "Em que passo está a conversa, o próximo passo e o local. A venda só conta com o pagamento confirmado, em “Venda e pagamento”." : "Contato, reunião ou proposta feita com esta pessoa. Fica no histórico do atendimento."}</DialogDescription>
     </DialogHeader>
     <form onSubmit={submit} className="grid gap-3 text-sm">
       {mode === "dados" ? <>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="grid gap-1">Etapa<select name="stage" value={stage} onChange={(e) => setStage(e.target.value)} className="commercial-input">{STAGES.map((item) => <option key={item}>{item}</option>)}</select></label>
-          <label className="grid gap-1">Temperatura<select name="temperature" defaultValue={row.temperature ?? "Morno"} className="commercial-input">{TEMPERATURES.map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label className="grid gap-1">Etapa<select name="stage" value={stage} onChange={(e) => setStage(e.target.value)} className="commercial-input">{STAGE_STEPS.map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label className="grid gap-1">Temperatura (opcional)<select name="temperature" defaultValue={row.temperature ?? "Morno"} className="commercial-input">{TEMPERATURES.map((item) => <option key={item}>{item}</option>)}</select></label>
         </div>
         <label className="grid gap-1">Local vinculado (opcional)<select name="businessId" defaultValue={row.business_id ?? ""} className="commercial-input"><option value="">Nenhum</option>{places.map((place) => <option key={place.id} value={place.id}>{place.name}</option>)}</select></label>
         {!["Ganho", "Perdido"].includes(stage) && <div className="grid gap-3 sm:grid-cols-[1fr_auto]">

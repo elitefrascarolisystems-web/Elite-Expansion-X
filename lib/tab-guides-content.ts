@@ -127,13 +127,13 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Líder",
       "Comercial"
     ],
-    "paraQueServe": "Saber com quem falar hoje, o que foi combinado e quando voltar.",
+    "paraQueServe": "Com quem falar hoje, do 1º retorno ao pós-venda.",
     "passos": [
-      "Comece por \"Atrasados\" e depois \"Hoje\".",
-      "Toque em \"Abrir ficha\" e use \"Usar gancho\": a mensagem já sai com o nome da pessoa.",
-      "Depois da conversa, toque em \"Registrar retorno\" e marque a próxima data."
+      "Comece por \"Atrasados\" e \"Hoje\"; na ficha, use \"Usar gancho\".",
+      "Decidiu entrar e não pagou? Na ficha, toque em \"Iniciar F.E.C.H.A.\" e siga o roteiro.",
+      "Quem já pagou aparece em \"Pós-venda\": boas-vindas, retorno e convite para indicar."
     ],
-    "exemplo": "Carla estava atrasada desde segunda. Você abriu a ficha, usou o gancho de Retomada, conversou e registrou o retorno para quinta. Carla sai de Atrasados e volta na quinta.",
+    "exemplo": "F.E.C.H.A. = Fato, Entender, Corrigir, Hora e Acompanhar. Daniel decidiu entrar, mas não pagou: a trava era o limite do cartão. Você registrou a solução (boleto) e a data combinada, sexta. Na sexta ele pagou, você registrou em \"Venda e pagamento\" e Daniel passou para \"Pós-venda\".",
     "cuidado": "A plataforma não envia mensagens sozinha: você confere e envia. Fale só com quem autorizou o contato.",
     "acao": "novo:atendimento-novo"
   },
@@ -145,18 +145,18 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
       "Líder",
       "Comercial"
     ],
-    "paraQueServe": "Ver todos os atendimentos e pôr na agenda quem ficou de fora.",
+    "paraQueServe": "Todos os atendimentos, a etapa e as vendas pagas.",
     "passos": [
-      "No topo, toque em \"Abrir acompanhamento\" em cada pessoa.",
-      "Busque em \"Buscar pessoa ou próxima ação\" e toque no nome para abrir a ficha.",
-      "Na ficha, toque em \"Dados da oportunidade\" para ajustar etapa e temperatura."
+      "Toque em \"Abrir acompanhamento\" em quem não está na agenda.",
+      "Toque no nome e em \"Etapa e próximo passo\": Novo, Em conversa, Proposta, Ganho ou Perdido.",
+      "Pagou? Toque em \"Registrar venda e pagamento\"; o filtro \"Com pagamento\" mostra as vendas."
     ],
-    "exemplo": "Bruno, da Academia Corpo Ativo, autorizou o contato, mas não estava na agenda. Você tocou em \"Abrir acompanhamento\" e o 1º retorno entrou para hoje. Depois da conversa, em \"Dados da oportunidade\", marcou a temperatura Quente.",
-    "cuidado": "Se a pessoa pedir para não ser mais procurada, marque a revogação em \"Etapa e autorização\". O atendimento é cancelado, e isso não se desfaz.",
-    "acao": "novo:atendimento-novo",
+    "exemplo": "Bruno autorizou o contato, mas não estava na agenda. Você tocou em \"Abrir acompanhamento\" e o 1º retorno entrou para hoje. Depois mandou a proposta e marcou \"Proposta\". Quando os R$ 1.000 caíram, registrou \"Pagamento confirmado\": só então virou receita.",
+    "cuidado": "Se a pessoa pedir para não ser mais procurada, marque a revogação em \"Responsável e autorização\". O atendimento é encerrado, e isso não se desfaz.",
+    "acao": "novo:venda",
     "porFuncao": {
       "Comercial": {
-        "paraQueServe": "Ver todos os seus atendimentos e pôr na agenda quem ficou de fora."
+        "paraQueServe": "Seus atendimentos, a etapa e as vendas pagas."
       }
     }
   },
@@ -189,65 +189,6 @@ export const GUIDE_CONTENT: Record<GuideKey, TabGuide> = {
         "acao": "aba:vendas/agenda"
       }
     }
-  },
-  "vendas/fecha": {
-    "titulo": "Como usar: Método F.E.C.H.A.",
-    "funcoes": [
-      "Administrador",
-      "Coordenação",
-      "Líder",
-      "Comercial"
-    ],
-    "paraQueServe": "Levar ao pagamento quem decidiu entrar e não pagou.",
-    "passos": [
-      "Na Agenda, toque em \"Abrir ficha\" e em \"Iniciar F.E.C.H.A.\".",
-      "Siga o roteiro da ficha: \"Entender a trava\", \"Registrar solução\" e \"Marcar data combinada\".",
-      "Registre o pagamento em \"Venda e pagamento\"; se a pessoa sumir, toque em \"Sem resposta\"."
-    ],
-    "exemplo": "F.E.C.H.A. = Fato, Entender, Corrigir, Hora e Acompanhar. Daniel decidiu entrar, mas não pagou: a trava era o limite do cartão. Você registrou a solução, boleto, e a data combinada, sexta. Na sexta ele pagou, e você registrou em \"Venda e pagamento\".",
-    "cuidado": "A plataforma não envia mensagens: copie, adapte e envie você. Se a pessoa pedir para parar, marque a revogação em \"Etapa e autorização\".",
-    "acao": "aba:vendas/agenda"
-  },
-  "vendas/pagamentos": {
-    "titulo": "Como usar: Pagamentos",
-    "funcoes": [
-      "Administrador",
-      "Coordenação",
-      "Líder",
-      "Comercial"
-    ],
-    "paraQueServe": "Registrar as vendas e confirmar cada pagamento.",
-    "passos": [
-      "Toque em \"Registrar venda e pagamento\" e escolha o atendimento.",
-      "Em \"Situação\", marque \"Pagamento confirmado\" quando o dinheiro entrar: só aí vira receita.",
-      "Para mudar depois, toque em \"Venda e pagamento\" no atendimento, na lista."
-    ],
-    "exemplo": "Maria fechou com Daniel um plano de R$ 1.000 no boleto e registrou a venda como \"Venda confirmada\". Quando o boleto foi pago, tocou em \"Venda e pagamento\" e mudou para \"Pagamento confirmado\". Só então os R$ 1.000 entraram na receita.",
-    "cuidado": "Atendimento cancelado ou com autorização revogada não recebe venda.",
-    "acao": "novo:venda",
-    "porFuncao": {
-      "Comercial": {
-        "cuidado": "Você vê e registra só as vendas dos seus atendimentos. Atendimento cancelado ou com autorização revogada não recebe venda."
-      }
-    }
-  },
-  "vendas/posvenda": {
-    "titulo": "Como usar: Pós-venda",
-    "funcoes": [
-      "Administrador",
-      "Coordenação",
-      "Líder",
-      "Comercial"
-    ],
-    "paraQueServe": "Cuidar de quem já pagou, das boas-vindas ao convite para indicar.",
-    "passos": [
-      "Toque em \"Atualizar pós-venda\" e escolha \"Boas-vindas\".",
-      "Marque o próximo retorno e a próxima ação: a pessoa volta na Agenda nesse dia.",
-      "Convide a indicar e marque \"Indicação convidada\"; no fim, marque \"Concluído\"."
-    ],
-    "exemplo": "Bruno pagou na segunda. Você tocou em \"Atualizar pós-venda\", escolheu \"Boas-vindas\" e marcou o retorno para quarta. Na quarta, convidou Bruno a indicar e marcou \"Indicação convidada\". Ele indicou Carla, que autorizou o contato, e você começou o atendimento dela.",
-    "cuidado": "Só comece o atendimento de quem foi indicado depois que essa pessoa autorizar o contato.",
-    "acao": "novo:atendimento-novo"
   },
   "rede/embaixadores": {
     "titulo": "Como usar: Embaixadores",

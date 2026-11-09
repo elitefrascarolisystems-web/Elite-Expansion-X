@@ -29,7 +29,7 @@ export const NETWORK_TEMPLATE =
   "EXEMPLO Bruno Lima;Cidade Exemplo;Bairro Exemplo;;;EXEMPLO Ana Souza;Mentorado;Mentoria;1.500,00;22/04/2026;Pagamento confirmado\r\n" +
   "EXEMPLO Carla Dias;Cidade Exemplo;;;;EXEMPLO Bruno Lima;;;;;\r\n";
 
-export const SALE_STATUSES = ["Em negociação", "Venda confirmada", "Pagamento confirmado", "Cancelada", "Reembolsada"] as const;
+export const SALE_STATUSES = ["Pagamento confirmado", "Cancelada", "Reembolsada"] as const;
 export type SaleStatus = (typeof SALE_STATUSES)[number];
 
 /** Linha já interpretada, pronta para o servidor. */
@@ -96,14 +96,16 @@ export function parseDateBR(value: string): string | null {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-/** "pago", "confirmado", "paga" → Pagamento confirmado; "pendente" → Venda confirmada; vazio decide pelo valor/data. */
+/** "pago", "confirmado", "paga" → Pagamento confirmado; "pendente" ou "em negociação" → sem venda (fica só o atendimento); vazio decide pelo valor/data. */
 export function parseSaleStatus(value: string, hasSale: boolean): SaleStatus | "" | null {
   const key = nameKey(value);
   if (!key) return hasSale ? "Pagamento confirmado" : "";
   const exact = SALE_STATUSES.find((status) => nameKey(status) === key);
   if (exact) return exact;
+  // Venda ainda não paga não é venda: o atendimento é registrado e a negociação segue nele.
+  if (/\b(pendente|aguardando|negoci|em aberto|venda confirmada)/.test(key)) return "";
   if (/\b(pago|paga|confirmad|quitad|recebid)/.test(key)) return "Pagamento confirmado";
-  if (/\b(pendente|aguardando|negoci|em aberto|fechad)/.test(key)) return "Venda confirmada";
+  if (/\bfechad/.test(key)) return "";
   if (/\b(cancel|desist)/.test(key)) return "Cancelada";
   if (/\b(reembols|estorn|devolv)/.test(key)) return "Reembolsada";
   return null;
@@ -133,7 +135,7 @@ export function buildNetworkRows(grid: string[][], cities: CityLike[], defaultCi
     const hasSale = amountCents > 0 || Boolean(paidAt) || Boolean(product);
     const saleStatus = parseSaleStatus(value(cells, "saleStatus"), hasSale);
     if (saleStatus === null) return fail(`Situação da venda "${value(cells, "saleStatus")}" não reconhecida. Use: ${SALE_STATUSES.join(", ")}.`);
-    if (saleStatus && ["Venda confirmada", "Pagamento confirmado"].includes(saleStatus) && amountCents <= 0) return fail("Informe o valor da venda.");
+    if (saleStatus === "Pagamento confirmado" && amountCents <= 0) return fail("Informe o valor da venda.");
     const whatsapp = value(cells, "whatsapp"), email = value(cells, "email");
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(`E-mail "${email}" inválido.`);
     if (whatsapp && whatsapp.replace(/\D/g, "").length < 8) return fail(`WhatsApp "${whatsapp}" incompleto.`);

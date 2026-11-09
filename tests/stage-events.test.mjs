@@ -74,3 +74,29 @@ test('a migração aproveita o histórico em texto das atividades "Etapa"', ()=>
  ]);
  db.close();
 });
+
+test('etapa em 5 passos: intermediárias aparecem como "Em conversa" e nada gravado muda', async()=>{
+ const c=await vite.ssrLoadModule('/lib/commercial.ts');
+ assert.deepEqual([...c.STAGE_STEPS],['Novo','Em conversa','Proposta','Ganho','Perdido']);
+ assert.deepEqual(['Novo','Contato','Qualificado','Reunião','Proposta','Negociação','Ganho','Perdido'].map(c.stageStep),['Novo','Em conversa','Em conversa','Em conversa','Proposta','Em conversa','Ganho','Perdido']);
+ assert.equal(c.stageFromStep('Em conversa','Novo'),'Contato');
+ assert.equal(c.stageFromStep('Em conversa','Reunião'),'Reunião','mantém a etapa intermediária já gravada');
+ assert.equal(c.stageFromStep('Proposta','Reunião'),'Proposta');
+ assert.deepEqual([...c.SALE_STEPS],['Pagamento confirmado','Cancelada','Reembolsada']);
+ assert.equal(c.saleStatusLabel('Venda confirmada'),'Venda confirmada (antiga)');
+ assert.equal(c.saleStatusLabel('Cancelada'),'Cancelada');
+});
+
+test('abrir o acompanhamento valida o atendimento informado (embaixador ou mentorado)', async()=>{
+ const m=await setup();
+ sqlite.prepare("UPDATE leads SET status='Lead informado' WHERE id=1").run();
+ await save(m,crypto.randomUUID(),'Novo');
+ assert.equal(sqlite.prepare('SELECT status FROM leads WHERE id=1').get().status,'Lead válido');
+});
+
+test('abrir o acompanhamento não mexe em atendimento já válido ou cancelado', async()=>{
+ const m=await setup();
+ sqlite.prepare("UPDATE leads SET status='Oportunidade' WHERE id=1").run();
+ await save(m,crypto.randomUUID(),'Novo');
+ assert.equal(sqlite.prepare('SELECT status FROM leads WHERE id=1').get().status,'Oportunidade');
+});

@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionName } from "@/lib/expansion-permissions";
 import { defaultOwnerEmail, eligibleOwners } from "@/lib/owners";
+import { OLD_SALE_STATUSES, SALE_STEPS, saleStatusLabel } from "@/lib/commercial";
 import type { AmbassadorRecord, CityRecord, DashboardData } from "@/lib/expansion-types";
 
 export type DialogName =
@@ -255,10 +256,9 @@ function LeadForm({ data, saving, onSave }: { data: DashboardData; saving: boole
 }
 
 function LeadStatusForm({ data, leadId, saving, onSave }: { data: DashboardData; leadId?: number; saving: boolean; onSave: Save }) {
-  const lead = data.leads.find((item) => item.id === leadId); const [status, setStatus] = useState(lead?.status ?? "Lead válido");
+  const lead = data.leads.find((item) => item.id === leadId); const status = lead?.status ?? "Lead válido";
   const [consentRevoked, setConsentRevoked] = useState(Boolean(lead?.consentRevokedAt));
-  return <FormShell title={`Etapa e autorização · ${lead?.name ?? ""}`} description="A etapa comercial não confirma uma venda ou pagamento. Use o registro de venda para isso." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("update_lead", { leadId: lead?.id, status, assignedToEmail: f.get("assignedToEmail") ?? "", consentRevoked, consentRevocationReason: f.get("consentRevocationReason") ?? "" }); }}>
-    <Field label="Etapa"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Lead informado", "Lead válido", "Oportunidade", "Cancelado"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
+  return <FormShell title={`Responsável e autorização · ${lead?.name ?? ""}`} description="Quem cuida do atendimento e a autorização de contato. A etapa fica em “Etapa e próximo passo”; a venda, em “Venda e pagamento”." saving={saving} onSubmit={(event) => { event.preventDefault(); const f = new FormData(event.currentTarget); onSave("update_lead", { leadId: lead?.id, status, assignedToEmail: f.get("assignedToEmail") ?? "", consentRevoked, consentRevocationReason: f.get("consentRevocationReason") ?? "" }); }}>
     <Field label="Responsável comercial"><Input name="assignedToEmail" type="email" defaultValue={lead?.assignedToEmail} className={inputClass} /></Field>
     <div className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-4"><Checkbox id="lead-consent-revoked" checked={consentRevoked} disabled={Boolean(lead?.consentRevokedAt)} onCheckedChange={(value) => setConsentRevoked(value === true)} /><label htmlFor="lead-consent-revoked" className="text-sm leading-6 text-zinc-300">O contato revogou a autorização. Essa ação cancela o atendimento e não pode ser desfeita neste registro.</label></div>
     {consentRevoked && <Field label="Motivo da revogação" wide><Input name="consentRevocationReason" required defaultValue={lead?.consentRevocationReason} className={inputClass} /></Field>}
@@ -269,16 +269,16 @@ function SaleForm({ data, leadId, saving, onSave }: { data: DashboardData; leadI
   const eligibleLeads = data.leads.filter((lead) => lead.status !== "Cancelado" && !lead.consentRevokedAt);
   const [selectedLead, setSelectedLead] = useState(String(leadId ?? eligibleLeads[0]?.id ?? ""));
   const selectedSale = data.sales.find((item) => item.leadId === Number(selectedLead));
-  const [status, setStatus] = useState(selectedSale?.status ?? "Em negociação");
+  const [status, setStatus] = useState(selectedSale?.status ?? "Pagamento confirmado");
   const [product, setProduct] = useState(selectedSale?.product ?? "");
   const [amount, setAmount] = useState(String((selectedSale?.amountCents ?? 0) / 100));
 
   if (!eligibleLeads.length) return <><DialogHeader><DialogTitle>Nenhum atendimento disponível</DialogTitle><DialogDescription className="leading-6 text-zinc-400">Comece um atendimento antes de registrar a venda. Contatos cancelados ou com autorização revogada não podem receber vendas.</DialogDescription></DialogHeader><DialogFooter className="mt-6"><DialogClose asChild><Button type="button" variant="outline" className="border-white/12 bg-transparent text-white">Fechar</Button></DialogClose></DialogFooter></>;
 
-  return <FormShell title="Registrar venda e pagamento" description="Só o status Pagamento confirmado conta como receita." saving={saving} onSubmit={(event) => { event.preventDefault(); onSave("record_sale", { leadId: Number(selectedLead), product, amountCents: cents(amount), status }); }}>
-    <Field label="Atendimento"><Select value={selectedLead} onValueChange={(value) => { const sale = data.sales.find((item) => item.leadId === Number(value)); setSelectedLead(value); setStatus(sale?.status ?? "Em negociação"); setProduct(sale?.product ?? ""); setAmount(String((sale?.amountCents ?? 0) / 100)); }}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{eligibleLeads.map((lead) => <SelectItem key={lead.id} value={String(lead.id)}>#{lead.id} · {lead.name} · {lead.cityName}</SelectItem>)}</SelectContent></Select></Field>
+  return <FormShell title="Registrar venda e pagamento" description="Registre aqui só o que foi pago (ou cancelar e reembolsar uma venda). Enquanto a pessoa decide, a etapa do atendimento é que mostra o andamento." saving={saving} onSubmit={(event) => { event.preventDefault(); onSave("record_sale", { leadId: Number(selectedLead), product, amountCents: cents(amount), status }); }}>
+    <Field label="Atendimento"><Select value={selectedLead} onValueChange={(value) => { const sale = data.sales.find((item) => item.leadId === Number(value)); setSelectedLead(value); setStatus(sale?.status ?? "Pagamento confirmado"); setProduct(sale?.product ?? ""); setAmount(String((sale?.amountCents ?? 0) / 100)); }}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{eligibleLeads.map((lead) => <SelectItem key={lead.id} value={String(lead.id)}>#{lead.id} · {lead.name} · {lead.cityName}</SelectItem>)}</SelectContent></Select></Field>
     <Field label="Produto"><Input name="product" required value={product} onChange={(event) => setProduct(event.target.value)} placeholder="Ex.: Mentoria anual" className={inputClass} /></Field><Field label="Valor (R$)"><Input name="amount" type="number" min="0" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} className={inputClass} /></Field>
-    <Field label="Situação"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{["Em negociação", "Venda confirmada", "Pagamento confirmado", "Cancelada", "Reembolsada"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
+    <Field label="Situação"><Select value={status} onValueChange={setStatus}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent>{[...(OLD_SALE_STATUSES as readonly string[]).filter((item) => item === selectedSale?.status), ...SALE_STEPS].map((item) => <SelectItem key={item} value={item}>{saleStatusLabel(item)}</SelectItem>)}</SelectContent></Select></Field>
   </FormShell>;
 }
 

@@ -16,7 +16,7 @@ import {StreetViewPanel} from '@/app/street-view-panel';
 import { TerritoryCanvas, type HoverCard, type ModeLayer } from '@/app/territory-canvas';
 import { CoverageLegend, FunnelLegend, FunnelOptions, HeatLegend, HeatOptions, LegendCard, ModeBar, PlacesNotes, TimelineLegend, TimelinePlayer, TowerLegend } from '@/app/territory-modes';
 import { buildDashboardView, EMPTY_FILTERS } from '@/lib/expansion-domain';
-import { STAGES } from '@/lib/commercial';
+import { STAGES, stageStep } from '@/lib/commercial';
 import { binIndex, binLabels, countBins, hexAreaLabel, hexBins, hexRadiusForZoom } from '@/lib/hexgrid';
 import { funnelCollection, funnelSpots, funnelTotals, HEAT_METRICS, heatCollection, heatWeights, hexCollection, MAP_MODES, openBySpot, parseMode, timelineCollection, timelineFrame, timelineMonths, timelineSeries, towerCollection, towerScale, withMode, type HeatMetric, type MapMode, type Temperature } from '@/lib/map-modes';
 import { themeLabels, type TerritoryTheme } from '@/lib/territory-appearance';
@@ -134,7 +134,7 @@ export function TerritorialMap({view,data,focusLeadId,focusPersonId,focusKey,foc
   const spot=places?.spots[target.index];if(!spot)return null;
   const lines=[spot.kind==='city'?'Centro da cidade · atendimentos sem local ligado':spot.kind==='region'?`Bairro · ${spot.people} ${spot.people===1?'pessoa':'pessoas'} sem local ligado`:[spot.type,spot.sector].filter(Boolean).join(' · ')];
   if(mode==='calor'&&heat){const unit=HEAT_METRICS.find(m=>m.id===heatMetric)!.unit,value=heat.weights[target.index]??0;lines.push(`${value} ${value===1?unit[0]:unit[1]}`);}
-  if(mode==='funil'){const row=funnel?.rows.find(r=>r.spot===target.index);if(row)lines.push(`Etapa mais avançada: ${STAGES[row.stage]}`,`${row.open} abertos · ${row.won} ganhos${row.lost?` · ${row.lost} perdidos`:''}`);}
+  if(mode==='funil'){const row=funnel?.rows.find(r=>r.spot===target.index);if(row)lines.push(`Etapa mais avançada: ${stageStep(STAGES[row.stage])}`,`${row.open} abertos · ${row.won} ganhos${row.lost?` · ${row.lost} perdidos`:''}`);}
   if(mode==='linha-do-tempo'&&spot.mapped)lines.push(`Mapeado em ${date(spot.mapped)}`);
   if(spot.kind==='business'&&(mode==='cidade-acesa'||mode==='cobertura'))lines.push(`${spot.people} ${spot.people===1?'pessoa com local principal aqui':'pessoas com local principal aqui'} · ${openDeals[target.index]??0} abertos`);
   return {title:spot.name,lines:[...lines.filter(Boolean),'Clique para abrir a ficha']};

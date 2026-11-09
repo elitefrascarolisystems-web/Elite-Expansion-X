@@ -79,7 +79,7 @@ test('funil: etapa mais avançada, perdido só quando tudo foi perdido, filtro d
  assert.deepEqual(rows.map(r=>[r.spot,c.STAGES[r.stage],m.FUNNEL_GROUPS[r.group].label]),[[0,'Ganho','Ganho'],[1,'Perdido','Perdido'],[2,'Ganho','Ganho']]);
  assert.deepEqual(rows.map(r=>[r.open,r.won,r.lost,r.hot]),[[2,1,0,2],[0,0,1,0],[3,1,0,0]]);
  const frio=m.funnelSpots(data,'Frio');
- assert.deepEqual(frio.map(r=>[r.spot,m.FUNNEL_GROUPS[r.group].label]),[[1,'Perdido'],[2,'Novo e Contato']]);
+ assert.deepEqual(frio.map(r=>[r.spot,m.FUNNEL_GROUPS[r.group].label]),[[1,'Perdido'],[2,c.stageStep(c.STAGES[frio.find(r=>r.spot===2).stage])]]);
  const quente=m.funnelSpots(data,'Quente');
  assert.deepEqual(quente.map(r=>[r.spot,c.STAGES[r.stage]]),[[0,'Proposta'],[2,'Ganho']]);
  assert.deepEqual(m.funnelTotals(rows),{places:3,open:5,won:2,hot:2,byGroup:[0,0,0,2,1]});

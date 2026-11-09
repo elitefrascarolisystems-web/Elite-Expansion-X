@@ -77,9 +77,9 @@ export function openBySpot(data: TerritoryPlacesResponse): number[] {
 }
 
 export const FUNNEL_GROUPS = [
-  { label: "Novo e Contato", stages: ["Novo", "Contato"] },
-  { label: "Qualificado e Reunião", stages: ["Qualificado", "Reunião"] },
-  { label: "Proposta e Negociação", stages: ["Proposta", "Negociação"] },
+  { label: "Novo", stages: ["Novo"] },
+  { label: "Em conversa", stages: ["Contato", "Qualificado", "Reunião", "Negociação"] },
+  { label: "Proposta", stages: ["Proposta"] },
   { label: "Ganho", stages: ["Ganho"] },
   { label: "Perdido", stages: ["Perdido"] },
 ] as const;

@@ -6,6 +6,7 @@ import type { NewAction } from "@/app/app-shell";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { goCommands, helpCommands, matches } from "@/lib/commands";
+import { stageStep } from "@/lib/commercial";
 import type { UserRole } from "@/lib/expansion-types";
 import { guideKeyFor } from "@/lib/tab-guide-keys";
 import type { NavArea, NavLocation } from "@/lib/navigation";
@@ -81,7 +82,7 @@ function SearchDialog({ sales, commands, onClose, onRun, onPick }: { sales: bool
           icon: r.kind === "city" ? MapPin : r.kind === "person" ? UserRound : Building2, run: () => pickRef.current({ kind: "territory", key: r.key }),
         }));
         const deals: Hit[] = followup.slice(0, 6).map((r) => ({
-          id: `op:${r.id}`, group: "Atendimentos", title: r.lead_name, detail: [r.city_name, r.stage, r.next_action].filter(Boolean).join(" · "),
+          id: `op:${r.id}`, group: "Atendimentos", title: r.lead_name, detail: [r.city_name, stageStep(r.stage), r.next_action].filter(Boolean).join(" · "),
           icon: HandCoins, run: () => pickRef.current({ kind: "followup", leadId: Number(r.lead_id) }),
         }));
         setHits([...places, ...deals]); setActive(0);

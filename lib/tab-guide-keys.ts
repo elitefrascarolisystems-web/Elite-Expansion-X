@@ -9,7 +9,7 @@ import type { NavLocation } from "@/lib/navigation";
 export const GUIDE_KEYS = [
   "hoje/",
   "territorio/mapa", "territorio/cidades", "territorio/locais",
-  "vendas/agenda", "vendas/atendimentos", "vendas/ganchos", "vendas/fecha", "vendas/pagamentos", "vendas/posvenda",
+  "vendas/agenda", "vendas/atendimentos", "vendas/ganchos",
   "rede/embaixadores", "rede/indicacoes", "rede/mentorados", "rede/parceiros", "rede/materiais",
   "resultados/visao", "resultados/calculadora", "resultados/metas", "resultados/mapeamento", "resultados/custos",
   "gestao/time", "gestao/regras", "gestao/identidade", "gestao/plano", "gestao/historico", "gestao/privacidade", "gestao/avisos", "gestao/assessoria",

@@ -27,8 +27,7 @@ export function navigationFor(access: AccessView, { hasAdvisors }: NavOptions): 
     {
       id: "vendas", label: "Vendas", description: "Do primeiro contato ao pagamento, e o cuidado depois da venda.",
       views: [
-        { id: "agenda", label: "Agenda" }, { id: "atendimentos", label: "Atendimentos" }, { id: "ganchos", label: "Ganchos" }, { id: "fecha", label: "Método F.E.C.H.A." },
-        { id: "pagamentos", label: "Pagamentos" }, { id: "posvenda", label: "Pós-venda" },
+        { id: "agenda", label: "Agenda" }, { id: "atendimentos", label: "Atendimentos" }, { id: "ganchos", label: "Ganchos" },
       ],
     },
     {
@@ -79,8 +78,15 @@ export function defaultLocation(access: AccessView): NavLocation {
   return { area: "hoje", view: "" };
 }
 
+/** Vendas → Pagamentos virou o filtro "Com pagamento" de Atendimentos; F.E.C.H.A. e Pós-venda, filtros da Agenda. */
+export const OLD_VIEWS: Record<string, string> = { pagamentos: "atendimentos", fecha: "agenda", posvenda: "agenda" };
+/** Filtro rápido que o endereço antigo abre já marcado. */
+export const OLD_VIEW_QUICK: Record<string, string> = { pagamentos: "paid", fecha: "fecha", posvenda: "aftercare" };
+
 /** Corrige um endereço (?area=&ver=) para algo que esta função pode ver. */
 export function resolveLocation(areas: NavArea[], access: AccessView, area?: string | null, view?: string | null): NavLocation {
+  // Abas que viraram filtros (simplificação, parte 2): os endereços antigos continuam abrindo o lugar certo.
+  if (area === "vendas" && view && OLD_VIEWS[view]) view = OLD_VIEWS[view];
   const target = areas.find((item) => item.id === area);
   if (!target) return defaultLocation(access);
   if (!target.views.length) return { area: target.id, view: "" };

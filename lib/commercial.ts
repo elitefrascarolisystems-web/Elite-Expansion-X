@@ -2,6 +2,20 @@ import "./zod-pt";
 import {z} from 'zod';
 import {BUSINESS_STATUSES,PLACE_TYPES,SECTORS} from './places';
 export const STAGES=['Novo','Contato','Qualificado','Reunião','Proposta','Negociação','Ganho','Perdido'] as const;
+/**
+ * Na tela, a etapa do atendimento tem 5 passos. As etapas gravadas continuam as mesmas (nada é migrado):
+ * Contato, Qualificado, Reunião e Negociação aparecem como "Em conversa"; escolher "Em conversa" grava "Contato"
+ * (ou mantém a etapa intermediária que já estava gravada).
+ */
+export const STAGE_STEPS=['Novo','Em conversa','Proposta','Ganho','Perdido'] as const;
+export type StageStep=(typeof STAGE_STEPS)[number];
+const IN_TALK=new Set(['Contato','Qualificado','Reunião','Negociação']);
+export const stageStep=(stage:string|null|undefined):string=>!stage?'':IN_TALK.has(stage)?'Em conversa':stage;
+export const stageFromStep=(step:string,current?:string|null):(typeof STAGES)[number]=>step==='Em conversa'?(current&&IN_TALK.has(current)?current as (typeof STAGES)[number]:'Contato'):(STAGES as readonly string[]).includes(step)?step as (typeof STAGES)[number]:'Novo';
+/** Venda: só as 3 situações de hoje. "Em negociação" e "Venda confirmada" ficam nos registros antigos, marcadas "(antiga)". */
+export const SALE_STEPS=['Pagamento confirmado','Cancelada','Reembolsada'] as const;
+export const OLD_SALE_STATUSES=['Em negociação','Venda confirmada'] as const;
+export const saleStatusLabel=(status:string|null|undefined)=>!status?'':(OLD_SALE_STATUSES as readonly string[]).includes(status)?`${status} (antiga)`:status;
 export const TEMPERATURES=['Frio','Morno','Quente'] as const;
 export const ACTIVITY_KINDS=['Contato','Follow-up','Reunião','Proposta'] as const;
 export const daySchema=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>!Number.isNaN(Date.parse(v+'T12:00:00Z'))&&new Date(v+'T12:00:00Z').toISOString().slice(0,10)===v,'Data inválida.');

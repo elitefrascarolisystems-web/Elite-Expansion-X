@@ -408,11 +408,12 @@ function alerts(data: DashboardData, cities: CityMetric[], ambassadors: Ambassad
       description: "Confira treinamento, aceite das regras e atividade registrada.",
       cityId: item.cityId,
     }));
-  data.sales.filter((sale) => sale.status === "Venda confirmada").slice(0, 6).forEach((sale) => result.push({
+  // Situações antigas (antes da simplificação): pedem para confirmar o pagamento ou cancelar.
+  data.sales.filter((sale) => sale.status === "Venda confirmada" || sale.status === "Em negociação").slice(0, 6).forEach((sale) => result.push({
     id: `sale-${sale.id}-payment`,
     severity: "Atenção",
-    title: "Venda aguardando pagamento",
-    description: `A venda do lead #${sale.leadId} não entra no CAC até o pagamento ser confirmado.`,
+    title: "Venda antiga sem pagamento",
+    description: `A venda do atendimento #${sale.leadId} está como "${sale.status}" (situação antiga). Em "Venda e pagamento", marque Pagamento confirmado ou Cancelada.`,
     cityId: sale.cityId,
   }));
   return result;

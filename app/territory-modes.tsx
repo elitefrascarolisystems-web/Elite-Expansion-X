@@ -107,9 +107,9 @@ export function TimelineLegend({ dark, frame, months, series }: { dark: boolean;
     <ul className="territory-swatches">
       <li><Swatch color={p.sequential[4]} />Cadastrado em {month || "—"}</li>
       <li><Swatch color={p.sequential[2]} />Cadastrado antes</li>
-      <li><Swatch color={p.sale} ring /><CircleCheck className="size-3.5 text-[#0ca30c]" aria-hidden="true" />Venda confirmada até o mês</li>
+      <li><Swatch color={p.sale} ring /><CircleCheck className="size-3.5 text-[#0ca30c]" aria-hidden="true" />Venda paga até o mês</li>
     </ul>
-    <p className="territory-legend-count">{frame ? <>Até {month}: <strong>{plural(frame.mapped, "local", "locais")}</strong> (+{frame.newMapped} no mês) · {plural(frame.sales, "venda confirmada", "vendas confirmadas")} (+{frame.newSales})</> : "Ainda não há cadastros com data."}</p>
+    <p className="territory-legend-count">{frame ? <>Até {month}: <strong>{plural(frame.mapped, "local", "locais")}</strong> (+{frame.newMapped} no mês) · {plural(frame.sales, "venda paga", "vendas pagas")} (+{frame.newSales})</> : "Ainda não há cadastros com data."}</p>
     <Table caption="Novos locais e vendas por mês" head={["Mês", "Novos locais", "Vendas"]} rows={months.map((m, i) => [monthLabel(m), series.mapped[i], series.sales[i]])} />
   </LegendCard>;
 }
