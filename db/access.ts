@@ -1,6 +1,7 @@
 import { isPortalRole, type AccessView, type SettingsView, type UserRole } from "@/lib/expansion-types";
 import { asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runtime";
 import { parseGuidesSeen } from "@/lib/tab-guide-keys";
+import { advisoryAllowed } from "@/lib/advisory";
 
 const OWNER_EMAIL = "teamfrascaroli@gmail.com";
 
@@ -129,8 +130,16 @@ async function advisoryAccess(email: string, displayName: string, organizationId
   const db = database();
   const advisor = (await db.prepare(`${ACTIVE_ADVISOR_SQL} AND lower(adv.email)=lower(?) LIMIT 1`).bind(email).all()).results[0];
   if (!advisor) return null;
-  const org = (await db.prepare("SELECT id,name,mfa_required FROM organizations WHERE id=? AND active=1").bind(organizationId).all()).results[0];
+  const org = (await db.prepare("SELECT id,name,mfa_required,advisory_mode,advisory_until FROM organizations WHERE id=? AND active=1").bind(organizationId).all()).results[0];
   if (!org) return null;
+  // Quem decide o acesso da assessoria é a empresa: desligado ou com prazo vencido, ninguém da Elite entra.
+  const today = brazilTimestamp().slice(0, 10);
+  if (!advisoryAllowed(String(org.advisory_mode ?? "liberado"), org.advisory_until ? String(org.advisory_until) : null, today)) return null;
+  // Uma linha por dia por assessor no Histórico da empresa: a empresa vê quem da Elite entrou e quando.
+  await db.prepare(`INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,entity_id,summary,created_at)
+    SELECT ?,?,'advisory_access','organization',?,'Assessoria Elite entrou na empresa.',?
+    WHERE NOT EXISTS(SELECT 1 FROM audit_logs WHERE organization_id=? AND lower(actor_email)=lower(?) AND action='advisory_access' AND substr(created_at,1,10)=?)`)
+    .bind(organizationId, email, organizationId, brazilTimestamp(), organizationId, email, today).run();
   // Empresa que exige verificação em duas etapas: a assessoria também precisa tê-la ativa.
   const mfaSetupRequired = Number(org.mfa_required ?? 0) === 1 && !(await mfaEnabled(email));
   return {

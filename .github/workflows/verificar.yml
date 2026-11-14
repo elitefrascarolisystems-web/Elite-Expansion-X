@@ -38,8 +38,10 @@ jobs:
         run: |
           set -o pipefail
           node --test --test-concurrency=1 --test-reporter=spec \
+            tests/advisory.test.mjs \
             tests/business-import.test.mjs \
             tests/calculator-base.test.mjs \
+            tests/data-export.test.mjs \
             tests/elite-components.test.mjs \
             tests/expansion-domain.test.mjs \
             tests/fecha-guide.test.mjs \

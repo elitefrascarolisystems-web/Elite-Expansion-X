@@ -77,6 +77,9 @@ export type SubscriberRow = {
   lastActivity: string | null;
   lastLogin: string | null;
   ownerJoined: boolean;
+  /** A empresa decide se a Assessoria Elite entra (liberado, com prazo ou desligado). */
+  advisoryAllowed: boolean;
+  advisoryLabel: string;
 };
 export type SubscriptionAudit = { organizationId: number; actor: string; action: string; reason: string; at: string };
 export type SubscriptionsData = { subscribers: SubscriberRow[]; audit: SubscriptionAudit[]; today: string };

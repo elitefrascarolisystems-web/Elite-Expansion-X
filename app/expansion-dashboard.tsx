@@ -139,6 +139,8 @@ const HooksBank = lazy(() => import("@/app/hooks-bank").then((m) => ({ default: 
 const HookPicker = lazy(() => import("@/app/hooks-bank").then((m) => ({ default: m.HookPicker })));
 const GoalCalculator = lazy(() => import("@/app/goal-calculator").then((m) => ({ default: m.GoalCalculator })));
 import { GoalCell, useGoalProgress } from "@/app/goal-card";
+import { AdvisoryPanel } from "@/app/advisory-panel";
+import { DataExportCard } from "@/app/data-export-card";
 /** Página da pessoa no endereço: &ficha=pessoa:<uuid>. Id que não é uuid fecha a página sem erro. */
 const FICHA_EVENT = "elite-ficha";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -379,10 +381,6 @@ function HistoryPanel({ data }: { data: DashboardData }) {
     detail: `${item.action} · ${item.entityType}${item.entityId ? ` #${item.entityId}` : ""}`,
     meta: <>{item.actorEmail}{item.advisory && <Badge variant="outline" className="ml-2 border-gold/50 text-gold-light">Assessoria Elite</Badge>}</>,
   }))} /></article>;
-}
-
-function AdvisoryPanel({ data }: { data: DashboardData }) {
-  return <article className="elite-card p-6"><p className="section-kicker">Acompanhamento</p><h3 className="text-lg font-semibold text-white">Quem da Assessoria Elite acompanha a sua empresa</h3><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">A equipe de assessoria da Elite Frascaroli Academy pode ver e editar os dados desta organização para mentorar e dar suporte à operação. Esse acesso faz parte do serviço contratado, e cada alteração feita pela assessoria aparece marcada no Histórico.</p><ul className="mt-4 flex flex-wrap gap-2">{data.advisors.map((advisor) => <li key={advisor.email} className="rounded-lg border border-gold/30 bg-gold/5 px-3 py-2 text-sm"><span className="font-medium text-white">{advisor.name}</span><span className="block text-xs text-subtle">{advisor.email}</span></li>)}</ul></article>;
 }
 
 function localQr(text: string) {
@@ -664,6 +662,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
           {data.access.organizationId !== 1 && data.plan && <section aria-label="Plano" className="space-y-3"><h2 className="text-xl font-semibold text-white">Plano</h2><PlanCard plan={data.plan} organization={data.access.organizationName} /></section>}
           <section aria-label="Regras e cálculos" className="space-y-3"><h2 className="text-xl font-semibold text-white">Regras e cálculos</h2><RulesPanel data={data} view={view} open={setDialog} /></section>
           <section aria-label="Avisos por e-mail" className="space-y-3"><h2 className="text-xl font-semibold text-white">Avisos por e-mail</h2><NotificationsPanel /></section>
+          {data.access.role === "Administrador" && !data.access.isAdvisory && <section aria-label="Seus dados" className="space-y-3"><h2 className="text-xl font-semibold text-white">Seus dados</h2><DataExportCard /></section>}
         </div>}
         {here === "gestao/historico" && <HistoryPanel data={data} />}
         {here === "gestao/privacidade" && <PrivacyPanel />}

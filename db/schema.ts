@@ -8,6 +8,9 @@ export const organizations = sqliteTable('organizations', {
   createdAt:text('created_at').notNull(),
   /** A empresa exige verificação em duas etapas de toda a equipe (0034). */
   mfaRequired:integer('mfa_required').notNull().default(0),
+  /** Acesso da Assessoria Elite decidido pela empresa (0035): liberado, prazo (até advisoryUntil) ou desligado. */
+  advisoryMode:text('advisory_mode').notNull().default('liberado'), advisoryUntil:text('advisory_until'),
+  advisoryChangedBy:text('advisory_changed_by').notNull().default(''), advisoryChangedAt:text('advisory_changed_at'),
 });
 
 export const cities = sqliteTable("cities", {

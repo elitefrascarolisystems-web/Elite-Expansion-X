@@ -49,7 +49,7 @@ function Usage({ used, limit, label }: { used: number; limit: number | null; lab
 }
 
 function Company({ s }: { s: SubscriberRow }) {
-  return <div><p className="font-medium text-white">{s.name}</p><p className="text-xs text-subtle">{s.ownerName || s.ownerEmail}</p>{!s.active && <span className="mt-1 inline-flex rounded-full border border-red-400/30 bg-red-400/10 px-2 py-0.5 text-[11px] text-red-300">Suspensa</span>}{s.active && !s.ownerJoined && <p className="mt-1 text-xs text-amber-200">Responsável ainda não criou a senha</p>}</div>;
+  return <div><p className="font-medium text-white">{s.name}</p><p className="text-xs text-subtle">{s.ownerName || s.ownerEmail}</p>{!s.active && <span className="mt-1 inline-flex rounded-full border border-red-400/30 bg-red-400/10 px-2 py-0.5 text-[11px] text-red-300">Suspensa</span>}{s.active && !s.ownerJoined && <p className="mt-1 text-xs text-amber-200">Responsável ainda não criou a senha</p>}{s.advisoryLabel !== "Liberado" && <p className="mt-1 text-xs text-subtle">Assessoria: {s.advisoryLabel.toLowerCase()}</p>}</div>;
 }
 function PlanInfo({ s }: { s: SubscriberRow }) {
   const off = PLAN_FEATURES.filter(([key]) => !s[key]).map(([, label]) => label.toLowerCase());

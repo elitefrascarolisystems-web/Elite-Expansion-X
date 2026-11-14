@@ -3,20 +3,24 @@ import { z } from 'zod';
 import { database, brazilTimestamp } from '@/db/runtime';
 import { isPlatformAdvisor, isPlatformOwnerEmail } from '@/db/access';
 import type { AccessView } from '@/lib/expansion-types';
+import { advisoryAllowed } from '@/lib/advisory';
 
 export const ADVISORY_ROLE_LABEL = 'Assessoria Elite';
 /** Erro com mensagem segura para mostrar ao usuário. */
 export class OrganizationError extends Error { constructor(message:string, public status=400){ super(message); } }
 const email = z.string().trim().email().max(254).transform(v => v.toLowerCase());
 
-/** Organizações da pessoa: as próprias e, para assessores, todas as clientes ativas. */
+/** Organizações da pessoa: as próprias e, para assessores, as clientes ativas que liberaram a assessoria. */
 export async function listOrganizations(userEmail:string){
  const db=database();
  const own=(await db.prepare('SELECT o.id,o.name,u.role FROM organizations o JOIN app_users u ON u.organization_id=o.id WHERE lower(u.email)=lower(?) AND u.active=1 AND o.active=1 ORDER BY o.name').bind(userEmail).all()).results.map(row=>({id:Number(row.id),name:String(row.name),role:String(row.role)}));
  if(!await isPlatformAdvisor(userEmail))return own;
  const ownIds=new Set(own.map(o=>o.id));
- const clients=(await db.prepare('SELECT id,name FROM organizations WHERE active=1 AND id<>1 ORDER BY name').all()).results
-  .filter(row=>!ownIds.has(Number(row.id))).map(row=>({id:Number(row.id),name:String(row.name),role:ADVISORY_ROLE_LABEL}));
+ // Empresa que desligou a assessoria (ou cujo prazo venceu) some da lista: a decisão é dela.
+ const today=brazilTimestamp().slice(0,10);
+ const clients=(await db.prepare('SELECT id,name,advisory_mode,advisory_until FROM organizations WHERE active=1 AND id<>1 ORDER BY name').all()).results
+  .filter(row=>!ownIds.has(Number(row.id))&&advisoryAllowed(String(row.advisory_mode??'liberado'),row.advisory_until?String(row.advisory_until):null,today))
+  .map(row=>({id:Number(row.id),name:String(row.name),role:ADVISORY_ROLE_LABEL}));
  return [...own,...clients];
 }
 

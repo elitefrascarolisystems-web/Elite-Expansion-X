@@ -2,6 +2,7 @@ import "@/lib/zod-pt";
 import { asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runtime";
 import { createOrganization, OrganizationError } from "@/db/organizations";
 import type { AccessView } from "@/lib/expansion-types";
+import { advisoryAllowed, advisoryLabel } from "@/lib/advisory";
 import { newSubscriberSchema, statusSchema, subscriptionSchema, type SubscriptionInput, type SubscriptionsData } from "@/lib/subscriptions";
 
 /**
@@ -19,7 +20,7 @@ export async function getSubscriptions(access: AccessView): Promise<Subscription
   requireOwner(access);
   const db = database();
   const rows = (await db.prepare(`
-    SELECT o.id,o.name,o.owner_email,o.active,o.created_at,
+    SELECT o.id,o.name,o.owner_email,o.active,o.created_at,o.advisory_mode,o.advisory_until,
       s.plan,s.price_cents,s.paid_until,s.notes,
       e.user_limit,e.city_limit,e.imports,e.exports,e.external_maps,
       (SELECT name FROM app_users WHERE organization_id=o.id AND lower(email)=lower(o.owner_email)) AS owner_name,
@@ -50,6 +51,8 @@ export async function getSubscriptions(access: AccessView): Promise<Subscription
       users: asNumber(r.users), mentorados: asNumber(r.mentorados), cities: asNumber(r.cities), people: asNumber(r.people), leads: asNumber(r.leads),
       lastActivity: r.last_activity ? String(r.last_activity) : null, lastLogin: r.last_login ? String(r.last_login) : null,
       ownerJoined: Number(r.owner_joined) === 1,
+      advisoryAllowed: advisoryAllowed(String(r.advisory_mode ?? "liberado"), r.advisory_until ? String(r.advisory_until) : null, today()),
+      advisoryLabel: advisoryLabel(String(r.advisory_mode ?? "liberado"), r.advisory_until ? String(r.advisory_until) : null, today()),
     })),
     audit: audit.map((r) => ({ organizationId: asNumber(r.organization_id), actor: String(r.actor_email), action: String(r.action), reason: String(r.reason), at: String(r.created_at) })),
   };
