@@ -50,6 +50,7 @@ jobs:
             tests/goals.test.mjs \
             tests/hooks.test.mjs \
             tests/map-modes.test.mjs \
+            tests/mfa.test.mjs \
             tests/navigation.test.mjs \
             tests/network-import.test.mjs \
             tests/network-levels.test.mjs \
@@ -67,6 +68,7 @@ jobs:
             tests/stage-events.test.mjs \
             tests/subscription-requests.test.mjs \
             tests/subscriptions.test.mjs \
+            tests/totp.test.mjs \
             tests/tab-guides.test.mjs \
             tests/team.test.mjs \
             tests/territory-integration.test.mjs \

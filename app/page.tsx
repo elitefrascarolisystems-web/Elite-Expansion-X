@@ -7,6 +7,7 @@ import { getUserAccess, suspendedOrganizationOf } from "@/db/access";
 import { getDashboardData } from "@/db/queries";
 import { getPortalData } from "@/db/portal";
 import { ClientPortal } from "@/app/client-portal";
+import { MfaGate } from "@/app/mfa-gate";
 import { guidesStorageKey } from "@/lib/tab-guide-keys";
 import { isPortalRole } from "@/lib/expansion-types";
 import Image from "next/image";
@@ -49,6 +50,9 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
       </main>
     );
   }
+
+  // A empresa exige verificação em duas etapas e a pessoa ainda não ativou: só a tela de ativar.
+  if (access.mfaSetupRequired) return <MfaGate organizationName={access.organizationName} email={user.email} signOutPath={signOutPath()} />;
 
   // Mentorados e assinantes só têm o portal deles; nunca carregam os dados da equipe.
   if (isPortalRole(access.role)) return <ClientPortal initialData={await getPortalData(access)} signOutPath={signOutPath()} guideStorageKey={guidesStorageKey(access.organizationId, access.id)} />;

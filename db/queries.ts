@@ -197,6 +197,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
       SELECT u.id, u.email, u.name, u.role, u.city_id, COALESCE(c.name, '') AS city_name,
         u.ambassador_id, COALESCE(a.name, '') AS ambassador_name, u.active, u.created_at, u.title, u.mentorship_cycle,
         cr.email IS NOT NULL AS has_password, cr.last_login_at,
+        EXISTS(SELECT 1 FROM user_mfa mf WHERE mf.email = lower(u.email) AND mf.enabled_at IS NOT NULL) AS has_mfa,
         (SELECT pl.expires_at||'|'||COALESCE(pl.used_at,'') FROM password_links pl WHERE pl.email = lower(u.email) ORDER BY pl.created_at DESC LIMIT 1) AS link_info
       FROM app_users u
       LEFT JOIN user_credentials cr ON cr.email = lower(u.email)
@@ -334,6 +335,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     ambassadorId: asNullableNumber(row.ambassador_id), ambassadorName: String(row.ambassador_name ?? ""),
     active: Boolean(row.active), hasPassword: Number(row.has_password) === 1, createdAt: String(row.created_at),
     title: String(row.title ?? ""), mentorshipCycle: asNumber(row.mentorship_cycle ?? 0), lastLoginAt: nullableText(row.last_login_at),
+    mfa: Number(row.has_mfa ?? 0) === 1,
     ...linkState(nullableText(row.link_info)),
   }));
 
@@ -359,6 +361,8 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     agenda: await getAgenda(access),
     plan: await getPlan(access.organizationId),
     logoVersion: await logoVersion(access.organizationId),
+    // A empresa exige verificação em duas etapas da equipe (Gestão → Equipe).
+    mfaRequired: Number((await rows("SELECT mfa_required FROM organizations WHERE id=?", [access.organizationId]))[0]?.mfa_required ?? 0) === 1,
     subscriptionRequests: await newRequestCount(access),
     access,
     settings,

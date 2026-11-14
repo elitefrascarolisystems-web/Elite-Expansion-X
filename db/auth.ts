@@ -2,6 +2,7 @@ import { audit, brazilTimestamp, database } from "@/db/runtime";
 import { isPlatformAdvisor, isPlatformOwnerEmail } from "@/db/access";
 import type { AccessView } from "@/lib/expansion-types";
 import { hashPassword, isToken, passwordProblem, randomToken, sha256Hex, verifyPassword, type PasswordHash } from "@/lib/password";
+import { challengeEmail, createChallenge, hasMfa, MfaError, redeemChallenge } from "@/db/mfa";
 
 export const SESSION_HOURS = 24;
 export const LINK_HOURS = 72;
@@ -69,8 +70,11 @@ async function recordFailure(key: string, max: number) {
 
 /* ---------- Login ---------- */
 
-/** Confere e-mail e senha e abre uma sessão. Devolve o token da sessão. */
-export async function login(emailInput: string, password: string, network: string): Promise<string> {
+/** Resultado da senha: a sessão já aberta ou, com a verificação em duas etapas ligada, o desafio do código. */
+export type LoginResult = { session: string } | { challenge: string };
+
+/** Confere e-mail e senha. Sem verificação em duas etapas, abre a sessão; com ela, devolve o desafio do código. */
+export async function login(emailInput: string, password: string, network: string): Promise<LoginResult> {
   const email = normalize(emailInput);
   const emailKey = `email:${email}`, networkKey = `rede:${network || "desconhecida"}`;
   if (await lockedUntil(emailKey) || await lockedUntil(networkKey)) {
@@ -87,11 +91,39 @@ export async function login(emailInput: string, password: string, network: strin
     throw new AuthError("E-mail ou senha incorretos.", 401);
   }
   const db = database();
+  if (await hasMfa(email)) {
+    // Senha certa não abre a sessão sozinha: falta o código do app (5 minutos, até 5 tentativas).
+    await db.prepare("DELETE FROM login_throttle WHERE key=?").bind(emailKey).run();
+    return { challenge: await createChallenge(email) };
+  }
   await db.batch([
     db.prepare("DELETE FROM login_throttle WHERE key=?").bind(emailKey),
     db.prepare("UPDATE user_credentials SET last_login_at=? WHERE email=?").bind(iso(), email),
   ]);
-  return openSession(email);
+  return { session: await openSession(email) };
+}
+
+/** Segundo passo: o código do app (ou um de recuperação) para o desafio. Abre a sessão. */
+export async function loginWithCode(challenge: unknown, code: string, network: string): Promise<string> {
+  const email = await challengeEmail(challenge);
+  const emailKey = `email:${email ?? ""}`, networkKey = `rede:${network || "desconhecida"}`;
+  if (await lockedUntil(networkKey) || (email && await lockedUntil(emailKey))) {
+    throw new AuthError(`Muitas tentativas erradas. Aguarde ${LOCK_MINUTES} minutos e tente de novo.`, 429);
+  }
+  let verified: string;
+  try { verified = await redeemChallenge(challenge, code); }
+  catch (error) {
+    if (email) await recordFailure(emailKey, MAX_FAILURES_PER_EMAIL);
+    await recordFailure(networkKey, MAX_FAILURES_PER_NETWORK);
+    if (error instanceof MfaError) throw new AuthError(error.message, error.status);
+    throw error;
+  }
+  const db = database();
+  await db.batch([
+    db.prepare("DELETE FROM login_throttle WHERE key=?").bind(`email:${verified}`),
+    db.prepare("UPDATE user_credentials SET last_login_at=? WHERE email=?").bind(iso(), verified),
+  ]);
+  return openSession(verified);
 }
 
 /* ---------- Links para criar ou trocar a senha ---------- */
@@ -136,8 +168,11 @@ export async function passwordLinkInfo(token: unknown): Promise<{ email: string;
   return { email, hasPassword: Boolean(await first("SELECT email FROM user_credentials WHERE email=?", email)) };
 }
 
-/** Usa o link: grava a senha nova, encerra as sessões antigas e já abre uma sessão nova. */
-export async function redeemPasswordLink(token: unknown, password: string): Promise<string> {
+/**
+ * Usa o link: grava a senha nova, encerra as sessões antigas e já abre uma sessão nova. Com a verificação em
+ * duas etapas ligada, o link sozinho não entra: devolve o desafio do código (o celular continua sendo pedido).
+ */
+export async function redeemPasswordLink(token: unknown, password: string): Promise<LoginResult> {
   const info = await passwordLinkInfo(token);
   if (!info || !isToken(token)) throw new AuthError("Este link é inválido, expirou ou já foi usado. Peça um novo ao administrador.", 403);
   const problem = passwordProblem(password, info.email);
@@ -155,5 +190,6 @@ export async function redeemPasswordLink(token: unknown, password: string): Prom
     db.prepare("DELETE FROM user_sessions WHERE email=?").bind(info.email),
     db.prepare("DELETE FROM login_throttle WHERE key=?").bind(`email:${info.email}`),
   ]);
-  return openSession(info.email);
+  if (await hasMfa(info.email)) return { challenge: await createChallenge(info.email) };
+  return { session: await openSession(info.email) };
 }

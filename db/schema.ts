@@ -6,6 +6,8 @@ export const organizations = sqliteTable('organizations', {
   id: integer('id').primaryKey({autoIncrement:true}), name:text('name').notNull(),
   ownerEmail:text('owner_email').notNull(), active:integer('active').notNull().default(1),
   createdAt:text('created_at').notNull(),
+  /** A empresa exige verificação em duas etapas de toda a equipe (0034). */
+  mfaRequired:integer('mfa_required').notNull().default(0),
 });
 
 export const cities = sqliteTable("cities", {
@@ -393,6 +395,15 @@ export const userSessions=sqliteTable('user_sessions',{
 export const passwordLinks=sqliteTable('password_links',{
  tokenHash:text('token_hash').primaryKey(),email:text('email').notNull(),createdBy:text('created_by').notNull(),createdAt:text('created_at').notNull(),expiresAt:text('expires_at').notNull(),usedAt:text('used_at'),
 },(table)=>[index('password_links_email_idx').on(table.email)]);
+/** Verificação em duas etapas (app autenticador). `enabledAt` vazio: cadastro ainda não confirmado. Recuperação: só os hashes. */
+export const userMfa=sqliteTable('user_mfa',{
+ email:text('email').primaryKey(),secret:text('secret').notNull(),enabledAt:text('enabled_at'),recoveryHashes:text('recovery_hashes').notNull().default('[]'),
+ lastStep:integer('last_step').notNull().default(0),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),
+});
+/** Desafio de 5 minutos depois da senha certa, para digitar o código do app. */
+export const mfaChallenges=sqliteTable('mfa_challenges',{
+ tokenHash:text('token_hash').primaryKey(),email:text('email').notNull(),attempts:integer('attempts').notNull().default(0),createdAt:text('created_at').notNull(),expiresAt:text('expires_at').notNull(),
+},(table)=>[index('mfa_challenges_email_idx').on(table.email)]);
 /** Tentativas de login erradas, por e-mail e por endereço de rede, para bloquear quem tenta adivinhar. */
 export const loginThrottle=sqliteTable('login_throttle',{
  key:text('key').primaryKey(),failures:integer('failures').notNull(),windowStartedAt:text('window_started_at').notNull(),lockedUntil:text('locked_until'),

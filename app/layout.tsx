@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Elite Expansion X — Embaixadores",
-  description: "Gestão de cidades, embaixadores, custos e resultados da Expansão Elite.",
+  title: "Elite Expansion X — Expansão com mapa",
+  description: "Plataforma de expansão territorial: mapa, cidades, locais, rede, atendimentos e resultados da sua empresa.",
   icons: {
     // Ícone leve (o PNG oficial tem 1080 px e 120 KB; o da aba do navegador não precisa disso).
     icon: [{url: "/elite-academy-official.svg", type: "image/svg+xml"}, {url: "/app/icon-192.png", type: "image/png"}],

@@ -4,6 +4,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import { PasswordField } from "@/app/password-field";
 import { Button } from "@/components/ui/button";
+import { MfaCodeStep } from "@/app/mfa-code-step";
 
 type LinkInfo = { email: string; hasPassword: boolean };
 
@@ -24,6 +25,8 @@ export function PasswordForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  // Conta com verificação em duas etapas: a senha nova fica gravada e falta o código do app para entrar.
+  const [challenge, setChallenge] = useState("");
 
   useEffect(() => {
     const token = linkToken();
@@ -39,8 +42,9 @@ export function PasswordForm() {
     setBusy(true);
     setError("");
     try {
-      await call({ action: "set", token: linkToken(), password });
+      const result = await call({ action: "set", token: linkToken(), password });
       window.history.replaceState(null, "", "/definir-senha");
+      if (result.mfa && result.challenge) { setChallenge(String(result.challenge)); setBusy(false); return; }
       window.location.assign("/");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível salvar a senha agora.");
@@ -48,6 +52,7 @@ export function PasswordForm() {
     }
   }
 
+  if (challenge) return <div className="grid gap-4"><p className="rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2.5 text-sm text-emerald-100">Senha nova gravada. Para entrar, falta o código do app.</p><MfaCodeStep challenge={challenge} onRestart={() => window.location.assign("/entrar")} /></div>;
   if (loading) return <p className="flex items-center gap-2 text-sm text-zinc-400"><LoaderCircle className="size-4 animate-spin" /> Conferindo o link…</p>;
   if (!info) return (
     <div className="grid gap-5">

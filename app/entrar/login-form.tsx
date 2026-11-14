@@ -5,10 +5,13 @@ import { LoaderCircle } from "lucide-react";
 import { PasswordField } from "@/app/password-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MfaCodeStep } from "@/app/mfa-code-step";
 
 export function LoginForm() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Verificação em duas etapas ligada: depois da senha certa vem o código do app.
+  const [challenge, setChallenge] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -23,6 +26,7 @@ export function LoginForm() {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || "Não foi possível entrar agora.");
+      if (result.mfa && result.challenge) { setChallenge(String(result.challenge)); setBusy(false); return; }
       window.location.assign("/");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível entrar agora.");
@@ -30,6 +34,7 @@ export function LoginForm() {
     }
   }
 
+  if (challenge) return <MfaCodeStep challenge={challenge} onRestart={() => { setChallenge(""); setError("Digite a senha de novo para continuar."); }} />;
   return (
     <form onSubmit={submit} className="grid gap-5">
       <div className="grid gap-2">

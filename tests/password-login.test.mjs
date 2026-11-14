@@ -38,7 +38,7 @@ test('link de acesso: cria a senha uma vez só, abre sessão e encerra as sessõ
  assert.equal(sqlite.prepare('SELECT count(*) n FROM password_links WHERE token_hash=?').get(token).n,0,'o banco guarda só o hash');
  assert.deepEqual({...await m.passwordLinkInfo(token)},{email:'nova@elite.invalid',hasPassword:false});
  await assert.rejects(m.redeemPasswordLink(token,'fraca'),/pelo menos 10/);
- const session=await m.redeemPasswordLink(token,STRONG);
+ const {session}=await m.redeemPasswordLink(token,STRONG);
  assert.equal(await m.sessionEmail(session),'nova@elite.invalid');
  await assert.rejects(m.redeemPasswordLink(token,STRONG),/inválido, expirou ou já foi usado/,'uso único');
  assert.equal(await m.passwordLinkInfo(token),null);
@@ -48,7 +48,7 @@ test('link de acesso: cria a senha uma vez só, abre sessão e encerra as sessõ
  await m.redeemPasswordLink(reset,'OutraSenha2027');
  assert.equal(await m.sessionEmail(session),null);
  await assert.rejects(m.login('nova@elite.invalid',STRONG,'1.1.1.1'),/incorretos/);
- assert.ok(await m.sessionEmail(await m.login('NOVA@elite.invalid','OutraSenha2027','1.1.1.1')));
+ assert.ok(await m.sessionEmail((await m.login('NOVA@elite.invalid','OutraSenha2027','1.1.1.1')).session));
  // Gerar outro link cancela o anterior ainda não usado; link vencido não vale.
  const a=await m.createPasswordLink(admin,'nova@elite.invalid'),b=await m.createPasswordLink(admin,'nova@elite.invalid');
  assert.equal(await m.passwordLinkInfo(a),null);assert.ok(await m.passwordLinkInfo(b));
@@ -70,10 +70,10 @@ test('login: mensagem igual para e-mail desconhecido e senha errada; bloqueia ap
  for(let i=0;i<20;i++)await assert.rejects(m.login(`x${i}@elite.invalid`,'Errada12345','9.9.9.9'));
  await assert.rejects(m.login('alvo@elite.invalid',STRONG,'9.9.9.9'),{status:429});
  // Sessão vencida não vale; sair encerra a sessão.
- const s=await m.login('alvo@elite.invalid',STRONG,'5.5.5.5');
+ const s=(await m.login('alvo@elite.invalid',STRONG,'5.5.5.5')).session;
  sqlite.prepare("UPDATE user_sessions SET expires_at='2000-01-01T00:00:00.000Z'").run();
  assert.equal(await m.sessionEmail(s),null);
- const s2=await m.login('alvo@elite.invalid',STRONG,'5.5.5.5');await m.closeSession(s2);assert.equal(await m.sessionEmail(s2),null);
+ const s2=(await m.login('alvo@elite.invalid',STRONG,'5.5.5.5')).session;await m.closeSession(s2);assert.equal(await m.sessionEmail(s2),null);
  assert.equal(await m.sessionEmail('nao-e-token'),null);
 });
 

@@ -14,7 +14,7 @@ import { GettingStarted, WelcomeDialog } from "@/app/getting-started";
 import { NoticesCard, NotificationsPanel } from "@/app/notifications-panel";
 import { OfflineSync } from "@/app/offline-sync";
 import { AgendaBanner } from "@/app/agenda-banner";
-/* eslint-disable @next/next/no-img-element -- QR remoto gerado somente após o administrador configurar o link-base. */
+/* eslint-disable @next/next/no-img-element -- QR do link de indicação desenhado no aparelho (data URL). */
 
 import { lazy, Suspense, type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
@@ -53,6 +53,7 @@ import {
   Upload,
 } from "lucide-react";
 import { toast } from "sonner";
+import qrcode from "qrcode-generator";
 
 import type { DialogState } from "@/app/expansion-forms";
 import { ChartFrame } from "@/components/elite/chart-frame";
@@ -151,6 +152,7 @@ function subscribeFicha(listener: () => void) {
   return () => { window.removeEventListener("popstate", listener); window.removeEventListener(FICHA_EVENT, listener); };
 }
 const PlantingToday = lazy(() => import("@/app/plant-dialogs").then((m) => ({ default: m.PlantingToday })));
+const AccountSecurityDialog = lazy(() => import("@/app/account-security").then((m) => ({ default: m.AccountSecurityDialog })));
 const FieldMode = lazy(() => import("@/app/field-mode").then((m) => ({ default: m.FieldMode })));
 const VisitShortcut = lazy(() => import("@/app/visit-shortcut").then((m) => ({ default: m.VisitShortcut })));
 const GoalCard = lazy(() => import("@/app/goal-card").then((m) => ({ default: m.GoalCard })));
@@ -380,7 +382,12 @@ function HistoryPanel({ data }: { data: DashboardData }) {
 }
 
 function AdvisoryPanel({ data }: { data: DashboardData }) {
-  return <article className="elite-card p-6"><p className="section-kicker">Acompanhamento</p><h3 className="text-lg font-semibold text-white">Quem da Elite acompanha a sua empresa</h3><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">A equipe de assessoria da Elite Frascaroli Academy pode ver e editar os dados desta organização para mentorar e dar suporte à operação. Esse acesso faz parte do serviço contratado, e cada alteração feita pela assessoria aparece marcada no Histórico.</p><ul className="mt-4 flex flex-wrap gap-2">{data.advisors.map((advisor) => <li key={advisor.email} className="rounded-lg border border-gold/30 bg-gold/5 px-3 py-2 text-sm"><span className="font-medium text-white">{advisor.name}</span><span className="block text-xs text-subtle">{advisor.email}</span></li>)}</ul></article>;
+  return <article className="elite-card p-6"><p className="section-kicker">Acompanhamento</p><h3 className="text-lg font-semibold text-white">Quem da Assessoria Elite acompanha a sua empresa</h3><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">A equipe de assessoria da Elite Frascaroli Academy pode ver e editar os dados desta organização para mentorar e dar suporte à operação. Esse acesso faz parte do serviço contratado, e cada alteração feita pela assessoria aparece marcada no Histórico.</p><ul className="mt-4 flex flex-wrap gap-2">{data.advisors.map((advisor) => <li key={advisor.email} className="rounded-lg border border-gold/30 bg-gold/5 px-3 py-2 text-sm"><span className="font-medium text-white">{advisor.name}</span><span className="block text-xs text-subtle">{advisor.email}</span></li>)}</ul></article>;
+}
+
+function localQr(text: string) {
+  const qr = qrcode(0, "M"); qr.addData(text); qr.make();
+  return qr.createDataURL(7, 2);
 }
 
 function referralLink(base: string, code: string) {
@@ -394,7 +401,8 @@ function AmbassadorPortal({ data, view, open, saving, save, onGuide, guideCard }
   const link = referralLink(data.settings.referralBaseUrl, ambassador.code);
   const approvedContents = data.contents.filter((item) => item.status === "Aprovado");
   const pendingTasks = data.tasks.filter((item) => item.status === "Pendente");
-  const qrUrl = link ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(link)}` : "";
+  // QR desenhado no próprio aparelho: o link do embaixador não vai para nenhum serviço externo.
+  const qrUrl = link ? localQr(link) : "";
   return <main className="elite-grid min-h-screen bg-background text-zinc-100"><header className="border-b border-white/8 bg-background/95"><div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3"><div className="flex items-center gap-3"><img src="/elite-emblem-sm.png" alt="Elite Frascaroli Academy — logo oficial" width={128} height={128} className="elite-brand-logo" /><div><p className="font-semibold text-white">Portal do Embaixador</p><p className="text-xs text-subtle">{ambassador.cityName} · {ambassador.code}</p></div></div><div className="flex items-center gap-1"><GuideButton onClick={onGuide} /><Button asChild variant="ghost" size="icon" className="text-zinc-400"><a href="/api/auth/logout" aria-label="Sair"><LogOut /></a></Button></div></div></header><div className="mx-auto max-w-6xl space-y-6 px-4 py-7">
     {guideCard}
     <section className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end"><div><p className="section-kicker">Olá, {ambassador.name}</p><h1 className="text-3xl font-semibold tracking-tight text-white">Sua missão e seus resultados</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Use somente os materiais aprovados e registre contatos que autorizaram o atendimento.</p></div><div className="flex flex-wrap gap-2"><Button onClick={() => open({ name: "lead" })} className="bg-gold text-black"><Plus /> Novo atendimento</Button></div></section>
@@ -456,6 +464,8 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const [fieldOpen, setFieldOpen] = useState(false);
   const [mappingPoint, setMappingPoint] = useState<InitialPoint | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  // Segurança da conta (verificação em duas etapas), pelo menu.
+  const [accountOpen, setAccountOpen] = useState(false);
   const areas = useMemo(() => navigationFor(data.access, { hasAdvisors: data.advisors.length > 0 }), [data.access, data.advisors.length]);
   const [location, setLocation] = useState<NavLocation>(() => resolveLocation(areas, initialData.access, initialArea, initialView));
   // Endereço antigo (Pagamentos, F.E.C.H.A., Pós-venda): abre a aba nova com o filtro rápido certo.
@@ -620,7 +630,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
   const outline = "border-white/10 bg-white/5 text-white";
 
   return <>
-    <AppShell logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={{ ...(pending ? { vendas: pending } : {}), ...(data.subscriptionRequests ? { plataforma: data.subscriptionRequests } : {}) }} actions={actions} onNavigate={(next) => navigate(next)} onGuide={guideKey ? openGuide : undefined} search={<QuickSearch sales={canPipeline} commands={{ areas, current: location, actions, onNavigate: (next) => navigate(next), help: { role: data.access.role, organizationName: data.access.organizationName, onOpen: (next) => { navigate(next); openGuide(); }, onReset: resetGuides } }} onPick={(pick) => (pick.kind === "territory" ? (pick.key.startsWith("person:") ? openPersonPage(pick.key.slice(7)) : openMapKey(pick.key)) : openFollowup(pick.leadId))} />} notice={<><OfflineSync access={data.access} cities={data.cities} onSynced={refreshDashboard} /><InstallAppBanner /></>}>
+    <AppShell onAccount={() => setAccountOpen(true)} logo={logoUrl(data.access.organizationId, data.logoVersion)} access={data.access} userName={userName} signOutPath={signOutPath} areas={areas} location={location} badges={{ ...(pending ? { vendas: pending } : {}), ...(data.subscriptionRequests ? { plataforma: data.subscriptionRequests } : {}) }} actions={actions} onNavigate={(next) => navigate(next)} onGuide={guideKey ? openGuide : undefined} search={<QuickSearch sales={canPipeline} commands={{ areas, current: location, actions, onNavigate: (next) => navigate(next), help: { role: data.access.role, organizationName: data.access.organizationName, onOpen: (next) => { navigate(next); openGuide(); }, onReset: resetGuides } }} onPick={(pick) => (pick.kind === "territory" ? (pick.key.startsWith("person:") ? openPersonPage(pick.key.slice(7)) : openMapKey(pick.key)) : openFollowup(pick.leadId))} />} notice={<><OfflineSync access={data.access} cities={data.cities} onSynced={refreshDashboard} /><InstallAppBanner /></>}>
       {/* Telas que vêm sob demanda: enquanto o código delas chega, o esqueleto no formato da tela. */}
       <Suspense fallback={<PanelSkeleton label="Carregando a tela…" />}><div className="space-y-5">
         {firstVisit && guide && here !== "territorio/mapa" && <TabGuideCard guide={guide} action={guideAction} onOpen={openGuide} onDone={() => guides.markSeen(guide.key)} />}
@@ -664,6 +674,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
       </div></Suspense>
     </AppShell>
     {/* Janelas: o código de cada uma vem quando ela abre (ou antes, em segundo plano — warmUp). */}
+    {accountOpen && <Suspense fallback={null}><AccountSecurityDialog open onOpenChange={(open) => { if (!open) { setAccountOpen(false); void refreshDashboard(); } }} /></Suspense>}
     {fieldOpen && <Suspense fallback={null}><FieldMode data={data} onClose={() => setFieldOpen(false)} onSaved={() => { void refreshDashboard(); }} onMapKey={(key) => { setFieldOpen(false); openMapKey(key); }} onMapear={(point) => { setFieldOpen(false); setMappingPlace(undefined); setMappingPoint(point); setMappingOpen(true); }} /></Suspense>}
     {importOpen && <Suspense fallback={null}><ImportChooser canPeople={canImport} onClose={() => setImportOpen(false)} onGo={go} /></Suspense>}
     {visitOpen && <Suspense fallback={null}><VisitShortcut data={data} onClose={() => setVisitOpen(false)} onSaved={() => { void refreshDashboard(); }} onMapPeople={(id) => { setVisitOpen(false); setMappingPlace(id); setMappingOpen(true); }} /></Suspense>}

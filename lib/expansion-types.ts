@@ -10,6 +10,8 @@ export type UserRole = (typeof USER_ROLES)[number];
 
 export type AccessView = {
   isOrganizationOwner?: boolean;
+  /** A empresa exige verificação em duas etapas e esta pessoa ainda não ativou: só a tela de ativar. */
+  mfaSetupRequired?: boolean;
   /** Acesso pela Assessoria Elite (time da plataforma), não por vínculo próprio na organização. */
   isAdvisory?: boolean;
   organizationId: number;
@@ -249,6 +251,8 @@ export type UserProfileRecord = {
   title: string;
   mentorshipCycle: number;
   lastLoginAt: string | null;
+  /** Verificação em duas etapas ativa. */
+  mfa?: boolean;
   /** Último link de acesso: ainda vale, venceu, já foi usado ou nunca foi gerado. */
   linkStatus: "Nenhum" | "Válido" | "Vencido" | "Usado";
   linkExpiresAt: string | null;
@@ -283,6 +287,8 @@ export type DashboardData = {
   plan?: PlanUsage;
   /** Logo da empresa assinante: versão (data da troca) ou null sem logo. */
   logoVersion?: string | null;
+  /** A empresa exige verificação em duas etapas da equipe. */
+  mfaRequired?: boolean;
   /** Donos da plataforma: pedidos novos vindos da página pública /conheca. */
   subscriptionRequests?: number;
   access: AccessView;

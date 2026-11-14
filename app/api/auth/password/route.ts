@@ -21,8 +21,10 @@ export async function POST(request: Request) {
       if (!info) return Response.json({ error: "Este link é inválido, expirou ou já foi usado. Peça um novo ao administrador." }, { status: 404, headers });
       return Response.json(info, { headers });
     }
-    const token = await redeemPasswordLink(v.data.token, v.data.password);
-    return Response.json({ ok: true }, { headers: { ...headers, "Set-Cookie": sessionCookie(token, SESSION_HOURS * 3600) } });
+    const result = await redeemPasswordLink(v.data.token, v.data.password);
+    // Com a verificação em duas etapas ligada, a senha nova fica gravada e falta o código do app para entrar.
+    if ("challenge" in result) return Response.json({ ok: true, mfa: true, challenge: result.challenge }, { headers });
+    return Response.json({ ok: true }, { headers: { ...headers, "Set-Cookie": sessionCookie(result.session, SESSION_HOURS * 3600) } });
   } catch (error) {
     if (error instanceof AuthError) return Response.json({ error: error.message }, { status: error.status, headers });
     return Response.json({ error: "Não foi possível salvar a senha agora. Tente novamente." }, { status: 503, headers });

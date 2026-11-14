@@ -68,7 +68,7 @@ export async function getUserAccess(email: string, displayName: string, organiza
   await ensureSystemData(email, displayName);
   const db = database();
   const result = await db.prepare(`
-    SELECT u.id,u.email,u.name,u.role,u.city_id,u.ambassador_id,u.active,u.title,u.welcomed_at,u.guides_seen,u.person_id,u.business_id,u.organization_id,o.name AS organization_name,o.owner_email
+    SELECT u.id,u.email,u.name,u.role,u.city_id,u.ambassador_id,u.active,u.title,u.welcomed_at,u.guides_seen,u.person_id,u.business_id,u.organization_id,o.name AS organization_name,o.owner_email,o.mfa_required
     FROM app_users u JOIN organizations o ON o.id=u.organization_id AND o.active=1 WHERE lower(u.email)=lower(?) AND u.active=1 AND (? IS NULL OR u.organization_id=?) ORDER BY u.organization_id LIMIT 1
   `).bind(email,organizationId??null,organizationId??null).all();
   const row = result.results[0];
@@ -78,7 +78,10 @@ export async function getUserAccess(email: string, displayName: string, organiza
     return organizationId !== undefined && organizationId > 0 ? advisoryAccess(email, displayName, organizationId) : null;
   }
   const role = String(row.role) as UserRole;
+  // A empresa exige verificação em duas etapas da equipe: sem ela ativa, a pessoa só vê a tela de ativar.
+  const mfaSetupRequired = Number(row.mfa_required ?? 0) === 1 && !isPortalRole(role) && !(await mfaEnabled(email));
   return {
+    ...(mfaSetupRequired ? { mfaSetupRequired: true } : {}),
     isOrganizationOwner:String(row.owner_email).toLowerCase()===email.toLowerCase(),organizationId:asNumber(row.organization_id),organizationName:String(row.organization_name),isPlatformOwner:isPlatformOwnerEmail(email) && asNumber(row.organization_id)===1 && role==="Administrador",
     id: asNumber(row.id),
     email: String(row.email),
@@ -126,9 +129,12 @@ async function advisoryAccess(email: string, displayName: string, organizationId
   const db = database();
   const advisor = (await db.prepare(`${ACTIVE_ADVISOR_SQL} AND lower(adv.email)=lower(?) LIMIT 1`).bind(email).all()).results[0];
   if (!advisor) return null;
-  const org = (await db.prepare("SELECT id,name FROM organizations WHERE id=? AND active=1").bind(organizationId).all()).results[0];
+  const org = (await db.prepare("SELECT id,name,mfa_required FROM organizations WHERE id=? AND active=1").bind(organizationId).all()).results[0];
   if (!org) return null;
+  // Empresa que exige verificação em duas etapas: a assessoria também precisa tê-la ativa.
+  const mfaSetupRequired = Number(org.mfa_required ?? 0) === 1 && !(await mfaEnabled(email));
   return {
+    ...(mfaSetupRequired ? { mfaSetupRequired: true } : {}),
     isAdvisory: true,
     isOrganizationOwner: false,
     isPlatformOwner: false,
@@ -177,7 +183,13 @@ export async function getSettings(organizationId=1): Promise<SettingsView> {
  */
 export async function getTeamAccess(email: string, displayName: string, organizationId?: number): Promise<AccessView | null> {
   const access = await getUserAccess(email, displayName, organizationId);
-  return access && !isPortalRole(access.role) ? access : null;
+  // Sem a verificação exigida pela empresa, nenhuma ferramenta da equipe responde (só a tela de ativar).
+  return access && !isPortalRole(access.role) && !access.mfaSetupRequired ? access : null;
+}
+
+/** Verificação em duas etapas ativa (consulta direta, sem importar db/mfa, que depende deste arquivo). */
+async function mfaEnabled(email: string): Promise<boolean> {
+  return (await database().prepare("SELECT 1 FROM user_mfa WHERE email=lower(?) AND enabled_at IS NOT NULL").bind(email).all()).results.length > 0;
 }
 
 /** Empresa suspensa à qual a pessoa pertence (para explicar por que não entra), ou null. */

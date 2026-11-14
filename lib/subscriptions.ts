@@ -92,10 +92,10 @@ export function paymentState(paidUntil: string | null, today: string): PaymentSt
   return { label: "Em dia", tone: "ok" };
 }
 
-export const seatLimitMessage = (limit: number) => `O plano permite ${limit} ${limit === 1 ? "usuário" : "usuários"} da equipe e todas as vagas estão ocupadas. Fale com a Elite para ampliar o plano.`;
-export const cityLimitMessage = (limit: number) => `O plano permite ${limit} ${limit === 1 ? "cidade ativa" : "cidades ativas"} e o limite foi atingido. Deixe uma cidade como Planejada ou fale com a Elite para ampliar o plano.`;
+export const seatLimitMessage = (limit: number) => `O plano permite ${limit} ${limit === 1 ? "usuário" : "usuários"} da equipe e todas as vagas estão ocupadas. Fale com o suporte da Elite Expansion X para ampliar o plano.`;
+export const cityLimitMessage = (limit: number) => `O plano permite ${limit} ${limit === 1 ? "cidade ativa" : "cidades ativas"} e o limite foi atingido. Deixe uma cidade como Planejada ou fale com o suporte da Elite Expansion X para ampliar o plano.`;
 export const FEATURE_BLOCKED: Record<PlanFeature, string> = {
-  imports: "Importar planilhas não está incluído no plano da sua empresa. Fale com a Elite para liberar.",
-  exports: "Exportar relatórios não está incluído no plano da sua empresa. Fale com a Elite para liberar.",
+  imports: "Importar planilhas não está incluído no plano da sua empresa. Fale com o suporte da Elite Expansion X para liberar.",
+  exports: "Exportar relatórios não está incluído no plano da sua empresa. Fale com o suporte da Elite Expansion X para liberar.",
   externalMaps: "Mapas de satélite e Street View não estão incluídos no plano da sua empresa.",
 };
