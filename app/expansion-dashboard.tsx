@@ -51,6 +51,7 @@ import {
   UserPlus,
   Users,
   Upload,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import qrcode from "qrcode-generator";
@@ -300,9 +301,10 @@ function revenueTakeaway(timeline: DashboardView["timeline"]) {
   return `Em ${monthLabel(last.period)}: receita confirmada de ${money(last.revenue * 100, true)} e custo de ${money(last.cost * 100, true)} — resultado ${result >= 0 ? "positivo" : "negativo"} de ${money(Math.abs(result) * 100, true)}.`;
 }
 
-function ResultsOverview({ view, canExport }: { view: DashboardView; canExport: boolean }) {
+function ResultsOverview({ view, canExport, reportHref }: { view: DashboardView; canExport: boolean; reportHref: string | null }) {
   const summary = view.summary;
   return <div className="space-y-5">
+    {reportHref && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/25 bg-gold/[0.05] p-4"><p className="text-sm text-zinc-300"><span className="font-medium text-white">Relatório executivo do mês</span> — resumo, metas, cidades, canais, mapa e decisões numa folha A4 para imprimir ou salvar em PDF.</p><Button asChild variant="outline" className="border-gold/40 bg-black/20 text-white"><a href={reportHref} target="_blank" rel="noopener"><FileText /> Abrir relatório do mês</a></Button></div>}
     <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       <Kpi label="Cidades ativas" value={`${summary.activeCities}/${summary.plannedCities}`} helper="Operação autorizada" icon={MapPin} />
       <Kpi label="Embaixadores ativos" value={number(summary.activeAmbassadors)} helper={`${ratio(summary.activation)} de ${summary.eligibleAmbassadors} aprovados elegíveis`} icon={Users} />
@@ -651,7 +653,7 @@ export function ExpansionDashboard({ initialData, userName, signOutPath, initial
         {here === "rede/parceiros" && <><ActionBar hint="Quem abre portas na cidade e as ações locais planejadas.">{canOperation && <><Button onClick={() => setDialog({ name: "partner" })} variant="outline" className={outline}><Handshake /> Cadastrar parceiro</Button><Button onClick={() => setDialog({ name: "event" })} className="bg-gold text-black"><CalendarDays /> Cadastrar evento</Button></>}</ActionBar><PartnersEvents data={data} onPartner={canOperation ? () => setDialog({ name: "partner" }) : undefined} onEvent={canOperation ? () => setDialog({ name: "event" }) : undefined} /></>}
         {here === "rede/materiais" && <><ActionBar hint="Tudo o que a equipe pode usar com as pessoas: materiais (mensagens, vídeos, roteiros) e ganchos de conversa. No atendimento, a equipe acha os ganchos em “Usar gancho”, na ficha.">{canContent && <Button onClick={() => setDialog({ name: "content" })} className="bg-gold text-black"><Library /> Adicionar material</Button>}</ActionBar><Materials data={data} onCreate={canContent ? () => setDialog({ name: "content" }) : undefined} /><section aria-label="Ganchos" className="mt-8 space-y-3"><h2 className="text-xl font-semibold text-white">Ganchos de conversa</h2><HooksBank /></section></>}
 
-        {here === "resultados/visao" && <><ResultsOverview view={view} canExport={data.plan?.exports !== false} /><section aria-label="Custo por canal" className="mt-8 space-y-4"><ActionBar hint="Custo por canal: quanto custa cada resultado, por origem, com os mesmos filtros.">{canCost && <Button onClick={() => setDialog({ name: "cost" })} className="bg-gold text-black"><CircleDollarSign /> Registrar custo</Button>}</ActionBar><CostsPanel data={data} view={view} onCreate={canCost ? () => setDialog({ name: "cost" }) : undefined} /></section></>}
+        {here === "resultados/visao" && <><ResultsOverview view={view} canExport={data.plan?.exports !== false} reportHref={data.access.canManageCity ? `/imprimir/relatorio?org=${data.access.organizationId}` : null} /><section aria-label="Custo por canal" className="mt-8 space-y-4"><ActionBar hint="Custo por canal: quanto custa cada resultado, por origem, com os mesmos filtros.">{canCost && <Button onClick={() => setDialog({ name: "cost" })} className="bg-gold text-black"><CircleDollarSign /> Registrar custo</Button>}</ActionBar><CostsPanel data={data} view={view} onCreate={canCost ? () => setDialog({ name: "cost" }) : undefined} /></section></>}
         {here === "resultados/calculadora" && <GoalCalculator access={data.access} cities={data.cities.map((c) => ({ id: c.id, name: c.name }))} organizationName={data.access.organizationName} onPersonPage={openPersonPage} onMapKey={openMapKey} />}
         {here === "resultados/metas" && <CommercialWorkspace data={data} mode="team" onRefresh={refreshDashboard} />}
         {here === "resultados/mapeamento" && (data.mappingStats ? <MappingStatsPanel stats={data.mappingStats} /> : <article className="elite-card"><EmptyState title="Sem dados de mapeamento" description="Os indicadores aparecem quando houver locais e pessoas no mapa." /></article>)}

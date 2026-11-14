@@ -66,6 +66,8 @@ export function PrintMap({ logo, organization, author, initialCity }: { logo: st
   const today = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long", timeZone: "America/Sao_Paulo" }).format(new Date());
 
   return <main className="elite-print min-h-screen bg-neutral-300 px-4 py-6 text-neutral-900 print:bg-white print:p-0">
+    {/* Folha desta página: A3 deitado (o relatório do mês usa A4 em pé). */}
+    <style>{"@page { size: A3 landscape; margin: 10mm; }"}</style>
     <div className="print-hide mx-auto mb-4 flex max-w-[1400px] flex-wrap items-center gap-3">
       <Button variant="outline" className="border-neutral-400 bg-white text-neutral-900" onClick={() => { const org = new URLSearchParams(window.location.search).get("org"); window.location.assign(`/?${new URLSearchParams({ ...(org ? { org } : {}), area: "territorio", ver: "mapa" })}`); }}><ArrowLeft /> Voltar ao mapa</Button>
       <label className="flex items-center gap-2 text-sm">Cidade<select value={cityId ?? ""} onChange={(e) => setCityId(Number(e.target.value))} className="rounded-md border border-neutral-400 bg-white px-3 py-2">{(cities ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}/{c.state}</option>)}</select></label>

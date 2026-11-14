@@ -67,6 +67,7 @@ jobs:
             tests/privacy.test.mjs \
             tests/regions.test.mjs \
             tests/rendered-html.test.mjs \
+            tests/report.test.mjs \
             tests/stage-events.test.mjs \
             tests/subscription-requests.test.mjs \
             tests/subscriptions.test.mjs \

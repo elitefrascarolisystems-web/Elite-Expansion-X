@@ -897,13 +897,15 @@ button:disabled { cursor: not-allowed; }
   .elite-meter-fill, .elite-meter-bar > span { transition: none; }
 }
 
-/* ---------- Mapa para imprimir (A3 deitado) ---------- */
+/* ---------- Folhas para imprimir: mapa (A3 deitado) e relatório do mês (A4 em pé) ----------
+   O tamanho da folha (@page) vem de cada página de impressão (PRINT_PAGE_*), não daqui. */
 @media print {
-  @page { size: A3 landscape; margin: 10mm; }
   body { background: #fff !important; }
   .print-hide { display: none !important; }
   .elite-print { min-height: 0; }
-  .print-sheet { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-sheet, .report-sheet { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .report-block, .report-row { break-inside: avoid; }
+  .report-block h2 { break-after: avoid; }
 }
 
 /* Guia "Como usar": cartão da 1ª visita, chip do mapa e o quadro do exemplo. */
