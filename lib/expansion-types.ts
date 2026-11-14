@@ -287,6 +287,8 @@ export type DashboardData = {
   plan?: PlanUsage;
   /** Logo da empresa assinante: versão (data da troca) ou null sem logo. */
   logoVersion?: string | null;
+  /** Cor da empresa nos destaques (lib/accent.ts); "dourado" é o padrão. */
+  accent?: string;
   /** A empresa exige verificação em duas etapas da equipe. */
   mfaRequired?: boolean;
   /** Donos da plataforma: pedidos novos vindos da página pública /conheca. */

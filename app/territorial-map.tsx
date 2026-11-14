@@ -3,6 +3,7 @@ import {StartAttendanceDialog,type AttendancePerson} from '@/app/start-attendanc
 import {PlacePanel} from '@/app/plant-dialogs';
 import {ACTIVE_PERSON_ROLES,LEGACY_ROLE_HINT,PLACE_LINKS,PLACE_TYPES,SECTORS,PERSON_ROLES,ROLE_STEPS,roleStatusFromStep,roleStatusStep} from '@/lib/places';
 import {tenantFetch} from '@/lib/tenant-request';
+import { THEME_EVENT } from '@/lib/app-theme';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { FeatureCollection, Point, Polygon } from 'geojson';
 import { ArrowLeft, ChevronDown, Layers, List, LocateFixed, Map as MapIcon, MapPinPlus, Maximize2, Minimize2, Plus, RefreshCcw, Search, SlidersHorizontal } from 'lucide-react';
@@ -324,8 +325,9 @@ function subscribeLegend(listener:()=>void){window.addEventListener('elite-legen
 /** Modo do mapa: o do endereço (&modo=) ou o último usado neste aparelho. */
 function readMode(key:string):MapMode{try{return parseMode(new URLSearchParams(window.location.search).get('modo')??localStorage.getItem(key));}catch{return 'explorar';}}
 function subscribeMode(listener:()=>void){window.addEventListener('popstate',listener);window.addEventListener('storage',listener);return()=>{window.removeEventListener('popstate',listener);window.removeEventListener('storage',listener);};}
-function readTheme(key:string):TerritoryTheme{try{const s=localStorage.getItem(key);if(s==='light'||s==='mixed'||s==='dark')return s;return 'dark';}catch{return 'dark';}}
-function subscribeTheme(listener:()=>void){const media=matchMedia('(prefers-color-scheme: dark)');window.addEventListener('storage',listener);window.addEventListener('elite-theme',listener);media.addEventListener('change',listener);return()=>{window.removeEventListener('storage',listener);window.removeEventListener('elite-theme',listener);media.removeEventListener('change',listener);};}
+// Sem escolha própria no mapa, ele acompanha o tema do app (escuro ou claro).
+function readTheme(key:string):TerritoryTheme{const app:TerritoryTheme=document.documentElement.dataset.theme==='light'?'light':'dark';try{const s=localStorage.getItem(key);if(s==='light'||s==='mixed'||s==='dark')return s;return app;}catch{return app;}}
+function subscribeTheme(listener:()=>void){const media=matchMedia('(prefers-color-scheme: dark)');window.addEventListener('storage',listener);window.addEventListener('elite-theme',listener);window.addEventListener(THEME_EVENT,listener);media.addEventListener('change',listener);return()=>{window.removeEventListener('storage',listener);window.removeEventListener('elite-theme',listener);window.removeEventListener(THEME_EVENT,listener);media.removeEventListener('change',listener);};}
 
 function PersonSummary({record,data}:{record:TerritoryRecord;data:DashboardData}){
  const v=buildDashboardView(data),amb=v.ambassadors.find(a=>a.id===record.ambassadorId);

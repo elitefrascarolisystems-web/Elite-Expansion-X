@@ -11,6 +11,8 @@ export const organizations = sqliteTable('organizations', {
   /** Acesso da Assessoria Elite decidido pela empresa (0035): liberado, prazo (até advisoryUntil) ou desligado. */
   advisoryMode:text('advisory_mode').notNull().default('liberado'), advisoryUntil:text('advisory_until'),
   advisoryChangedBy:text('advisory_changed_by').notNull().default(''), advisoryChangedAt:text('advisory_changed_at'),
+  /** Cor da empresa nos destaques da plataforma (0036); vazio = dourado. Paleta em lib/accent.ts. */
+  accent:text('accent').notNull().default(''),
 });
 
 export const cities = sqliteTable("cities", {

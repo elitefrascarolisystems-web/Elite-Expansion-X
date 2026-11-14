@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- emblema estático e pequeno, igual ao do cabeçalho anterior. */
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { ThemeToggleButton, ThemeToggleItem } from "@/app/theme-toggle";
 import { BarChart3, Building2, ChevronsLeft, ChevronsRight, HandCoins, LogOut, Map, Menu, Network, Plus, Settings2, ShieldCheck, Sun, type LucideIcon } from "lucide-react";
 
 import { OrganizationSwitcher } from "@/app/organization-switcher";
@@ -69,7 +70,8 @@ export function AppShell({ logo, access, userName, signOutPath, areas, location,
       <div className="elite-sidebar-foot">
         {!collapsed && <div className="min-w-0 px-2"><p className="truncate text-sm text-zinc-200">{userName}</p><p className="truncate text-xs text-subtle">{access.isAdvisory ? "Assessoria Elite" : access.role}</p></div>}
         <div className={`flex ${collapsed ? "flex-col" : ""} items-center gap-1`}>
-          {onAccount && <Button variant="ghost" size="icon" onClick={onAccount} className="text-zinc-400 hover:bg-white/5 hover:text-white" aria-label="Segurança da conta" title="Segurança da conta"><ShieldCheck /></Button>}
+          <ThemeToggleButton className="text-zinc-400 hover:bg-white/5 hover:text-white" />
+          {onAccount && <Button variant="ghost" size="icon" onClick={onAccount} className="text-zinc-400 hover:bg-white/5 hover:text-white" aria-label="Sua conta: aparência e segurança" title="Sua conta: aparência e segurança"><ShieldCheck /></Button>}
           <Button asChild variant="ghost" size="icon" className="text-zinc-400 hover:bg-white/5 hover:text-white"><a href={signOutPath} aria-label="Sair da plataforma" title="Sair"><LogOut /></a></Button>
           <Button variant="ghost" size="icon" onClick={toggle} className="text-subtle hover:bg-white/5 hover:text-white" aria-label={collapsed ? "Expandir menu" : "Recolher menu"} title={collapsed ? "Expandir menu" : "Recolher menu"}>{collapsed ? <ChevronsRight /> : <ChevronsLeft />}</Button>
         </div>
@@ -107,7 +109,8 @@ export function AppShell({ logo, access, userName, signOutPath, areas, location,
       <SheetContent side="bottom" className="border-white/10 bg-surface pb-8 text-white">
         <SheetHeader><SheetTitle className="text-white">Mais áreas</SheetTitle><SheetDescription className="text-zinc-400">{userName} · {access.isAdvisory ? "Assessoria Elite" : access.role}</SheetDescription></SheetHeader>
         <div className="grid gap-1 px-4">{extra.map((area) => { const Icon = AREA_ICONS[area.id]; return <button key={area.id} type="button" onClick={() => { setMoreOpen(false); go(area); }} className={`elite-nav-item ${area.id === current.id ? "is-active" : ""}`}><Icon className="size-[18px]" /><span className="flex-1 text-left">{area.label}</span>{badge(area.id)}</button>; })}
-          {onAccount && <button type="button" onClick={() => { setMoreOpen(false); onAccount(); }} className="elite-nav-item text-zinc-300"><ShieldCheck className="size-[18px]" /><span>Segurança da conta</span></button>}
+          <ThemeToggleItem className="elite-nav-item text-zinc-300" />
+          {onAccount && <button type="button" onClick={() => { setMoreOpen(false); onAccount(); }} className="elite-nav-item text-zinc-300"><ShieldCheck className="size-[18px]" /><span>Sua conta</span></button>}
           <a href={signOutPath} className="elite-nav-item text-zinc-400"><LogOut className="size-[18px]" /><span>Sair</span></a></div>
       </SheetContent>
     </Sheet>

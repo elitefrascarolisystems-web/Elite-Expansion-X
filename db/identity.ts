@@ -3,6 +3,7 @@ import { z } from "zod";
 import { brazilTimestamp, database } from "@/db/runtime";
 import { TenantError, validateLogo } from "@/db/tenant-admin";
 import type { AccessView } from "@/lib/expansion-types";
+import { ACCENT_KEYS, ACCENTS, DEFAULT_ACCENT, type AccentKey } from "@/lib/accent";
 
 /**
  * Identidade da empresa: nome e logo. A logo aparece na barra lateral e no mapa impresso.
@@ -13,7 +14,16 @@ export const identitySchema = z.object({
   /** null retira a logo; ausente mantém a atual. */
   logo: z.union([z.string().max(210000), z.null()]).optional(),
   official: z.boolean().default(false),
+  /** Cor da empresa (paleta fechada); ausente mantém a atual. */
+  accent: z.enum(ACCENT_KEYS as [string, ...string[]], { message: "Escolha uma das cores da lista." }).optional(),
 });
+
+/** Cor da empresa; a Elite (organização 1) usa sempre o dourado. */
+export async function organizationAccent(organizationId: number): Promise<string> {
+  if (organizationId === 1) return DEFAULT_ACCENT;
+  const row = await first("SELECT accent FROM organizations WHERE id=?", organizationId);
+  return String(row?.accent || DEFAULT_ACCENT);
+}
 
 const first = async (sql: string, ...args: (string | number)[]) => (await database().prepare(sql).bind(...args).all()).results[0];
 
@@ -41,12 +51,14 @@ export async function saveIdentity(access: AccessView, input: unknown) {
   const db = database(), now = brazilTimestamp();
   const keepLogo = v.logo === undefined;
   await db.batch([
-    db.prepare("UPDATE organizations SET name=? WHERE id=?").bind(v.name, org),
+    v.accent === undefined
+      ? db.prepare("UPDATE organizations SET name=? WHERE id=?").bind(v.name, org)
+      : db.prepare("UPDATE organizations SET name=?, accent=? WHERE id=?").bind(v.name, v.accent === DEFAULT_ACCENT ? "" : v.accent, org),
     keepLogo
       ? db.prepare("INSERT INTO organization_profiles(organization_id,updated_at) VALUES(?,?) ON CONFLICT(organization_id) DO NOTHING").bind(org, now)
       : db.prepare("INSERT INTO organization_profiles(organization_id,logo,updated_at) VALUES(?,?,?) ON CONFLICT(organization_id) DO UPDATE SET logo=excluded.logo,updated_at=excluded.updated_at").bind(org, v.logo ?? null, now),
     db.prepare("INSERT INTO audit_logs(organization_id,actor_email,action,entity_type,summary,created_at) VALUES(?,?,'organization_identity','organization',?,?)")
-      .bind(org, access.email, keepLogo ? `Nome da empresa: ${v.name}.` : v.logo ? `Nome e logo da empresa atualizados (${v.name}).` : `Logo da empresa retirada.`, now),
+      .bind(org, access.email, (keepLogo ? `Nome da empresa: ${v.name}.` : v.logo ? `Nome e logo da empresa atualizados (${v.name}).` : `Logo da empresa retirada.`) + (v.accent ? ` Cor da empresa: ${ACCENTS[v.accent as AccentKey].label.toLowerCase()}.` : ""), now),
   ]);
-  return { name: v.name, logoVersion: await logoVersion(org) };
+  return { name: v.name, logoVersion: await logoVersion(org), accent: await organizationAccent(org) };
 }

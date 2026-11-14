@@ -22,7 +22,7 @@ export default function GoalPaceChart({ data, goal }: { data: PacePoint[]; goal:
       <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
       <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} minTickGap={24} />
       <YAxis tickLine={false} axisLine={false} width={40} allowDecimals={false} domain={[0, (max: number) => Math.max(max, goal)]} />
-      <ReferenceLine y={goal} stroke="var(--chart-1)" strokeDasharray="2 4" label={{ value: `Meta ${goal}`, position: "insideTopLeft", fill: "#e1c96e", fontSize: 12 }} />
+      <ReferenceLine y={goal} stroke="var(--chart-1)" strokeDasharray="2 4" label={{ value: `Meta ${goal}`, position: "insideTopLeft", fill: "var(--elite-gold-light)", fontSize: 12 }} />
       <ChartTooltip content={<ChartTooltipContent formatter={(value, name) => <div className="flex w-full items-center gap-2"><span className="flex-1 text-muted-foreground">{config[name as keyof typeof config]?.label ?? String(name)}</span><span className="font-medium tabular-nums">{Math.floor(Number(value))}</span></div>} />} />
       <ChartLegend content={<ChartLegendContent />} />
       <Line dataKey="real" type="monotone" stroke="var(--color-real)" strokeWidth={2.5} dot={false} connectNulls={false} />

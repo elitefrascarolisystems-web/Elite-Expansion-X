@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { groupSecret } from "@/lib/totp";
 import { tenantFetch } from "@/lib/tenant-request";
+import { ThemeChoiceField } from "@/app/theme-toggle";
 
 type Status = { enabled: boolean; enabledAt: string | null; recoveryLeft: number; required: boolean };
 type Stage = { kind: "status" } | { kind: "setup"; secret: string; otpauth: string } | { kind: "codes"; codes: string[] } | { kind: "confirm"; action: "disable" | "recovery" };
@@ -26,7 +27,7 @@ const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("pt-
 function QrCode({ text }: { text: string }) {
   const src = useMemo(() => { const qr = qrcode(0, "M"); qr.addData(text); qr.make(); return qr.createDataURL(5, 2); }, [text]);
   // eslint-disable-next-line @next/next/no-img-element -- imagem gerada no aparelho (data URL), sem servidor de imagens
-  return <img src={src} alt="QR code para cadastrar a Elite Expansion X no app autenticador" className="size-48 rounded-lg bg-white p-2" width={192} height={192} />;
+  return <img src={src} alt="QR code para cadastrar a Elite Expansion X no app autenticador" className="size-48 rounded-lg bg-[#fff] p-2" width={192} height={192} />;
 }
 
 function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void }) {
@@ -104,8 +105,11 @@ export function AccountSecurityPanel({ onEnabled }: { onEnabled?: () => void }) 
 export function AccountSecurityDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   return <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="max-h-[92dvh] overflow-y-auto bg-zinc-950 text-white sm:max-w-lg">
-      <DialogHeader><DialogTitle>Segurança da conta</DialogTitle><DialogDescription className="text-zinc-400">Verificação em duas etapas com um app autenticador no celular.</DialogDescription></DialogHeader>
-      {open && <AccountSecurityPanel />}
+      <DialogHeader><DialogTitle>Sua conta</DialogTitle><DialogDescription className="text-zinc-400">Aparência da plataforma neste aparelho e verificação em duas etapas.</DialogDescription></DialogHeader>
+      {open && <div className="grid gap-6">
+        <ThemeChoiceField />
+        <section aria-labelledby="mfa-title" className="grid gap-3 border-t border-white/10 pt-5"><h3 id="mfa-title" className="text-sm font-medium text-zinc-200">Verificação em duas etapas</h3><AccountSecurityPanel /></section>
+      </div>}
     </DialogContent>
   </Dialog>;
 }

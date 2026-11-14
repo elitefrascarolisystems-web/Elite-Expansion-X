@@ -20,7 +20,7 @@ import { getSettings, listActiveAdvisors } from "@/db/access";
 import { getMappingStats } from "@/db/mapping-stats";
 import { getAgenda } from "@/db/agenda";
 import { getPlan } from "@/db/plan";
-import { logoVersion } from "@/db/identity";
+import { logoVersion, organizationAccent } from "@/db/identity";
 import { newRequestCount } from "@/db/subscription-requests";
 import { asNullableNumber, asNumber, brazilTimestamp, database } from "@/db/runtime";
 
@@ -361,6 +361,7 @@ export async function getDashboardData(access: AccessView): Promise<DashboardDat
     agenda: await getAgenda(access),
     plan: await getPlan(access.organizationId),
     logoVersion: await logoVersion(access.organizationId),
+    accent: await organizationAccent(access.organizationId),
     // A empresa exige verificação em duas etapas da equipe (Gestão → Equipe).
     mfaRequired: Number((await rows("SELECT mfa_required FROM organizations WHERE id=?", [access.organizationId]))[0]?.mfa_required ?? 0) === 1,
     subscriptionRequests: await newRequestCount(access),

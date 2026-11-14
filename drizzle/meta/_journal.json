@@ -253,6 +253,13 @@
       "when": 1794633120158,
       "tag": "0035_assessoria_autorizada",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1794635625276,
+      "tag": "0036_cor_da_empresa",
+      "breakpoints": true
     }
   ]
 }
